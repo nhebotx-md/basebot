@@ -1,5 +1,5 @@
 {
-  "name": "Kyzo Yamada",
+  "name": "TangxAja",
   "version": "1.2",
   "description": "WhatsApp Bot Base",
   "main": "main.js",
@@ -7,7 +7,7 @@
   "scripts": {
     "start": "main.js"
   },
-  "author": "Kyzo Yamada",
+  "author": "TangxAja",
   "license": "MIT",
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",
