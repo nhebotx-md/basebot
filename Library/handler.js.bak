@@ -43,8 +43,6 @@ const loadPlugins = async () => {
 };
 
 const handleMessage = async (m, commandText, Obj) => {
-Obj.q = (type = 'fkontak', opt = {}) => global.q(m, type, opt)
-Obj.fakeQuoted = (opt = {}) => global.fakeQuoted(m, opt)
   const plugins = await loadPlugins();
 
   for (const plugin of plugins) {

@@ -342,6 +342,149 @@ const conn = WhosTANG
 const sock = WhosTANG
 const isOwn = isOwner
 const isPrem = isPremium
+
+// ===== GLOBAL FAKE QUOTED ULTRA =====
+global.fakeQuoted = (m, options = {}) => {
+    const thumb = fs.existsSync('./ShoNheMedia/image/owner.jpg')
+        ? fs.readFileSync('./ShoNheMedia/image/owner.jpg')
+        : null
+
+    const sender = m.sender || '0@s.whatsapp.net'
+    const name = m.pushName || "User"
+
+    const baseKey = {
+        participant: sender,
+        ...(m.chat ? { remoteJid: "status@broadcast" } : {})
+    }
+
+    return {
+
+        // ===== KONTAK =====
+        fkontak: {
+            key: baseKey,
+            message: {
+                contactMessage: {
+                    displayName: global.namaowner || name,
+                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${global.namaowner || name}\nTEL;waid=${sender.split("@")[0]}:${sender.split("@")[0]}\nEND:VCARD`,
+                    jpegThumbnail: thumb
+                }
+            }
+        },
+
+        // ===== AUDIO VN =====
+        fvn: {
+            key: baseKey,
+            message: {
+                audioMessage: {
+                    mimetype: "audio/ogg; codecs=opus",
+                    seconds: 999999,
+                    ptt: true
+                }
+            }
+        },
+
+        // ===== GIF =====
+        fgif: {
+            key: baseKey,
+            message: {
+                videoMessage: {
+                    caption: options.caption || "Powered by Bot",
+                    gifPlayback: true,
+                    jpegThumbnail: thumb
+                }
+            }
+        },
+
+        // ===== IMAGE =====
+        fimg: {
+            key: baseKey,
+            message: {
+                imageMessage: {
+                    caption: options.caption || "Fake Image",
+                    jpegThumbnail: thumb
+                }
+            }
+        },
+
+        // ===== DOCUMENT =====
+        fdoc: {
+            key: baseKey,
+            message: {
+                documentMessage: {
+                    title: options.title || "Fake Document",
+                    fileName: options.fileName || "file.pdf",
+                    mimetype: "application/pdf",
+                    jpegThumbnail: thumb
+                }
+            }
+        },
+
+        // ===== ORDER =====
+        forder: {
+            key: baseKey,
+            message: {
+                orderMessage: {
+                    itemCount: 1,
+                    status: 1,
+                    surface: 1,
+                    message: options.message || "Fake Order",
+                    orderTitle: options.title || "Order",
+                    thumbnail: thumb,
+                    sellerJid: sender
+                }
+            }
+        },
+
+        // ===== LOCATION =====
+        floc: {
+            key: baseKey,
+            message: {
+                locationMessage: {
+                    name: options.name || "Fake Location",
+                    jpegThumbnail: thumb
+                }
+            }
+        },
+
+        // ===== TEXT EXTENDED =====
+        ftext: {
+            key: baseKey,
+            message: {
+                extendedTextMessage: {
+                    text: options.text || "Fake Text Message"
+                }
+            }
+        },
+
+        // ===== PRODUCT =====
+        fproduct: {
+            key: baseKey,
+            message: {
+                productMessage: {
+                    product: {
+                        productImage: { jpegThumbnail: thumb },
+                        title: options.title || "Fake Product",
+                        description: options.desc || "Description",
+                        currencyCode: "IDR",
+                        priceAmount1000: "10000000"
+                    },
+                    businessOwnerJid: sender
+                }
+            }
+        },
+
+        // ===== RANDOM PICK =====
+        random: function () {
+            const keys = Object.keys(this).filter(k => k !== "random")
+            return this[keys[Math.floor(Math.random() * keys.length)]]
+        }
+    }
+}
+
+// shortcut
+global.q = (m, type = 'fkontak', opt = {}) => {
+    return global.fakeQuoted(m, opt)[type] || global.fakeQuoted(m).fkontak
+}
 // SELF MODE
 if (global.self && !isOwn) return
 
