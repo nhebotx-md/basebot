@@ -1,6 +1,8 @@
 const fs = require('fs')
 
 global.owner = ['62881027174423'] 
+global.namabot = "ShoNhe"
+global.namaowner = "Tangx"
 global.namaown = "TangxAja"
 global.prefa = ['','!','.',',','🐤','🗿'] // Prefix // Not Change
 global.thumbnail = "https://lunara.drizznesiasite.biz.id/f/ApAdiHpYChQf.jpg"
