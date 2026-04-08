@@ -1,5 +1,5 @@
 #!/bin/bash
-# gitup.sh - Auto commit & push ke GitHub (versi diperbaiki)
+# gitup.sh - Auto commit & push ke GitHub (versi anti-rejected)
 
 # --- Load credentials from me.json ---
 if [ ! -f me.json ]; then
@@ -7,7 +7,6 @@ if [ ! -f me.json ]; then
     exit 1
 fi
 
-# Parse JSON (tetap pakai grep/awk agar tidak bergantung jq)
 USERNAME=$(grep github_username me.json | awk -F '"' '{print $4}')
 TOKEN=$(grep github_token me.json | awk -F '"' '{print $4}')
 
@@ -18,14 +17,14 @@ fi
 
 # --- Cek apakah ini repository Git ---
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
-    echo "[ERROR] Folder ini bukan repository Git. Jalankan di dalam folder repo!"
+    echo "[ERROR] Folder ini bukan repository Git!"
     exit 1
 fi
 
-# --- Set remote URL dengan token ---
+# --- Remote URL dengan token ---
 REMOTE_URL="https://$USERNAME:$TOKEN@github.com/nhebotx-md/basebot.git"
 
-# --- Ambil nama branch saat ini ---
+# --- Ambil branch saat ini ---
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 # --- Cek apakah ada perubahan ---
@@ -35,20 +34,28 @@ if [ -z "$CHANGES" ]; then
     exit 0
 fi
 
-# --- Tambahkan SEMUA perubahan (termasuk subfolder & penghapusan) ---
+# --- Tambahkan SEMUA perubahan (subfolder + delete + mode change) ---
 echo "[INFO] Menambahkan semua perubahan..."
 git add -A
 
-# --- Commit changes ---
+# --- Commit ---
 COMMIT_MSG="Auto commit $(date +'%Y-%m-%d %H:%M:%S')"
 git commit -m "$COMMIT_MSG"
 
-# --- Push ke GitHub ---
+# --- PULL DULU (REBASE) agar tidak rejected ---
+echo "[INFO] Sync dengan GitHub (pull --rebase)..."
+if ! git pull --rebase "$REMOTE_URL" "$BRANCH"; then
+    echo "[ERROR] Ada konflik saat pull --rebase!"
+    echo "        Harap resolve konflik secara manual, lalu jalankan ./gitup.sh lagi."
+    exit 1
+fi
+
+# --- PUSH ---
 echo "[INFO] Pushing ke GitHub (branch: $BRANCH)..."
 git push "$REMOTE_URL" "$BRANCH"
 
 if [ $? -eq 0 ]; then
-    echo "[SUCCESS] Perubahan berhasil di-push ke GitHub!"
+    echo "[SUCCESS] Perubahan berhasil di-push ke GitHub! 🎉"
 else
-    echo "[ERROR] Push gagal. Cek koneksi, token, atau konflik di repository."
+    echo "[ERROR] Push masih gagal. Cek koneksi atau token."
 fi
