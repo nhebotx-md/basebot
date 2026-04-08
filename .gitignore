@@ -1,6 +1,7 @@
 package-lock.json
 node_modules
 session
+backup
 
 # Credentials
 me.json

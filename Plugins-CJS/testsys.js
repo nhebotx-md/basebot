@@ -134,16 +134,17 @@ module.exports = async (m, Obj) => {
   // =========================
   // 🔹 BUTTON BASIC (UPDATED ke format itsukichan modern)
   // =========================
-  await safe("button.sendInteractive() + quickReply", async () => {
-    await button.sendInteractive("Test Simple Button", [
-      ...button.flow.quickReply("📋 Menu Utama", ".menu"),
-      ...button.flow.quickReply("🔍 Ping", ".ping")
-    ])
-  })
-
   await safe("button.flow.menu()", async () => {
     await button.sendInteractive("🧠 Menu Button Test (Single Select)", button.flow.menu())
   })
+  await safe("button.sendInteractive() + quickReply", async () => {
+    await button.sendInteractive("Tampilan menu", [
+      ...button.flow.quickReply("📋 menu", ".menu"),
+      ...button.flow.quickReply("🔍 owner", ".owner")
+    ])
+  })
+
+  
 
   // =========================
   // 🔹 ADVANCED FLOW BUTTON (FULL MODERN + KOMBINASI)
