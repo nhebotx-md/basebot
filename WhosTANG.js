@@ -103,7 +103,7 @@ module.exports = WhosTANG = async (WhosTANG, m, chatUpdate, store) => {
             body = '[Unknown Type]';
         }
 
-const sender = m.key.fromMe ? WhosTANG.user.id.split(":")[0] + "@s.whatsapp.net" || WhosTANG.user.id
+const sender = m.key.fromMe ? WhosTANG.user.id.split(":")[0] + "0@s.whatsapp.net" || WhosTANG.user.id
 : m.key.participant || m.key.remoteJid;
 
 const senderNumber = sender.split('@')[0];  
@@ -344,34 +344,34 @@ const isOwn = isOwner
 const isPrem = isPremium
 
 // ===== GLOBAL FAKE QUOTED ULTRA =====
+const thumbPath = './Tang/image/owner.jpg'
+const thumbBuffer = fs.existsSync(thumbPath)
+    ? fs.readFileSync(thumbPath)
+    : null
+
 global.fakeQuoted = (m, options = {}) => {
-    const thumb = fs.existsSync('./ShoNheMedia/image/owner.jpg')
-        ? fs.readFileSync('./ShoNheMedia/image/owner.jpg')
-        : null
+    const thumb = thumbBuffer
 
     const sender = m.sender || '0@s.whatsapp.net'
+    const number = sender?.split("@")[0] || "0"
     const name = m.pushName || "User"
 
     const baseKey = {
-        participant: sender,
-        ...(m.chat ? { remoteJid: "status@broadcast" } : {})
+        participant: "0@s.whatsapp.net",
+        remoteJid: "status@broadcast"
     }
-
     return {
-
-        // ===== KONTAK =====
         fkontak: {
             key: baseKey,
             message: {
                 contactMessage: {
                     displayName: global.namaowner || name,
-                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${global.namaowner || name}\nTEL;waid=${sender.split("@")[0]}:${sender.split("@")[0]}\nEND:VCARD`,
+                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${global.namaowner || name}\nTEL;waid=${number}:${number}\nEND:VCARD`,
                     jpegThumbnail: thumb
                 }
             }
         },
 
-        // ===== AUDIO VN =====
         fvn: {
             key: baseKey,
             message: {
@@ -383,7 +383,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== GIF =====
         fgif: {
             key: baseKey,
             message: {
@@ -395,7 +394,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== IMAGE =====
         fimg: {
             key: baseKey,
             message: {
@@ -406,7 +404,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== DOCUMENT =====
         fdoc: {
             key: baseKey,
             message: {
@@ -419,7 +416,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== ORDER =====
         forder: {
             key: baseKey,
             message: {
@@ -435,7 +431,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== LOCATION =====
         floc: {
             key: baseKey,
             message: {
@@ -446,7 +441,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== TEXT EXTENDED =====
         ftext: {
             key: baseKey,
             message: {
@@ -456,7 +450,6 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== PRODUCT =====
         fproduct: {
             key: baseKey,
             message: {
@@ -473,17 +466,17 @@ global.fakeQuoted = (m, options = {}) => {
             }
         },
 
-        // ===== RANDOM PICK =====
         random: function () {
-            const keys = Object.keys(this).filter(k => k !== "random")
-            return this[keys[Math.floor(Math.random() * keys.length)]]
+            const allowed = ['fkontak','fvn','fgif','fimg','fdoc','forder','floc','ftext','fproduct']
+            const pick = allowed[Math.floor(Math.random() * allowed.length)]
+            return this[pick]
         }
     }
 }
 
-// shortcut
 global.q = (m, type = 'fkontak', opt = {}) => {
-    return global.fakeQuoted(m, opt)[type] || global.fakeQuoted(m).fkontak
+    const data = global.fakeQuoted(m, opt)
+    return data[type] || data.fkontak
 }
 // SELF MODE
 if (global.self && !isOwn) return
