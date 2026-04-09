@@ -1,31 +1,118 @@
-const fs = require('fs')
+/**
+ * =========================================
+ * 📌 FILE: config.js
+ * 📌 DESCRIPTION:
+ * File konfigurasi global untuk bot WhatsApp
+ *
+ * Berisi:
+ * - Owner configuration
+ * - Bot identity settings
+ * - Prefix configuration
+ * - Welcome/goodbye settings
+ * - Message templates
+ *
+ * ⚠️ CATATAN:
+ * DILARANG mengubah nama variabel global
+ * karena digunakan di seluruh sistem
+ * =========================================
+ */
 
-global.owner = ['62881027174423'] 
-global.namabot = "ShoNhe"
-global.namaowner = "Tangx"
-global.namaown = "TangxAja"
-global.prefa = ['','!','.',',','🐤','🗿'] // Prefix // Not Change
-global.thumbnail = "https://lunara.drizznesiasite.biz.id/f/ApAdiHpYChQf.jpg"
+// =========================================
+// 📌 IMPORT / REQUIRE
+// =========================================
+const fs = require('fs');
 
-global.welcome = true
-global.goodbye = true
+// =========================================
+// 📌 GLOBAL VARIABLES / CONFIG - OWNER
+// =========================================
 
-// fallback avatar kalau user tidak punya PP
-global.thumb = "https://files.catbox.moe/3l75pp"
+// Array nomor owner bot (bisa multiple)
+global.owner = ['62881027174423'];
 
+// =========================================
+// 📌 GLOBAL VARIABLES / CONFIG - BOT IDENTITY
+// =========================================
+
+// Nama bot yang ditampilkan di menu dan pesan
+global.namabot = "ShoNhe";
+
+// Nama owner untuk ditampilkan di kontak dan info
+global.namaowner = "Tangx";
+
+// Nama alternatif owner
+global.namaown = "TangxAja";
+
+// =========================================
+// 📌 GLOBAL VARIABLES / CONFIG - PREFIX
+// =========================================
+
+// Daftar prefix yang bisa digunakan untuk command
+// Note: Not Change - jangan diubah karena berpengaruh ke sistem
+global.prefa = ['','!','.',',','🐤','🗿'];
+
+// =========================================
+// 📌 GLOBAL VARIABLES / CONFIG - THUMBNAIL
+// =========================================
+
+// URL thumbnail utama untuk externalAdReply
+global.thumbnail = "https://lunara.drizznesiasite.biz.id/f/ApAdiHpYChQf.jpg";
+
+// =========================================
+// 📌 GLOBAL VARIABLES / CONFIG - WELCOME/GOODBYE
+// =========================================
+
+// Enable/disable fitur welcome (sambutan member baru)
+global.welcome = true;
+
+// Enable/disable fitur goodbye (pesan saat member keluar)
+global.goodbye = true;
+
+// =========================================
+// 📌 GLOBAL VARIABLES / CONFIG - FALLBACK
+// =========================================
+
+// Fallback avatar jika user tidak punya profile picture
+global.thumb = "https://files.catbox.moe/3l75pp";
+
+// =========================================
+// 📌 CONSTANTS - MESSAGE TEMPLATES
+// =========================================
+
+// Template pesan untuk berbagai kondisi
 global.mess = {
-  owner: "Maaf hanya untuk owner bot",
-  prem: "Maaf hanya untuk pengguna premium",
-  admin: "Maaf hanya untuk admin group",
-  botadmin: "Maaf bot harus dijadikan admin",
-  group: "Maaf hanya dapat digunakan di dalam group",
-  private: "Silahkan gunakan fitur di private chat",
-}
+    // Pesan jika bukan owner
+    owner: "Maaf hanya untuk owner bot",
+    // Pesan jika bukan premium
+    prem: "Maaf hanya untuk pengguna premium",
+    // Pesan jika bukan admin group
+    admin: "Maaf hanya untuk admin group",
+    // Pesan jika bot bukan admin
+    botadmin: "Maaf bot harus dijadikan admin",
+    // Pesan jika bukan di group
+    group: "Maaf hanya dapat digunakan di dalam group",
+    // Pesan jika harus di private chat
+    private: "Silahkan gunakan fitur di private chat",
+};
 
-let file = require.resolve(__filename)
+// =========================================
+// 📌 FILE WATCHER - AUTO RELOAD
+// =========================================
+
+/**
+ * Setup file watcher untuk auto-reload saat file diubah
+ * Ini memungkinkan perubahan config langsung terapply tanpa restart
+ */
+let file = require.resolve(__filename);
+
 require('fs').watchFile(file, () => {
-  require('fs').unwatchFile(file)
-  console.log('\x1b[0;32m'+__filename+' \x1b[1;32mupdated!\x1b[0m')
-  delete require.cache[file]
-  require(file)
-})
+    require('fs').unwatchFile(file);
+    console.log('\x1b[0;32m'+__filename+' \x1b[1;32mupdated!\x1b[0m');
+    delete require.cache[file];
+    require(file);
+});
+
+// =========================================
+// 📌 EXPORT / MODULE
+// =========================================
+// File ini tidak perlu export karena menggunakan global variables
+// Cukup require('./config') di file lain untuk load konfigurasi

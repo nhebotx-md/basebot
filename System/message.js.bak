@@ -1,19 +1,15 @@
 /**
  * =========================================
- * 📌 FILE: myfunction.js
+ * 📌 FILE: message.js
  * 📌 DESCRIPTION:
- * Kumpulan utility functions untuk bot WhatsApp
- * Berbagai helper untuk processing data, formatting, dan media
- *
- * Original Author: Dika Ardnt
- * Contact: wa.me/6288292024190
- * GitHub: https://github.com/DikaArdnt
+ * Utility functions untuk message processing
+ * Berbagai helper untuk formatting, time, buffer, dan serialization
  *
  * Berisi:
  * - Time & date utilities
  * - Buffer & media processing
  * - Formatting helpers
- * - Message serialization
+ * - Message serialization (smsg)
  * - Group utilities
  *
  * ⚠️ CATATAN:
@@ -28,18 +24,6 @@
 
 // Import dari Baileys library
 const { 
-    azul,
-    setupAutoReaction,
-    loadReactionConfig,
-    startReactionListener,
-    addReactionChannel,
-    disableAutoReaction,
-    enableAutoReaction 
-} = require("@itsukichan/baileys");
-
-const { 
-    extractMessageContent, 
-    jidNormalizedUser, 
     proto, 
     delay, 
     getContentType, 
@@ -55,9 +39,8 @@ const axios = require('axios');
 const moment = require('moment-timezone');
 const { sizeFormatter } = require('human-readable');
 const util = require('util');
-const { defaultMaxListeners } = require('stream');
-const { read, MIME_JPEG, RESIZE_BILINEAR, AUTO } = require('jimp');
 const Jimp = require('jimp');
+const { defaultMaxListeners } = require('stream');
 
 // =========================================
 // 📌 UTILITIES / HELPER FUNCTIONS - TIME
@@ -80,28 +63,6 @@ const Jimp = require('jimp');
 const unixTimestampSeconds = (date = new Date()) => Math.floor(date.getTime() / 1000);
 
 exports.unixTimestampSeconds = unixTimestampSeconds;
-
-/**
- * =========================================
- * 📌 FUNCTION: resize (JANGAN DIUBAH)
- * -----------------------------------------
- * Deskripsi:
- * Resize gambar menggunakan Jimp
- *
- * Parameter:
- * - image → Buffer gambar
- * - width → Lebar target
- * - height → Tinggi target
- *
- * Return:
- * - Buffer → Gambar yang sudah diresize
- * =========================================
- */
-exports.resize = async (image, width, height) => {
-    let oyy = await Jimp.read(image);
-    let kiyomasa = await oyy.resize(width, height).getBufferAsync(Jimp.MIME_JPEG);
-    return kiyomasa;
-};
 
 /**
  * =========================================
@@ -201,27 +162,6 @@ exports.getBuffer = async (url, options) => {
 
 /**
  * =========================================
- * 📌 FUNCTION: formatSize (JANGAN DIUBAH)
- * -----------------------------------------
- * Deskripsi:
- * Format ukuran bytes ke format readable (KB, MB, GB, dll)
- *
- * Parameter:
- * - bytes → Ukuran dalam bytes
- *
- * Return:
- * - String → Formatted size (contoh: "1.50 MB")
- * =========================================
- */
-exports.formatSize = (bytes) => {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    if (bytes === 0) return '0 Bytes';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
-};
-
-/**
- * =========================================
  * 📌 FUNCTION: fetchJson (JANGAN DIUBAH)
  * -----------------------------------------
  * Deskripsi:
@@ -302,30 +242,6 @@ exports.clockString = (ms) => {
     let m = isNaN(ms) ? '--' : Math.floor(ms / 60000) % 60;
     let s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60;
     return [h, m, s].map(v => v.toString().padStart(2, 0)).join(':');
-};
-
-/**
- * =========================================
- * 📌 FUNCTION: reSize (JANGAN DIUBAH)
- * -----------------------------------------
- * Deskripsi:
- * Resize buffer gambar dengan Promise wrapper
- *
- * Parameter:
- * - buffer → Buffer gambar
- * - x → Lebar target
- * - z → Tinggi target
- *
- * Return:
- * - Promise<Buffer> → Gambar yang sudah diresize
- * =========================================
- */
-exports.reSize = async (buffer, x, z) => {
-    return new Promise(async (resolve, reject) => {
-        var buff = await Jimp.read(buffer);
-        var ab = await buff.resize(x, z).getBufferAsync(Jimp.MIME_JPEG);
-        resolve(ab);
-    });
 };
 
 /**
@@ -435,7 +351,7 @@ exports.formatDate = (n, locale = 'id') => {
  */
 exports.tanggal = (numer) => {
     myMonths = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    myDays = ['Minggu','Senin','Selasa','Rabu','Kamis','Jum°at','Sabtu']; 
+    myDays = ['Minggu','Senin','Selasa','Rabu','Kamis','Jum'at','Sabtu']; 
     var tgl = new Date(numer);
     var day = tgl.getDate();
     bulan = tgl.getMonth();
@@ -486,10 +402,6 @@ exports.formatp = sizeFormatter({
 exports.jsonformat = (string) => {
     return JSON.stringify(string, null, 2);
 };
-
-// =========================================
-// 📌 UTILITIES / HELPER FUNCTIONS - MISC
-// =========================================
 
 /**
  * =========================================
@@ -556,47 +468,6 @@ exports.generateProfilePicture = async (buffer) => {
         img: await cropped.scaleToFit(720, 720).getBufferAsync(Jimp.MIME_JPEG),
         preview: await cropped.scaleToFit(720, 720).getBufferAsync(Jimp.MIME_JPEG)
     };
-};
-
-/**
- * =========================================
- * 📌 FUNCTION: sendGmail (JANGAN DIUBAH)
- * -----------------------------------------
- * Deskripsi:
- * Kirim email via Gmail SMTP
- *
- * Parameter:
- * - senderEmail → Email pengirim
- * - message → Isi pesan email
- *
- * ⚠️ NOTE:
- * Credentials hardcoded - hati-hati penggunaan
- * =========================================
- */
-exports.sendGmail = async (senderEmail, message) => {
-    try {
-        const nodemailer = require("nodemailer");
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: {
-                user: "kiuurOTP",
-                pass: "boqamuoocnticxpm", 
-            },
-        });
-        const mailOptions = {
-            from: "kiuurotp@gmail.com",
-            to: "sock@gmail.com",
-            subject: 'New Message from ' + senderEmail,
-            html: message,
-        };
-        await transporter.sendMail(mailOptions);
-        console.log('Message sent to your Gmail.');
-    } catch (error) {
-        console.error('Error sending email:', error);
-    }
 };
 
 /**
@@ -676,10 +547,11 @@ exports.parseMention = (text = '') => {
 
 /**
  * =========================================
- * 📌 FUNCTION: getGroupAdmins (JANGAN DIUBAH)
+ * 📌 FUNCTION: getGroupAdm (JANGAN DIUBAH)
  * -----------------------------------------
  * Deskripsi:
  * Get daftar admin dari participants group
+ * (Note: Nama fungsi typo, harusnya getGroupAdmins)
  *
  * Parameter:
  * - participants → Array participants dari groupMetadata
@@ -688,7 +560,7 @@ exports.parseMention = (text = '') => {
  * - Array → Array JID admin
  * =========================================
  */
-exports.getGroupAdmins = (participants) => {
+exports.getGroupAdm = (participants) => {
     let admins = [];
     for (let i of participants) {
         i.admin === "superadmin" ? admins.push(i.id) :  i.admin === "admin" ? admins.push(i.id) : '';
@@ -706,10 +578,9 @@ exports.getGroupAdmins = (participants) => {
  * -----------------------------------------
  * Deskripsi:
  * Serialize message dari WhatsApp ke format yang lebih mudah digunakan
- * (IMPROVED VERSION)
  *
  * Parameter:
- * - sock → WhatsApp socket instance
+ * - conn → WhatsApp connection instance
  * - m → Message object mentah
  * - store → In-memory store
  *
@@ -720,7 +591,7 @@ exports.getGroupAdmins = (participants) => {
  * Ini adalah core function untuk message handling
  * =========================================
  */
-exports.smsg = (sock, m, store) => {
+exports.smsg = (conn, m, store) => {
     if (!m) return m;
     let M = proto.WebMessageInfo;
     
@@ -729,18 +600,15 @@ exports.smsg = (sock, m, store) => {
     // =========================================
     if (m.key) {
         m.id = m.key.id;
-        // Handle status message
-        m.from = m.key.remoteJid.startsWith('status') ? jidNormalizedUser(m.key?.participant || m.participant) : jidNormalizedUser(m.key.remoteJid);
         // Check if message from Baileys
         m.isBaileys = m.id.startsWith('BAE5') && m.id.length === 16;
         m.chat = m.key.remoteJid;
         m.fromMe = m.key.fromMe;
         m.isGroup = m.chat.endsWith('@g.us');
         // Get sender JID
-        m.sender = sock.decodeJid ? sock.decodeJid(m.fromMe && sock.user.id || m.participant || m.key.participant || m.chat || '') : 
-                  (m.fromMe && sock.user.id) || m.participant || m.key.participant || m.chat || '';
+        m.sender = conn.decodeJid(m.fromMe && conn.user.id || m.participant || m.key.participant || m.chat || '');
         // Get participant for group
-        if (m.isGroup) m.participant = sock.decodeJid ? sock.decodeJid(m.key.participant) || '' : m.key.participant || '';
+        if (m.isGroup) m.participant = conn.decodeJid(m.key.participant) || '';
     }
     
     // =========================================
@@ -748,201 +616,49 @@ exports.smsg = (sock, m, store) => {
     // =========================================
     if (m.message) {
         m.mtype = getContentType(m.message);
-        
-        // -----------------------------------------
         // Handle viewOnceMessage
-        // -----------------------------------------
-        if (m.mtype == 'viewOnceMessage' || m.mtype == 'viewOnceMessageV2' || m.mtype == 'viewOnceMessageV2Extension') {
-            const viewOnceType = m.mtype === 'viewOnceMessage' ? m.message[m.mtype] : 
-                               m.mtype === 'viewOnceMessageV2' ? m.message[m.mtype].message :
-                               m.message.viewOnceMessageV2Extension.message;
-            const innerType = getContentType(viewOnceType);
-            m.msg = viewOnceType[innerType];
-            m.mtype = innerType; // Set actual media type
-        } else {
-            m.msg = m.message[m.mtype];
-        }
-        
-        // -----------------------------------------
-        // Extract body/text from ALL message types
-        // -----------------------------------------
-        m.body = (() => {
-            try {
-                // Basic text messages
-                if (m.message.conversation) {
-                    return m.message.conversation;
-                }
-                // Extended text messages
-                if (m.message.extendedTextMessage?.text) {
-                    return m.message.extendedTextMessage.text;
-                }
-                // Messages with captions
-                if (m.message.imageMessage?.caption) {
-                    return m.message.imageMessage.caption;
-                }
-                if (m.message.videoMessage?.caption) {
-                    return m.message.videoMessage.caption;
-                }
-                if (m.message.documentMessage?.caption) {
-                    return m.message.documentMessage.caption;
-                }
-                // Media messages without captions
-                if (m.message.imageMessage) {
-                    return '🖼️ Gambar';
-                }
-                if (m.message.videoMessage) {
-                    return '🎥 Video';
-                }
-                if (m.message.audioMessage) {
-                    // Check if it's voice note or audio
-                    if (m.message.audioMessage.ptt === true) {
-                        return '🎤 Voice Note';
-                    }
-                    return '🔊 Audio';
-                }
-                if (m.message.stickerMessage) {
-                    return '😺 Stiker';
-                }
-                if (m.message.contactMessage) {
-                    return '📇 Kontak';
-                }
-                if (m.message.locationMessage) {
-                    return '📍 Lokasi';
-                }
-                if (m.message.liveLocationMessage) {
-                    return '📍 Lokasi Langsung';
-                }
-                if (m.message.pollCreationMessage) {
-                    return '📊 Polling';
-                }
-                if (m.message.productMessage) {
-                    return '🛍️ Produk';
-                }
-                if (m.message.templateButtonReplyMessage) {
-                    return m.message.templateButtonReplyMessage.selectedId || '📱 Template Button';
-                }
-                if (m.message.buttonsResponseMessage) {
-                    return m.message.buttonsResponseMessage.selectedButtonId || '🔘 Button Response';
-                }
-                if (m.message.listResponseMessage) {
-                    return m.message.listResponseMessage.singleSelectReply.selectedRowId || '📋 List Response';
-                }
-                // For other message types
-                if (m.msg) {
-                    if (m.msg.text) return m.msg.text;
-                    if (m.msg.caption) return m.msg.caption;
-                    if (m.msg.selectedDisplayText) return m.msg.selectedDisplayText;
-                    if (m.msg.title) return m.msg.title;
-                    if (m.msg.contentText) return m.msg.contentText;
-                }
-                // Fallback for unknown types
-                if (m.mtype) {
-                    const typeMap = {
-                        'imageMessage': '🖼️ Gambar',
-                        'videoMessage': '🎥 Video',
-                        'audioMessage': '🔊 Audio',
-                        'documentMessage': '📄 Dokumen',
-                        'stickerMessage': '😺 Stiker',
-                        'contactMessage': '📇 Kontak',
-                        'locationMessage': '📍 Lokasi',
-                        'liveLocationMessage': '📍 Lokasi Langsung',
-                        'pollCreationMessage': '📊 Polling',
-                        'productMessage': '🛍️ Produk',
-                        'templateMessage': '📱 Template',
-                        'buttonsMessage': '🔘 Buttons',
-                        'listMessage': '📋 List',
-                        'interactiveMessage': '🔄 Interactive',
-                        'orderMessage': '📦 Order',
-                        'paymentMessage': '💳 Payment',
-                        'invoiceMessage': '🧾 Invoice',
-                        'newsletterAdminInviteMessage': '📰 Newsletter Invite'
-                    };
-                    return typeMap[m.mtype] || `[${m.mtype.replace('Message', '')}]`;
-                }
-                return '';
-            } catch (error) {
-                console.log('Error extracting body:', error);
-                return '';
-            }
-        })();
-        
-        m.text = m.body; // For backward compatibility
+        m.msg = (m.mtype == 'viewOnceMessage' ? m.message[m.mtype].message[getContentType(m.message[m.mtype].message)] : m.message[m.mtype]);
+        // Extract body/text
+        m.body = m.message.conversation || m.msg.caption || m.msg.text || (m.mtype == 'listResponseMessage') && m.msg.singleSelectReply.selectedRowId || (m.mtype == 'buttonsResponseMessage') && m.msg.selectedButtonId || (m.mtype == 'viewOnceMessage') && m.msg.caption || m.text;
         
         // =========================================
         // PROCESS QUOTED MESSAGES
         // =========================================
-        let quoted = m.quoted = m.msg?.contextInfo ? m.msg.contextInfo.quotedMessage : null;
-        m.mentionedJid = m.msg?.contextInfo ? m.msg.contextInfo.mentionedJid : [];
+        let quoted = m.quoted = m.msg.contextInfo ? m.msg.contextInfo.quotedMessage : null;
+        m.mentionedJid = m.msg.contextInfo ? m.msg.contextInfo.mentionedJid : [];
         
         if (m.quoted) {
-            let type = getContentType(quoted);
+            let type = Object.keys(m.quoted)[0];
             m.quoted = m.quoted[type];
             
             // Handle product message
             if (['productMessage'].includes(type)) {
-                type = getContentType(m.quoted);
+                type = Object.keys(m.quoted)[0];
                 m.quoted = m.quoted[type];
             }
             
             // Convert string to object
-            if (typeof m.quoted === 'string') {
-                m.quoted = {
-                    text: m.quoted
-                };
-            }
- 
-            // Build quoted key
-            m.quoted.key = {
-                remoteJid: m.msg?.contextInfo?.remoteJid || m.from,
-                participant: jidNormalizedUser(m.msg?.contextInfo?.participant),
-                fromMe: areJidsSameUser(jidNormalizedUser(m.msg?.contextInfo?.participant), jidNormalizedUser(sock?.user?.id)),
-                id: m.msg?.contextInfo?.stanzaId,
+            if (typeof m.quoted === 'string') m.quoted = {
+                text: m.quoted
             };
             
             m.quoted.mtype = type;
-            m.quoted.from = /g\.us|status/.test(m.msg?.contextInfo?.remoteJid) ? m.quoted.key.participant : m.quoted.key.remoteJid;
             m.quoted.id = m.msg.contextInfo.stanzaId;
             m.quoted.chat = m.msg.contextInfo.remoteJid || m.chat;
             m.quoted.isBaileys = m.quoted.id ? m.quoted.id.startsWith('BAE5') && m.quoted.id.length === 16 : false;
-            m.quoted.sender = sock.decodeJid ? sock.decodeJid(m.msg.contextInfo.participant) : m.msg.contextInfo.participant;
-            m.quoted.fromMe = m.quoted.sender === (sock.user && sock.user.id);
-            
-            // -----------------------------------------
-            // Extract quoted text
-            // -----------------------------------------
-            m.quoted.text = (() => {
-                try {
-                    if (m.quoted.text) return m.quoted.text;
-                    if (m.quoted.caption) return m.quoted.caption;
-                    if (m.quoted.conversation) return m.quoted.conversation;
-                    if (m.quoted.contentText) return m.quoted.contentText;
-                    if (m.quoted.selectedDisplayText) return m.quoted.selectedDisplayText;
-                    if (m.quoted.title) return m.quoted.title;
-                    // Media without caption
-                    if (m.quoted.imageMessage) return '🖼️ Gambar (quoted)';
-                    if (m.quoted.videoMessage) return '🎥 Video (quoted)';
-                    if (m.quoted.audioMessage) return '🔊 Audio (quoted)';
-                    if (m.quoted.stickerMessage) return '😺 Stiker (quoted)';
-                    return '';
-                } catch {
-                    return '';
-                }
-            })();
-            
+            m.quoted.sender = conn.decodeJid(m.msg.contextInfo.participant);
+            m.quoted.fromMe = m.quoted.sender === conn.decodeJid(conn.user.id);
+            m.quoted.text = m.quoted.text || m.quoted.caption || m.quoted.conversation || m.quoted.contentText || m.quoted.selectedDisplayText || m.quoted.title || '';
             m.quoted.mentionedJid = m.msg.contextInfo ? m.msg.contextInfo.mentionedJid : [];
             
-            // -----------------------------------------
             // Get quoted message object
-            // -----------------------------------------
             m.getQuotedObj = m.getQuotedMessage = async () => {
                 if (!m.quoted.id) return false;
-                let q = await store.loadMessage(m.chat, m.quoted.id, sock);
-                return exports.smsg(sock, q, store);
+                let q = await store.loadMessage(m.chat, m.quoted.id, conn);
+                return exports.smsg(conn, q, store);
             };
             
-            // -----------------------------------------
             // Create fake object for quoted
-            // -----------------------------------------
             let vM = m.quoted.fakeObj = M.fromObject({
                 key: {
                     remoteJid: m.quoted.chat,
@@ -953,91 +669,67 @@ exports.smsg = (sock, m, store) => {
                 ...(m.isGroup ? { participant: m.quoted.sender } : {})
             });
 
-            // -----------------------------------------
             // Quoted utilities
-            // -----------------------------------------
-            m.quoted.delete = () => sock.sendMessage(m.quoted.chat, { delete: vM.key });
+            /**
+             * Delete quoted message
+             */
+            m.quoted.delete = () => conn.sendMessage(m.quoted.chat, { delete: vM.key });
 
-            m.quoted.copyNForward = (jid, forceForward = false, options = {}) => {
-                if (sock.copyNForward) {
-                    return sock.copyNForward(jid, vM, forceForward, options);
-                }
-                return null;
-            };
+            /**
+             * Copy and forward quoted message
+             */
+            m.quoted.copyNForward = (jid, forceForward = false, options = {}) => conn.copyNForward(jid, vM, forceForward, options);
 
-            m.quoted.download = () => {
-                if (sock.downloadMediaMessage) {
-                    return sock.downloadMediaMessage(m.quoted);
-                }
-                return null;
-            };
+            /**
+             * Download quoted media
+             */
+            m.quoted.download = () => conn.downloadMediaMessage(m.quoted);
         }
     }
     
-    // =========================================
-    // ADD DOWNLOAD HELPER TO MESSAGE
-    // =========================================
-    if (m.msg && m.msg.url) {
-        m.download = () => {
-            if (sock.downloadMediaMessage) {
-                return sock.downloadMediaMessage(m.msg);
-            }
-            return null;
-        };
-    }
+    // Add download helper to message
+    if (m.msg.url) m.download = () => conn.downloadMediaMessage(m.msg);
     
-    // =========================================
-    // ADD REPLY HELPER TO MESSAGE
-    // =========================================
+    // Set text property
+    m.text = m.msg.text || m.msg.caption || m.message.conversation || m.msg.contentText || m.msg.selectedDisplayText || m.msg.title || '';
+    
     /**
      * Reply to this message
      */
-    m.reply = (text, chatId = m.chat, options = {}) => {
-        if (Buffer.isBuffer(text)) {
-            if (sock.sendMedia) {
-                return sock.sendMedia(chatId, text, 'file', '', m, { ...options });
-            }
-        } else {
-            if (sock.sendText) {
-                return sock.sendText(chatId, text, m, { ...options });
-            } else if (sock.sendMessage) {
-                return sock.sendMessage(chatId, { text: text }, { quoted: m, ...options });
-            }
-        }
-        return null;
-    };
+    m.reply = (text, chatId = m.chat, options = {}) => Buffer.isBuffer(text) ? conn.sendMedia(chatId, text, 'file', '', m, { ...options }) : conn.sendText(chatId, text, m, { ...options });
     
-    // =========================================
-    // ADD COPY HELPER TO MESSAGE
-    // =========================================
     /**
      * Copy this message
      */
-    m.copy = () => exports.smsg(sock, M.fromObject(M.toObject(m)));
+    m.copy = () => exports.smsg(conn, M.fromObject(M.toObject(m)));
 
-    // =========================================
-    // ADD FORWARD HELPER TO MESSAGE
-    // =========================================
     /**
      * Forward this message
      */
-    m.copyNForward = (jid = m.chat, forceForward = false, options = {}) => {
-        if (sock.copyNForward) {
-            return sock.copyNForward(jid, m, forceForward, options);
-        }
-        return null;
+    m.copyNForward = (jid = m.chat, forceForward = false, options = {}) => conn.copyNForward(jid, m, forceForward, options);
+
+    // =========================================
+    // APPEND TEXT MESSAGE HELPER
+    // =========================================
+    /**
+     * Append text ke message yang sudah ada
+     */
+    conn.appenTextMessage = async(text, chatUpdate) => {
+        let messages = await generateWAMessage(m.chat, { text: text, mentions: m.mentionedJid }, {
+            userJid: conn.user.id,
+            quoted: m.quoted && m.quoted.fakeObj
+        });
+        messages.key.fromMe = areJidsSameUser(m.sender, conn.user.id);
+        messages.key.id = m.key.id;
+        messages.pushName = m.pushName;
+        if (m.isGroup) messages.participant = m.sender;
+        let msg = {
+            ...chatUpdate,
+            messages: [proto.WebMessageInfo.fromObject(messages)],
+            type: 'append'
+        };
+        conn.ev.emit('messages.upsert', msg);
     };
 
     return m;
 };
-
-// =========================================
-// 📌 FILE WATCHER - AUTO RELOAD
-// =========================================
-let file = require.resolve(__filename);
-fs.watchFile(file, () => {
-    fs.unwatchFile(file);
-    console.log(chalk.redBright(`Update ${__filename}`));
-    delete require.cache[file];
-    require(file);
-});

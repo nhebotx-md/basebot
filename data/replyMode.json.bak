@@ -1,0 +1,15 @@
+{
+  "_comment": "Reply Mode Data Storage - Jangan edit manual!",
+  "_format": {
+    "userId@s.whatsapp.net": {
+      "mode": "button|text",
+      "firstInteraction": "ISO date",
+      "lastUpdated": "ISO date"
+    }
+  },
+  "218786137436242@lid": {
+    "mode": "text",
+    "firstInteraction": "2026-04-09T18:14:35.911Z",
+    "lastUpdated": "2026-04-09T18:14:35.911Z"
+  }
+}
