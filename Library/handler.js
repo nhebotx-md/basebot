@@ -3,14 +3,38 @@ const path = require("path")
 const buildButton = require("./buttonHelper")
 
 // ==============================
+// CACHE PLUGINS (FIX)
+// ==============================
+let pluginsCache = null
+
+// ==============================
 // LOAD PLUGINS
 // ==============================
 const loadPlugins = async () => {
   const dir = path.join(__dirname, "../Plugins-CJS")
   const plugins = []
+  const pluginsByTag = new Map()
+
+  const normalizeTags = (tags) => {
+    if (!Array.isArray(tags)) return []
+    return [...new Set(
+      tags
+        .map(t => String(t || "").trim().toLowerCase())
+        .filter(Boolean)
+    )]
+  }
+
+  const addToTagIndex = (tag, plugin) => {
+    const key = String(tag || "").trim().toLowerCase()
+    if (!key) return
+
+    if (!pluginsByTag.has(key)) pluginsByTag.set(key, [])
+    pluginsByTag.get(key).push(plugin)
+  }
 
   if (!fs.existsSync(dir)) {
     console.warn("Folder 'Plugins-CJS' tidak ditemukan.")
+    plugins.byTag = pluginsByTag
     return plugins
   }
 
@@ -31,15 +55,35 @@ const loadPlugins = async () => {
       const plugin = require(filePath)
 
       if (typeof plugin === "function" && Array.isArray(plugin.command)) {
+        const tags = normalizeTags(plugin.tags)
+
+        // simpan metadata aman
+        plugin.tags = tags
+        plugin.help = Array.isArray(plugin.help) ? plugin.help : []
+        plugin._file = file
+        plugin._path = filePath
+        plugin._category = tags[0] || "uncategorized"
+
         plugins.push(plugin)
+
+        // index berdasarkan tag kategori
+        if (tags.length) {
+          tags.forEach(tag => addToTagIndex(tag, plugin))
+        } else {
+          addToTagIndex("uncategorized", plugin)
+        }
       } else {
         console.warn(`Plugin '${file}' tidak valid`)
       }
-
     } catch (err) {
       console.error(`❌ Gagal load plugin: ${file}`, err)
     }
   }
+
+  // tempel index ke array biar tetap backward-compatible
+  plugins.byTag = pluginsByTag
+  plugins.getByTag = (tag) => pluginsByTag.get(String(tag || "").toLowerCase()) || []
+  plugins.tags = [...pluginsByTag.keys()]
 
   return plugins
 }
@@ -60,6 +104,19 @@ const handleMessage = async (m, commandText, Obj = {}) => {
     console.error("❌ conn tidak ditemukan!")
     return
   }
+
+  // ==============================
+  // 🔥 LOAD PLUGINS (CACHE FIX)
+  // ==============================
+  if (!pluginsCache) {
+    pluginsCache = await loadPlugins()
+    console.log("✅ Plugins loaded:", pluginsCache.length)
+    console.log("📦 Tags:", pluginsCache.tags)
+  }
+
+  // 🔥 INJECT KE OBJ (FIX UTAMA)
+  Obj.plugins = pluginsCache
+  global.plugins = pluginsCache
 
   // ==============================
   // FAKE QUOTED WRAPPER
@@ -252,7 +309,7 @@ const handleMessage = async (m, commandText, Obj = {}) => {
   // ==============================
   // LOAD & EXECUTE PLUGIN
   // ==============================
-  const plugins = await loadPlugins()
+  const plugins = pluginsCache // 🔥 pakai cache (fix performa)
 
   for (const plugin of plugins) {
     if (
