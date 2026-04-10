@@ -1,68 +1,75 @@
 /**
  * Plugin: listadmin.js
- * Description: List admin grup
- * Command: .listadmin, .adminlist
+ * Description: Menampilkan daftar admin grup
+ * Command: .listadmin, .adminlist, .admins
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, groupMetadata, groupAdmins } = Obj
+    const { conn, q, button, isGroup, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  try {
-    const meta = groupMetadata || await conn.groupMetadata(m.chat)
-    const admins = meta.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || []
-    const owner = admins.find(p => p.admin === 'superadmin')
+    try {
+        const groupMetadata = await conn.groupMetadata(m.chat);
+        const participants = groupMetadata.participants || [];
+        const admins = participants.filter(p => p.admin === 'admin' || p.admin === 'superadmin');
+        const owner = participants.find(p => p.admin === 'superadmin');
 
-    let adminText = `
+        if (admins.length === 0) {
+            return replyAdaptive({
+                text: '❌ Tidak ada admin di grup ini!',
+                title: "Error",
+                body: "No Admins"
+            });
+        }
+
+        let adminText = `
 ╭━━━❰ *LIST ADMIN* ❱━━━╮
 ┃
-┃ 👥 *Grup:* ${meta.subject}
+┃ 📛 *Grup:* ${groupMetadata.subject || 'Unknown'}
 ┃ 👑 *Total Admin:* ${admins.length}
 ┃
-┃ 👤 *Owner:*
-┃ @${owner?.id?.split('@')[0] || 'Tidak diketahui'}
-┃
-┃ 👑 *Admin:*\n`
+`;
 
-    admins.filter(a => a.admin === 'admin').forEach((admin, i) => {
-      adminText += `┃ ${i + 1}. @${admin.id.split('@')[0]}\n`
-    })
+        admins.forEach((admin, i) => {
+            const isOwner = admin.admin === 'superadmin';
+            adminText += `┃ ${i + 1}. @${admin.id.split('@')[0]} ${isOwner ? '👑' : '👤'}\n`;
+        });
 
-    adminText += `┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+        adminText += `┃\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🔗 Link Group", ".linkgc"),
-      ...button.flow.quickReply("📊 Group Info", ".groupinfo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("⬆️ Promote", ".promote"),
+            ...button.flow.quickReply("⬇️ Demote", ".demote"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await conn.sendMessage(m.chat, {
-      text: adminText,
-      mentions: admins.map(a => a.id)
-    }, { quoted: m })
+        return replyAdaptive({
+            text: adminText,
+            buttons: buttons,
+            mentions: admins.map(a => a.id),
+            title: "List Admin",
+            body: `${admins.length} admins`
+        });
 
-    await button.sendInteractive("✅ Daftar admin berhasil ditampilkan!", buttons, {
-      title: "Admin List",
-      body: `${admins.length} admin`
-    })
+    } catch (error) {
+        console.error('List Admin Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal mengambil daftar admin'}`,
+            title: "Error",
+            body: "List Admin Failed"
+        });
+    }
+};
 
-  } catch (err) {
-    console.error("List Admin Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal mengambil daftar admin: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+handler.command = ['listadmin', 'adminlist', 'admins', 'daftaradmin'];
+handler.tags = ['group'];
+handler.help = ['listadmin'];
 
-handler.help = ['listadmin']
-handler.tags = ['group']
-handler.command = ['listadmin', 'adminlist', 'admins']
-handler.group = true
-
-module.exports = handler
+module.exports = handler;

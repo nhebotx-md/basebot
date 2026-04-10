@@ -1,60 +1,60 @@
 /**
  * Plugin: hidetag.js
- * Description: Hide tag semua member grup
+ * Description: Tag semua member tanpa mention
  * Command: .hidetag, .ht
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, groupMetadata, participants, text } = Obj
+    const { conn, q, button, text, isGroup, isAdmins, isBotAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  try {
-    const meta = groupMetadata || await conn.groupMetadata(m.chat)
-    const members = meta.participants || participants || []
-    
-    const message = text || "📢 *Hidden Tag*"
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-    // Send with mentions but no visible tags
-    await conn.sendMessage(m.chat, {
-      text: message,
-      mentions: members.map(m => m.id)
-    }, { quoted: m })
+    try {
+        const groupMetadata = await conn.groupMetadata(m.chat);
+        const participants = groupMetadata.participants || [];
+        const memberJids = participants.map(p => p.id);
 
-    // Success buttons
-    const buttons = [
-      ...button.flow.quickReply("📢 Tag All", ".tagall"),
-      ...button.flow.quickReply("📊 Group Info", ".groupinfo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const message = text || '📢 Pesan dari admin';
 
-    await button.sendInteractive(`✅ Hide tag berhasil! (${members.length} member)`, buttons, {
-      title: "Hide Tag Complete",
-      body: `${members.length} members notified`
-    })
+        await conn.sendMessage(m.chat, {
+            text: message,
+            mentions: memberJids
+        }, { quoted: q('fkontak') });
 
-  } catch (err) {
-    console.error("Hide Tag Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal hide tag: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Hidetag Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal mengirim hidetag'}`,
+            title: "Error",
+            body: "Hidetag Failed"
+        });
+    }
+};
 
-handler.help = ['hidetag']
-handler.tags = ['group']
-handler.command = ['hidetag', 'ht', 'hidentag']
-handler.group = true
-handler.admin = true
+handler.command = ['hidetag', 'ht', 'h'];
+handler.tags = ['group'];
+handler.help = ['hidetag <pesan>'];
 
-module.exports = handler
+module.exports = handler;

@@ -1,67 +1,74 @@
 /**
  * Plugin: open.js
- * Description: Buka grup (semua bisa kirim pesan)
- * Command: .open, .bukagrup
+ * Description: Buka grup (semua member bisa kirim pesan)
+ * Command: .open, .buka
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, isBotAdmins } = Obj
+    const { conn, q, button, isGroup, isAdmins, isBotAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  if (!isBotAdmins) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Bot harus menjadi admin untuk menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-  try {
-    await conn.groupSettingUpdate(m.chat, 'not_announcement')
-
-    const openText = `
-╭━━━❰ *GROUP DIBUKA* ❱━━━╮
+    try {
+        await conn.groupSettingUpdate(m.chat, 'not_announcement');
+        
+        const openText = `
+╭━━━❰ *GROUP OPENED* ❱━━━╮
 ┃
-┃ 🔓 *Grup telah dibuka!*
+┃ 🔓 *Grup dibuka!*
 ┃
-┃ ✅ Semua member sekarang
+┃ Sekarang semua member
 ┃ bisa mengirim pesan.
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🔒 Tutup Grup", ".close"),
-      ...button.flow.quickReply("📊 Group Info", ".groupinfo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("🔒 Tutup Grup", ".close"),
+            ...button.flow.quickReply("📋 Info Grup", ".groupinfo"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await button.sendInteractive(openText, buttons, {
-      title: "Group Opened",
-      body: "Everyone can send messages"
-    })
+        return replyAdaptive({
+            text: openText,
+            buttons: buttons,
+            title: "Group Opened",
+            body: "All members can send messages"
+        });
 
-  } catch (err) {
-    console.error("Open Group Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal membuka grup: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Open Group Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal membuka grup'}`,
+            title: "Error",
+            body: "Open Group Failed"
+        });
+    }
+};
 
-handler.help = ['open']
-handler.tags = ['group']
-handler.command = ['open', 'bukagrup', 'bukagc']
-handler.group = true
-handler.admin = true
-handler.botAdmin = true
+handler.command = ['open', 'buka', 'gopen'];
+handler.tags = ['group'];
+handler.help = ['open'];
 
-module.exports = handler
+module.exports = handler;

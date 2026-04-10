@@ -1,131 +1,119 @@
 /**
  * Plugin: stickermeme.js
- * Description: Meme sticker generator dengan text atas & bawah
+ * Description: Meme sticker generator
  * Command: .stickermeme, .smeme
  */
 
-const { writeExifImg } = require('../Library/exif')
-const Jimp = require('jimp')
+const axios = require('axios');
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, quoted, mime, text, args } = Obj
+    const { conn, q, button, text, replyAdaptive, quoted } = Obj;
 
-  if (!quoted || !/image/.test(mime)) {
-    const helpText = `
-╭━━━❰ *MEME STICKER* ❱━━━╮
+    // Check if quoted message has image
+    const isImage = quoted && (quoted.mtype === 'imageMessage' || quoted.mtype === 'viewOnceMessage');
+
+    if (!isImage) {
+        const helpText = `
+╭━━━❰ *STICKER MEME* ❱━━━╮
+┃
+┃ 😂 Buat meme sticker
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ Reply gambar dengan:
-┃ .stickermeme Teks Atas | Teks Bawah
+┃ 1. Kirim/reply gambar dengan caption:
+┃    .smeme <teks atas> | <teks bawah>
 ┃
 ┃ *Contoh:*
-┃ .smeme Hello | World
-┃ .smeme When you | See this
+┃ [reply gambar]
+┃ .smeme When you | realize it's Monday
 ┃
-┃ 🎨 *Fitur:*
-┃ • Text atas & bawah
-┃ • Font impact style
-┃ • Auto resize
+┃ 💡 *Tips:*
+┃ • Pisahkan teks atas dan bawah dengan |
+┃ • Gunakan gambar dengan resolusi tinggi
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("📋 Menu", ".menuplug"),
-      ...button.flow.quickReply("🏷️ Sticker WM", ".stickerwm")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("🏷️ Sticker WM", ".stickerwm"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Meme Sticker",
-      body: "Generator meme sticker"
-    })
-  }
-
-  if (!text) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Masukkan teks meme!\nContoh: .smeme Teks Atas | Teks Bawah"
-    }, { quoted: q('fkontak') })
-  }
-
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "⏳ Sedang membuat meme sticker..."
-    }, { quoted: q('fkontak') })
-
-    // Parse text
-    const parts = text.split('|').map(p => p.trim())
-    const topText = parts[0] || ''
-    const bottomText = parts[1] || ''
-
-    // Download image
-    let media = await quoted.download()
-    if (!media) throw new Error('Gagal download gambar')
-
-    // Process image with Jimp
-    const image = await Jimp.read(media)
-    const width = image.getWidth()
-    const height = image.getHeight()
-
-    // Add top text
-    if (topText) {
-      const font = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE)
-      const textWidth = Jimp.measureText(font, topText)
-      const x = (width - textWidth) / 2
-      
-      // Add black outline
-      image.print(font, x - 2, 18, topText)
-      image.print(font, x + 2, 22, topText)
-      image.print(font, x, 20, topText)
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Sticker Meme",
+            body: "Meme generator"
+        });
     }
 
-    // Add bottom text
-    if (bottomText) {
-      const font = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE)
-      const textWidth = Jimp.measureText(font, bottomText)
-      const x = (width - textWidth) / 2
-      const y = height - 50
-      
-      image.print(font, x - 2, y - 2, bottomText)
-      image.print(font, x + 2, y + 2, bottomText)
-      image.print(font, x, y, bottomText)
+    if (!text) {
+        return replyAdaptive({
+            text: '❌ Masukkan teks meme!\n\nFormat: .smeme <teks atas> | <teks bawah>',
+            title: "Error",
+            body: "Text Required"
+        });
     }
 
-    // Convert to buffer
-    const processedBuffer = await image.getBufferAsync(Jimp.MIME_JPEG)
+    try {
+        await conn.sendMessage(m.chat, {
+            text: `😂 Sedang membuat meme sticker...`
+        }, { quoted: q('fkontak') });
 
-    // Create sticker
-    const stickerBuffer = await writeExifImg(processedBuffer, {
-      packname: global.packname || "NHE MEME",
-      author: global.author || "Meme Generator"
-    })
+        // Download image
+        const imageBuffer = await quoted.download();
+        if (!imageBuffer) {
+            throw new Error('Failed to download image');
+        }
 
-    await conn.sendMessage(m.chat, {
-      sticker: stickerBuffer
-    }, { quoted: m })
+        // Parse text
+        const parts = text.split('|').map(s => s.trim());
+        const topText = parts[0] || '';
+        const bottomText = parts[1] || '';
 
-    // Success message
-    const buttons = [
-      ...button.flow.quickReply("🏷️ Sticker WM", ".stickerwm"),
-      ...button.flow.quickReply("⚡ Triggered", ".trigger"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        // Upload image to get URL (using catbox or similar)
+        const FormData = require('form-data');
+        const form = new FormData();
+        form.append('file', imageBuffer, 'image.jpg');
 
-    await button.sendInteractive(
-      `✅ Meme sticker berhasil dibuat!\n\n🔝 Atas: ${topText || '-'}\n🔽 Bawah: ${bottomText || '-'}`,
-      buttons,
-      { title: "Meme Created", body: "Sticker ready!" }
-    )
+        const uploadResponse = await axios.post('https://catbox.moe/user/api.php', form, {
+            headers: form.getHeaders(),
+            params: { reqtype: 'fileupload' },
+            timeout: 60000
+        });
 
-  } catch (err) {
-    console.error("Meme Sticker Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal membuat meme sticker: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+        const imageUrl = uploadResponse.data;
 
-handler.help = ['stickermeme']
-handler.tags = ['sticker']
-handler.command = ['stickermeme', 'smeme', 'memestick']
+        // Generate meme
+        const memeUrl = `https://api.memegen.link/images/custom/${encodeURIComponent(topText)}/${encodeURIComponent(bottomText)}.png?background=${encodeURIComponent(imageUrl)}`;
 
-module.exports = handler
+        const memeBuffer = await axios.get(memeUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
+
+        // Convert to webp and send as sticker
+        const { writeExifImg } = require('../Library/uploader');
+        const webpBuffer = await writeExifImg(Buffer.from(memeBuffer.data), {
+            packname: global.botname || 'NHE BOT',
+            author: global.namaowner || 'Owner'
+        });
+
+        await conn.sendMessage(m.chat, {
+            sticker: webpBuffer
+        }, { quoted: q('fkontak') });
+
+    } catch (error) {
+        console.error('Sticker Meme Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal membuat meme sticker'}`,
+            title: "Error",
+            body: "Meme Sticker Failed"
+        });
+    }
+};
+
+handler.command = ['stickermeme', 'smeme', 'memesticker'];
+handler.tags = ['sticker'];
+handler.help = ['stickermeme <teks atas> | <teks bawah> (reply gambar)'];
+
+module.exports = handler;

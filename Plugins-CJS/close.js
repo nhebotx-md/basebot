@@ -1,67 +1,74 @@
 /**
  * Plugin: close.js
- * Description: Tutup grup (hanya admin bisa kirim pesan)
- * Command: .close, .tutupgrup
+ * Description: Tutup grup (hanya admin yang bisa kirim pesan)
+ * Command: .close, .tutup
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, isBotAdmins } = Obj
+    const { conn, q, button, isGroup, isAdmins, isBotAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  if (!isBotAdmins) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Bot harus menjadi admin untuk menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-  try {
-    await conn.groupSettingUpdate(m.chat, 'announcement')
-
-    const closeText = `
-╭━━━❰ *GROUP DITUTUP* ❱━━━╮
+    try {
+        await conn.groupSettingUpdate(m.chat, 'announcement');
+        
+        const closeText = `
+╭━━━❰ *GROUP CLOSED* ❱━━━╮
 ┃
-┃ 🔒 *Grup telah ditutup!*
+┃ 🔒 *Grup ditutup!*
 ┃
-┃ ⚠️ Hanya admin yang bisa
-┃ mengirim pesan sekarang.
+┃ Sekarang hanya admin yang
+┃ bisa mengirim pesan.
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🔓 Buka Grup", ".open"),
-      ...button.flow.quickReply("📊 Group Info", ".groupinfo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("🔓 Buka Grup", ".open"),
+            ...button.flow.quickReply("📋 Info Grup", ".groupinfo"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await button.sendInteractive(closeText, buttons, {
-      title: "Group Closed",
-      body: "Only admins can send messages"
-    })
+        return replyAdaptive({
+            text: closeText,
+            buttons: buttons,
+            title: "Group Closed",
+            body: "Only admins can send messages"
+        });
 
-  } catch (err) {
-    console.error("Close Group Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal menutup grup: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Close Group Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal menutup grup'}`,
+            title: "Error",
+            body: "Close Group Failed"
+        });
+    }
+};
 
-handler.help = ['close']
-handler.tags = ['group']
-handler.command = ['close', 'tutupgrup', 'tutupgc']
-handler.group = true
-handler.admin = true
-handler.botAdmin = true
+handler.command = ['close', 'tutup', 'gclose'];
+handler.tags = ['group'];
+handler.help = ['close'];
 
-module.exports = handler
+module.exports = handler;

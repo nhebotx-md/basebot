@@ -5,7 +5,7 @@
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, groupName, pushname } = Obj
+  const { conn, q, button, isGroup, groupName, pushname, replyAdaptive } = Obj
 
   const botName = global.botname || "NHE BOT"
   const version = global.version || "2.0.0"
@@ -105,7 +105,9 @@ Ketik atau pilih kategori di bawah:`
   ]
 
   // Send interactive message
-  await button.sendInteractive(menuText, interactiveButtons, {
+  await replyAdaptive({
+    text: menuText,
+    buttons: interactiveButtons,
     title: `${botName} Menu System`,
     body: `Version ${version} | By ${ownerName}`,
     thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg",

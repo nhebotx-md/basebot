@@ -4,195 +4,149 @@
  * Command: .surah, .quran
  */
 
-const axios = require('axios')
+const axios = require('axios');
+
+const surahList = [
+    { nomor: 1, nama: 'Al-Fatihah', arti: 'Pembukaan', ayat: 7 },
+    { nomor: 2, nama: 'Al-Baqarah', arti: 'Sapi', ayat: 286 },
+    { nomor: 3, nama: 'Ali Imran', arti: 'Keluarga Imran', ayat: 200 },
+    { nomor: 4, nama: 'An-Nisa', arti: 'Wanita', ayat: 176 },
+    { nomor: 5, nama: 'Al-Ma\'idah', arti: 'Hidangan', ayat: 120 },
+    { nomor: 6, nama: 'Al-An\'am', arti: 'Binatang Ternak', ayat: 165 },
+    { nomor: 7, nama: 'Al-A\'raf', arti: 'Tempat Tertinggi', ayat: 206 },
+    { nomor: 36, nama: 'Yasin', arti: 'Yasin', ayat: 83 },
+    { nomor: 55, nama: 'Ar-Rahman', arti: 'Yang Maha Pengasih', ayat: 78 },
+    { nomor: 56, nama: 'Al-Waqi\'ah', arti: 'Hari Kiamat', ayat: 96 },
+    { nomor: 67, nama: 'Al-Mulk', arti: 'Kerajaan', ayat: 30 },
+    { nomor: 112, nama: 'Al-Ikhlas', arti: 'Ikhlas', ayat: 4 },
+    { nomor: 113, nama: 'Al-Falaq', arti: 'Waktu Subuh', ayat: 5 },
+    { nomor: 114, nama: 'An-Nas', arti: 'Manusia', ayat: 6 }
+];
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text, args } = Obj
+    const { conn, q, button, text, replyAdaptive } = Obj;
 
-  if (!text) {
-    const helpText = `
-╭━━━❰ *AL-QURAN* ❱━━━╮
+    // If no text, show list
+    if (!text) {
+        let listText = `
+╭━━━❰ *DAFTAR SURAH* ❱━━━╮
 ┃
-┃ 📝 *Cara Penggunaan:*
+┃ 📖 Pilih surah untuk dibaca:
 ┃
-┃ .surah NomorSurah
-┃ .surah NamaSurah
-┃ .quran NomorSurah:Ayat
-┃
-┃ *Contoh:*
-┃ .surah 1 (Al-Fatihah)
-┃ .surah Al-Baqarah
-┃ .quran 2:255 (Ayat Kursi)
-┃
-┃ 📖 *Daftar Surah Populer:*
-┃ • 1. Al-Fatihah
-┃ • 2. Al-Baqarah
-┃ • 36. Yasin
-┃ • 55. Ar-Rahman
-┃ • 67. Al-Mulk
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+`;
 
-    const sections = [
-      {
-        title: "Surah Populer",
-        rows: [
-          { title: "📖 Al-Fatihah", description: "Surah pembuka", id: ".surah 1" },
-          { title: "📖 Al-Baqarah", description: "Surah terpanjang", id: ".surah 2" },
-          { title: "📖 Yasin", description: "Surah Yasin", id: ".surah 36" },
-          { title: "📖 Ar-Rahman", description: "Surah Ar-Rahman", id: ".surah 55" },
-          { title: "📖 Al-Mulk", description: "Surah Al-Mulk", id: ".surah 67" },
-          { title: "📖 Al-Ikhlas", description: "Surah Al-Ikhlas", id: ".surah 112" }
-        ]
-      }
-    ]
+        surahList.forEach(surah => {
+            listText += `┃ ${surah.nomor}. ${surah.nama} (${surah.arti})\n`;
+        });
 
-    const buttons = [
-      ...button.flow.singleSelect("📖 Pilih Surah", sections),
-      ...button.flow.quickReply("🕌 Jadwal Sholat", ".sholat Jakarta"),
-      ...button.flow.quickReply("✨ Asmaul Husna", ".asmaulhusna"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        listText += `┃\n┃ 💡 Ketik: .surah <nomor/nama>\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Al-Quran",
-      body: "Baca surah Al-Quran"
-    })
-  }
+        const buttons = [
+            ...button.flow.quickReply("📖 Yasin", ".surah 36"),
+            ...button.flow.quickReply("📖 Al-Fatihah", ".surah 1"),
+            ...button.flow.quickReply("📖 Ar-Rahman", ".surah 55"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-  try {
-    await conn.sendMessage(m.chat, {
-      text: `📖 Mencari surah...`
-    }, { quoted: q('fkontak') })
-
-    let surahNumber, ayatNumber
-
-    // Check if format is Surah:Ayat
-    if (text.includes(':')) {
-      [surahNumber, ayatNumber] = text.split(':').map(n => parseInt(n.trim()))
-    } else {
-      // Check if text is a number
-      const num = parseInt(text)
-      if (!isNaN(num)) {
-        surahNumber = num
-      }
+        return replyAdaptive({
+            text: listText,
+            buttons: buttons,
+            title: "Daftar Surah",
+            body: "Al-Quran"
+        });
     }
 
-    let apiUrl
-    if (surahNumber && ayatNumber) {
-      // Get specific ayat
-      apiUrl = `https://api.alquran.cloud/v1/ayah/${surahNumber}:${ayatNumber}/editions/quran-simple,id.indonesian`
-    } else if (surahNumber) {
-      // Get full surah
-      apiUrl = `https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-simple,id.indonesian`
-    } else {
-      // Search by name
-      const searchUrl = `https://api.alquran.cloud/v1/surah`
-      const searchRes = await axios.get(searchUrl)
-      const surahList = searchRes.data.data
-      
-      const found = surahList.find(s => 
-        s.englishName.toLowerCase().includes(text.toLowerCase()) ||
-        s.name.includes(text) ||
-        s.englishNameTranslation.toLowerCase().includes(text.toLowerCase())
-      )
-      
-      if (!found) {
-        throw new Error('Surah tidak ditemukan')
-      }
-      
-      surahNumber = found.number
-      apiUrl = `https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-simple,id.indonesian`
+    try {
+        // Determine surah number
+        let surahNumber = parseInt(text);
+        if (isNaN(surahNumber)) {
+            // Search by name
+            const found = surahList.find(s => 
+                s.nama.toLowerCase().includes(text.toLowerCase())
+            );
+            if (found) {
+                surahNumber = found.nomor;
+            } else {
+                throw new Error('Surah tidak ditemukan');
+            }
+        }
+
+        if (surahNumber < 1 || surahNumber > 114) {
+            throw new Error('Nomor surah harus antara 1-114');
+        }
+
+        await conn.sendMessage(m.chat, {
+            text: `📖 Sedang mengambil surah...`
+        }, { quoted: q('fkontak') });
+
+        // Get surah data from API
+        const response = await axios.get(`https://api.ryzendesu.vip/api/islam/surah?no=${surahNumber}`, {
+            timeout: 30000
+        });
+
+        const data = response.data;
+
+        if (!data || data.error) {
+            throw new Error(data?.error || 'Gagal mengambil data surah');
+        }
+
+        const surahData = data.data || data;
+        const verses = surahData.ayahs || [];
+
+        let surahText = `
+╭━━━❰ *${surahData.name?.transliteration?.id || surahData.name || 'Surah'}* ❱━━━╮
+┃
+┃ 📖 *${surahData.name?.short || ''}*
+┃ Arti: ${surahData.name?.translation?.id || 'Unknown'}
+┃ Jumlah Ayat: ${surahData.numberOfVerses || verses.length}
+┃
+`;
+
+        // Add verses (limit to first 10 for long surahs)
+        const displayVerses = verses.length > 10 ? verses.slice(0, 10) : verses;
+        
+        displayVerses.forEach((ayah, i) => {
+            const verseText = ayah.text?.arab || ayah.arab || '';
+            const verseTranslation = ayah.text?.translation?.id || ayah.translation?.id || '';
+            surahText += `┃ ${ayah.number?.inSurah || i + 1}. ${verseText.substring(0, 50)}${verseText.length > 50 ? '...' : ''}\n`;
+            if (verseTranslation) {
+                surahText += `┃    ${verseTranslation.substring(0, 50)}${verseTranslation.length > 50 ? '...' : ''}\n`;
+            }
+            surahText += `┃\n`;
+        });
+
+        if (verses.length > 10) {
+            surahText += `┃ ... dan ${verses.length - 10} ayat lainnya\n┃\n`;
+        }
+
+        surahText += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+        const buttons = [
+            ...button.flow.quickReply("⬅️ Surah Sebelumnya", `.surah ${surahNumber > 1 ? surahNumber - 1 : 114}`),
+            ...button.flow.quickReply("➡️ Surah Selanjutnya", `.surah ${surahNumber < 114 ? surahNumber + 1 : 1}`),
+            ...button.flow.quickReply("📋 Daftar Surah", ".surah"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
+
+        return replyAdaptive({
+            text: surahText,
+            buttons: buttons,
+            title: surahData.name?.transliteration?.id || 'Surah',
+            body: surahData.name?.translation?.id || 'Al-Quran'
+        });
+
+    } catch (error) {
+        console.error('Surah Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal mengambil surah'}`,
+            title: "Error",
+            body: "Surah Failed"
+        });
     }
+};
 
-    const response = await axios.get(apiUrl)
-    const data = response.data.data
+handler.command = ['surah', 'quran', 'bacaquran'];
+handler.tags = ['islam'];
+handler.help = ['surah <nomor/nama>'];
 
-    if (ayatNumber) {
-      // Single ayat
-      const arabic = data[0]
-      const translation = data[1]
-
-      const ayatText = `
-╭━━━❰ *${arabic.surah.englishName}* ❱━━━╮
-┃
-┃ 📖 *Surah:* ${arabic.surah.name} (${arabic.surah.englishName})
-┃ 🔢 *Ayat:* ${arabic.numberInSurah}
-┃
-┃ 🕌 *Arab:*
-┃ ${arabic.text}
-┃
-┃ 🇮🇩 *Terjemahan:*
-┃ ${translation.text}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
-
-      const buttons = [
-        ...button.flow.quickReply("📖 Surah Lengkap", `.surah ${surahNumber}`),
-        ...button.flow.quickReply("📖 Ayat Sebelumnya", `.quran ${surahNumber}:${ayatNumber - 1}`),
-        ...button.flow.quickReply("📖 Ayat Selanjutnya", `.quran ${surahNumber}:${ayatNumber + 1}`),
-        ...button.flow.quickReply("📋 Menu", ".menuplug")
-      ]
-
-      await button.sendInteractive(ayatText, buttons, {
-        title: `${arabic.surah.englishName} : ${arabic.numberInSurah}`,
-        body: arabic.surah.englishNameTranslation
-      })
-    } else {
-      // Full surah
-      const arabic = data[0]
-      const translation = data[1]
-
-      let surahText = `
-╭━━━❰ *${arabic.englishName}* ❱━━━╮
-┃
-┃ 📖 *${arabic.name}*
-┃ 📝 ${arabic.englishName}
-┃ 🌍 ${arabic.englishNameTranslation}
-┃ 🔢 Jumlah Ayat: ${arabic.numberOfAyahs}
-┃ 🏳️ ${arabic.revelationType === 'Meccan' ? 'Makkiyah' : 'Madaniyah'}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-`
-
-      // Send first few ayats
-      const maxAyats = Math.min(arabic.ayahs.length, 10)
-      for (let i = 0; i < maxAyats; i++) {
-        surahText += `${arabic.ayahs[i].text} *{${arabic.ayahs[i].numberInSurah}}*\n\n`
-      }
-
-      if (arabic.ayahs.length > 10) {
-        surahText += `\n_...dan ${arabic.ayahs.length - 10} ayat lainnya_`
-      }
-
-      const buttons = [
-        ...button.flow.quickReply("📖 Baca Lengkap", `.quran ${surahNumber}:1`),
-        ...button.flow.quickReply("🕌 Jadwal Sholat", ".sholat Jakarta"),
-        ...button.flow.quickReply("✨ Asmaul Husna", ".asmaulhusna"),
-        ...button.flow.quickReply("📋 Menu", ".menuplug")
-      ]
-
-      await conn.sendMessage(m.chat, {
-        text: surahText
-      }, { quoted: m })
-
-      await button.sendInteractive(`✅ *${arabic.englishName}* berhasil dikirim!`, buttons, {
-        title: arabic.englishName,
-        body: `${arabic.numberOfAyahs} ayat`
-      })
-    }
-
-  } catch (err) {
-    console.error("Surah Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal mengambil data: " + err.message + "\n\nCoba dengan nomor surah (1-114)"
-    }, { quoted: q('fkontak') })
-  }
-}
-
-handler.help = ['surah']
-handler.tags = ['islam']
-handler.command = ['surah', 'quran', 'alquran']
-
-module.exports = handler
+module.exports = handler;

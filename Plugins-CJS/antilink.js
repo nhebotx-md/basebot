@@ -1,133 +1,151 @@
 /**
  * Plugin: antilink.js
- * Description: Anti link dengan button control
+ * Description: Anti link group protection
  * Command: .antilink
  */
 
-const fs = require('fs')
-const path = require('path')
+const fs = require('fs');
+const path = require('path');
 
-const ANTI_LINK_PATH = './data/antilink.json'
+const ANTILINK_PATH = path.join(process.cwd(), './data/antilink.json');
 
-// Load antilink data
-const loadAntiLink = () => {
-  if (!fs.existsSync(ANTI_LINK_PATH)) {
-    fs.mkdirSync(path.dirname(ANTI_LINK_PATH), { recursive: true })
-    fs.writeFileSync(ANTI_LINK_PATH, JSON.stringify({}, null, 2))
-    return {}
-  }
-  return JSON.parse(fs.readFileSync(ANTI_LINK_PATH, 'utf8'))
-}
+// Initialize antilink data
+const initAntiLink = () => {
+    try {
+        if (!fs.existsSync(path.dirname(ANTILINK_PATH))) {
+            fs.mkdirSync(path.dirname(ANTILINK_PATH), { recursive: true });
+        }
+        if (!fs.existsSync(ANTILINK_PATH)) {
+            fs.writeFileSync(ANTILINK_PATH, JSON.stringify({}, null, 2));
+        }
+    } catch (err) {
+        console.error('Error init antilink:', err);
+    }
+};
 
-// Save antilink data
-const saveAntiLink = (data) => {
-  fs.writeFileSync(ANTI_LINK_PATH, JSON.stringify(data, null, 2))
-}
+const getAntiLinkData = () => {
+    try {
+        initAntiLink();
+        const data = fs.readFileSync(ANTILINK_PATH, 'utf8');
+        return JSON.parse(data);
+    } catch {
+        return {};
+    }
+};
+
+const saveAntiLinkData = (data) => {
+    try {
+        fs.writeFileSync(ANTILINK_PATH, JSON.stringify(data, null, 2));
+    } catch (err) {
+        console.error('Error save antilink:', err);
+    }
+};
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, isBotAdmins, args, text } = Obj
+    const { conn, q, button, text, isGroup, isAdmins, isBotAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
-
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
-
-  if (!isBotAdmins) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Bot harus menjadi admin untuk menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
-
-  const antilinkData = loadAntiLink()
-  const groupId = m.chat
-  const currentStatus = antilinkData[groupId]?.enabled || false
-
-  // Jika ada argumen on/off
-  if (args[0]) {
-    const action = args[0].toLowerCase()
-    
-    if (action === 'on') {
-      antilinkData[groupId] = { enabled: true, mode: 'delete', ...antilinkData[groupId] }
-      saveAntiLink(antilinkData)
-      
-      return conn.sendMessage(m.chat, {
-        text: `✅ *Anti Link* telah diaktifkan di grup ini!\n\n⚠️ Member yang mengirim link akan dihapus pesannya.`
-      }, { quoted: q('fkontak') })
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
     }
-    
-    if (action === 'off') {
-      antilinkData[groupId] = { enabled: false, ...antilinkData[groupId] }
-      saveAntiLink(antilinkData)
-      
-      return conn.sendMessage(m.chat, {
-        text: `❌ *Anti Link* telah dinonaktifkan di grup ini!`
-      }, { quoted: q('fkontak') })
+
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
     }
-    
-    if (action === 'kick') {
-      antilinkData[groupId] = { enabled: true, mode: 'kick', ...antilinkData[groupId] }
-      saveAntiLink(antilinkData)
-      
-      return conn.sendMessage(m.chat, {
-        text: `✅ *Anti Link* diatur ke mode KICK!\n\n⚠️ Member yang mengirim link akan di-kick dari grup.`
-      }, { quoted: q('fkontak') })
+
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
     }
-  }
 
-  // Tampilkan menu antilink dengan button
-  const statusText = `
-╭━━━❰ *ANTI LINK SETTINGS* ❱━━━╮
+    const args = text.trim().toLowerCase();
+    const data = getAntiLinkData();
+    const groupId = m.chat;
+
+    if (!args || args === 'status') {
+        const status = data[groupId]?.enabled ? '✅ AKTIF' : '❌ NONAKTIF';
+        const action = data[groupId]?.action || 'delete';
+        
+        const statusText = `
+╭━━━❰ *ANTI LINK* ❱━━━╮
 ┃
-┃ 📊 *Status:* ${currentStatus ? '✅ AKTIF' : '❌ NONAKTIF'}
-┃ 🎯 *Mode:* ${antilinkData[groupId]?.mode || 'delete'}
+┃ 📊 *Status:* ${status}
+┃ 🛡️ *Action:* ${action}
 ┃
-┃ 📝 *Deskripsi:*
-┃ Fitur ini akan menghapus atau
-┃ mengkick member yang mengirim
-┃ link di grup.
+┃ 📝 *Cara Penggunaan:*
 ┃
-┃ ⚙️ *Cara Penggunaan:*
-┃ • .antilink on - Aktifkan
-┃ • .antilink off - Matikan
-┃ • .antilink kick - Mode kick
+┃ .antilink on - Aktifkan
+┃ .antilink off - Matikan
+┃ .antilink delete - Hapus pesan
+┃ .antilink kick - Kick pengirim
+┃ .antilink warn - Beri peringatan
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-  const buttons = [
-    ...button.flow.quickReply(currentStatus ? "❌ Matikan" : "✅ Aktifkan", currentStatus ? ".antilink off" : ".antilink on"),
-    ...button.flow.quickReply("⚡ Mode Kick", ".antilink kick"),
-    ...button.flow.quickReply("📋 Menu", ".menuplug"),
-    ...button.flow.singleSelect("⚙️ Pengaturan", [
-      {
-        title: "Anti Link Options",
-        rows: [
-          { title: "✅ Aktifkan", description: "Aktifkan anti link", id: ".antilink on" },
-          { title: "❌ Matikan", description: "Nonaktifkan anti link", id: ".antilink off" },
-          { title: "⚡ Mode Kick", description: "Kick member kirim link", id: ".antilink kick" }
-        ]
-      }
-    ])
-  ]
+        const buttons = [
+            ...button.flow.quickReply("✅ On", ".antilink on"),
+            ...button.flow.quickReply("❌ Off", ".antilink off"),
+            ...button.flow.quickReply("⚙️ Delete", ".antilink delete"),
+            ...button.flow.quickReply("🦵 Kick", ".antilink kick")
+        ];
 
-  await button.sendInteractive(statusText, buttons, {
-    title: "Anti Link Control",
-    body: `Status: ${currentStatus ? 'Aktif' : 'Nonaktif'}`,
-    thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg"
-  })
-}
+        return replyAdaptive({
+            text: statusText,
+            buttons: buttons,
+            title: "Anti Link Settings",
+            body: "Group Protection"
+        });
+    }
 
-handler.help = ['antilink']
-handler.tags = ['group']
-handler.command = ['antilink', 'antilinkgc']
-handler.group = true
-handler.admin = true
-handler.botAdmin = true
+    if (args === 'on') {
+        data[groupId] = { ...data[groupId], enabled: true };
+        saveAntiLinkData(data);
+        return replyAdaptive({
+            text: '✅ *Anti Link diaktifkan!*\n\nBot akan menghapus pesan yang mengandung link.',
+            title: "Success",
+            body: "Anti Link Enabled"
+        });
+    }
 
-module.exports = handler
+    if (args === 'off') {
+        data[groupId] = { ...data[groupId], enabled: false };
+        saveAntiLinkData(data);
+        return replyAdaptive({
+            text: '❌ *Anti Link dimatikan!*',
+            title: "Success",
+            body: "Anti Link Disabled"
+        });
+    }
+
+    if (['delete', 'kick', 'warn'].includes(args)) {
+        data[groupId] = { ...data[groupId], action: args };
+        saveAntiLinkData(data);
+        return replyAdaptive({
+            text: `✅ *Action diatur ke: ${args.toUpperCase()}*`,
+            title: "Success",
+            body: "Action Updated"
+        });
+    }
+
+    return replyAdaptive({
+        text: '❌ Opsi tidak valid!\n\nGunakan: on/off/delete/kick/warn',
+        title: "Error",
+        body: "Invalid Option"
+    });
+};
+
+handler.command = ['antilink', 'antilinkgc'];
+handler.tags = ['group'];
+handler.help = ['antilink <on/off/delete/kick/warn>'];
+
+module.exports = handler;

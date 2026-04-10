@@ -1,105 +1,128 @@
 /**
  * Plugin: demote.js
- * Description: Demote admin jadi member
- * Command: .demote, .dem
+ * Description: Demote admin grup menjadi member
+ * Command: .demote
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, isBotAdmins, quoted, mentions } = Obj
+    const { conn, q, button, isGroup, isAdmins, isBotAdmins, replyAdaptive, mentionedJid } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  if (!isBotAdmins) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Bot harus menjadi admin untuk menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-  // Get target user
-  let target = quoted ? quoted.sender : mentions && mentions[0] ? mentions[0] : null
+    // Get mentioned users
+    let users = mentionedJid || [];
+    
+    // Check quoted message
+    if (m.quoted && m.quoted.sender) {
+        users.push(m.quoted.sender);
+    }
 
-  if (!target) {
-    const helpText = `
+    if (users.length === 0) {
+        const helpText = `
 ╭━━━❰ *DEMOTE* ❱━━━╮
 ┃
-┃ 🚫 Demote admin jadi member
+┃ 👇 Demote admin menjadi member
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ 1. Reply pesan admin dengan .demote
-┃ 2. .demote @user
+┃ .demote @user
+┃ .demote (reply pesan user)
 ┃
 ┃ *Contoh:*
 ┃ .demote @6281234567890
-┃ (Reply pesan admin)
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("👑 Promote", ".promote"),
-      ...button.flow.quickReply("👥 List Admin", ".listadmin"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("⬆️ Promote", ".promote"),
+            ...button.flow.quickReply("📋 List Admin", ".listadmin"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Demote Admin",
-      body: "Turunkan admin menjadi member"
-    })
-  }
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Demote",
+            body: "Remove admin status"
+        });
+    }
 
-  try {
-    await conn.groupParticipantsUpdate(m.chat, [target], 'demote')
+    try {
+        let demoted = [];
+        let failed = [];
 
-    const demoteText = `
-╭━━━❰ *DEMOTED* ❱━━━╮
+        for (const user of users) {
+            try {
+                await conn.groupParticipantsUpdate(m.chat, [user], 'demote');
+                demoted.push(user.split('@')[0]);
+            } catch (err) {
+                failed.push(user.split('@')[0]);
+            }
+        }
+
+        let resultText = `
+╭━━━❰ *DEMOTE RESULT* ❱━━━╮
 ┃
-┃ 🚫 *Admin telah didemote!*
-┃
-┃ 👤 @${target.split('@')[0]}
-┃
-┃ ❌ Sekarang menjadi member
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+`;
+        
+        if (demoted.length > 0) {
+            resultText += `┃ ✅ *Berhasil demote:*\n┃ ${demoted.map(n => `@${n}`).join('\n┃ ')}\n┃\n`;
+        }
+        
+        if (failed.length > 0) {
+            resultText += `┃ ❌ *Gagal demote:*\n┃ ${failed.map(n => `@${n}`).join('\n┃ ')}\n┃\n`;
+        }
+        
+        resultText += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("👑 Promote", `.promote @${target.split('@')[0]}`),
-      ...button.flow.quickReply("👥 List Admin", ".listadmin"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("⬆️ Promote", ".promote"),
+            ...button.flow.quickReply("📋 List Admin", ".listadmin"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await conn.sendMessage(m.chat, {
-      text: demoteText,
-      mentions: [target]
-    }, { quoted: m })
+        return replyAdaptive({
+            text: resultText,
+            buttons: buttons,
+            mentions: users,
+            title: "Demote Complete",
+            body: `${demoted.length} users demoted`
+        });
 
-    await button.sendInteractive("✅ Demote berhasil!", buttons, {
-      title: "Demote Success",
-      body: "User is now member"
-    })
+    } catch (error) {
+        console.error('Demote Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal demote user'}`,
+            title: "Error",
+            body: "Demote Failed"
+        });
+    }
+};
 
-  } catch (err) {
-    console.error("Demote Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal demote: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+handler.command = ['demote', 'unadmin'];
+handler.tags = ['group'];
+handler.help = ['demote @user'];
 
-handler.help = ['demote']
-handler.tags = ['group']
-handler.command = ['demote', 'dem', 'turunkanadmin']
-handler.group = true
-handler.admin = true
-handler.botAdmin = true
-
-module.exports = handler
+module.exports = handler;

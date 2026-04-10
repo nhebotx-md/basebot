@@ -4,183 +4,151 @@
  * Command: .spotify, .spotidown
  */
 
-const { getBuffer, fetchJson } = require('../Library/myfunction')
-const axios = require('axios')
+const axios = require('axios');
+const { getBuffer } = require('../Library/myfunction');
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text } = Obj
+    const { conn, q, button, text, replyAdaptive } = Obj;
 
-  if (!text) {
-    const helpText = `
-╭━━━❰ *SPOTIFY DOWNLOADER* ❱━━━╮
+    if (!text) {
+        const helpText = `
+╭━━━❰ *SPOTIFY DOWNLOAD* ❱━━━╮
+┃
+┃ 🎧 Download lagu dari Spotify
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ .spotify Judul Lagu
-┃ .spotidown Judul Lagu
+┃ .spotify <judul lagu>
+┃ .spotify <link spotify>
 ┃
 ┃ *Contoh:*
-┃ .spotify Blinding Lights
+┃ .spotify Perfect Ed Sheeran
 ┃ .spotify https://open.spotify.com/track/...
 ┃
-┃ 🎧 *Fitur:*
+┃ 🎵 *Fitur:*
 ┃ • Cari lagu di Spotify
 ┃ • Download audio MP3
-┃ • Metadata lengkap
+┃ • High quality
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🎵 YouTube Music", ".play"),
-      ...button.flow.quickReply("🎬 YouTube Video", ".ytvideo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("🎵 Play YouTube", ".play"),
+            ...button.flow.quickReply("🎬 YouTube Video", ".ytvideo"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Spotify Downloader",
-      body: "Download lagu Spotify"
-    })
-  }
-
-  try {
-    await conn.sendMessage(m.chat, {
-      text: `🔍 Mencari di Spotify: *${text}*...`
-    }, { quoted: q('fkontak') })
-
-    let trackData
-    const isUrl = text.includes('open.spotify.com')
-
-    if (isUrl) {
-      // Extract track ID
-      const trackId = text.match(/track\/([a-zA-Z0-9]+)/)?.[1]
-      if (!trackId) {
-        return conn.sendMessage(m.chat, {
-          text: "❌ URL Spotify tidak valid!"
-        }, { quoted: q('fkontak') })
-      }
-
-      // Get track info
-      const apiUrl = `https://api.spotifydown.com/metadata/track/${trackId}`
-      trackData = await axios.get(apiUrl, {
-        headers: {
-          'Origin': 'https://spotifydown.com',
-          'Referer': 'https://spotifydown.com/'
-        }
-      }).then(res => res.data).catch(() => null)
-    } else {
-      // Search track
-      const searchUrl = `https://api.spotifydown.com/search?q=${encodeURIComponent(text)}`
-      const searchResult = await axios.get(searchUrl, {
-        headers: {
-          'Origin': 'https://spotifydown.com',
-          'Referer': 'https://spotifydown.com/'
-        }
-      }).then(res => res.data).catch(() => null)
-
-      if (!searchResult || !searchResult.tracks || searchResult.tracks.length === 0) {
-        return conn.sendMessage(m.chat, {
-          text: "❌ Lagu tidak ditemukan di Spotify!"
-        }, { quoted: q('fkontak') })
-      }
-
-      trackData = searchResult.tracks[0]
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Spotify Download",
+            body: "Download lagu Spotify"
+        });
     }
 
-    if (!trackData) {
-      return conn.sendMessage(m.chat, {
-        text: "❌ Gagal mendapatkan data lagu!"
-      }, { quoted: q('fkontak') })
-    }
+    try {
+        await conn.sendMessage(m.chat, {
+            text: `🔍 Mencari di Spotify: *${text}*...`
+        }, { quoted: q('fkontak') });
 
-    const { title, artists, album, cover, id } = trackData
-    const artistName = Array.isArray(artists) ? artists.map(a => a.name).join(', ') : artists
+        // Determine if input is URL or search query
+        const isUrl = text.includes('open.spotify.com');
+        let searchUrl;
 
-    // Info message
-    const infoText = `
+        if (isUrl) {
+            searchUrl = `https://api.ryzendesu.vip/api/downloader/spotify?url=${encodeURIComponent(text)}`;
+        } else {
+            searchUrl = `https://api.ryzendesu.vip/api/search/spotify?q=${encodeURIComponent(text)}`;
+        }
+
+        // Search/download from Spotify
+        const response = await axios.get(searchUrl, {
+            timeout: 60000
+        });
+
+        const data = response.data;
+
+        if (!data || data.error) {
+            throw new Error(data?.error || 'Lagu tidak ditemukan');
+        }
+
+        // Handle search results
+        let trackData;
+        if (Array.isArray(data) && data.length > 0) {
+            trackData = data[0];
+        } else if (data.data) {
+            trackData = data.data;
+        } else {
+            trackData = data;
+        }
+
+        const { title, artist, album, thumbnail, url: trackUrl } = trackData;
+
+        // Send info
+        const infoText = `
 ╭━━━❰ *SPOTIFY TRACK* ❱━━━╮
 ┃
-┃ 🎵 *${title}*
+┃ 🎵 *${title || 'Unknown'}*
 ┃
-┃ 🎤 Artist: ${artistName}
-┃ 💿 Album: ${album?.name || 'Single'}
+┃ 👤 *Artist:* ${artist || 'Unknown'}
+┃ 💿 *Album:* ${album || 'Unknown'}
 ┃
-┃ ⏳ Sedang mendownload...
+┃ ⬇️ Sedang download...
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
-
-    await conn.sendMessage(m.chat, {
-      image: { url: cover },
-      caption: infoText
-    }, { quoted: m })
-
-    // Download
-    try {
-      const downloadUrl = `https://api.spotifydown.com/download/${id}`
-      const downloadData = await axios.get(downloadUrl, {
-        headers: {
-          'Origin': 'https://spotifydown.com',
-          'Referer': 'https://spotifydown.com/'
-        }
-      }).then(res => res.data).catch(() => null)
-
-      if (downloadData && downloadData.link) {
-        const audioBuffer = await getBuffer(downloadData.link)
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
         await conn.sendMessage(m.chat, {
-          audio: audioBuffer,
-          mimetype: 'audio/mp4',
-          ptt: false,
-          contextInfo: {
-            externalAdReply: {
-              title: title,
-              body: artistName,
-              thumbnailUrl: cover,
-              sourceUrl: `https://open.spotify.com/track/${id}`,
-              mediaType: 1
+            image: { url: thumbnail || global.thumbnail },
+            caption: infoText
+        }, { quoted: q('fkontak') });
+
+        // Get download URL
+        let downloadUrl = trackData.downloadUrl || trackData.url;
+        
+        // If no direct download, try to get from downloader API
+        if (!downloadUrl && trackUrl) {
+            const downloadResponse = await axios.get(`https://api.ryzendesu.vip/api/downloader/spotify?url=${encodeURIComponent(trackUrl)}`, {
+                timeout: 60000
+            });
+            downloadUrl = downloadResponse.data?.downloadUrl || downloadResponse.data?.url;
+        }
+
+        if (!downloadUrl) {
+            throw new Error('Download URL not available');
+        }
+
+        // Download audio
+        const audioBuffer = await getBuffer(downloadUrl);
+
+        // Send audio
+        await conn.sendMessage(m.chat, {
+            audio: audioBuffer,
+            mimetype: 'audio/mpeg',
+            fileName: `${title || 'Spotify Track'}.mp3`,
+            contextInfo: {
+                externalAdReply: {
+                    title: title || 'Spotify Track',
+                    body: `By ${artist || 'Unknown'}`,
+                    thumbnailUrl: thumbnail || global.thumbnail,
+                    sourceUrl: trackUrl || 'https://spotify.com',
+                    mediaType: 1,
+                    renderLargerThumbnail: true
+                }
             }
-          }
-        }, { quoted: m })
+        }, { quoted: q('fkontak') });
 
-        // Success buttons
-        const buttons = [
-          ...button.flow.ctaUrl("🔗 Buka Spotify", `https://open.spotify.com/track/${id}`),
-          ...button.flow.quickReply("🎵 YouTube", `.play ${title} ${artistName}`),
-          ...button.flow.quickReply("📋 Menu", ".menuplug")
-        ]
-
-        await button.sendInteractive(`✅ *${title}* berhasil dikirim!`, buttons, {
-          title: "Download Complete",
-          body: `${title} - ${artistName}`
-        })
-      } else {
-        throw new Error('Download link not found')
-      }
-    } catch (dlErr) {
-      // Fallback
-      const buttons = [
-        ...button.flow.ctaUrl("🔗 Buka Spotify", `https://open.spotify.com/track/${id}`),
-        ...button.flow.quickReply("🎵 YouTube", `.play ${title}`),
-        ...button.flow.quickReply("📋 Menu", ".menuplug")
-      ]
-
-      await button.sendInteractive(
-        `⚠️ Download gagal, tapi lagu ditemukan!\n\n🎵 *${title}*\n🎤 ${artistName}`,
-        buttons,
-        { title: "Track Found", body: "Click to open Spotify" }
-      )
+    } catch (error) {
+        console.error('Spotify Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal download lagu'}`,
+            title: "Error",
+            body: "Spotify Download Failed"
+        });
     }
+};
 
-  } catch (err) {
-    console.error("Spotify Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal mendownload: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+handler.command = ['spotify', 'spotidown', 'spdl'];
+handler.tags = ['download'];
+handler.help = ['spotify <judul/link>'];
 
-handler.help = ['spotify']
-handler.tags = ['download']
-handler.command = ['spotify', 'spotidown', 'spotidl']
-handler.limit = true
-
-module.exports = handler
+module.exports = handler;

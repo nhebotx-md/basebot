@@ -5,140 +5,136 @@
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text, isOwner, args } = Obj
+    const { conn, q, button, text, isOwn, replyAdaptive } = Obj;
 
-  if (!isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya untuk Owner!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isOwn) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya untuk owner bot!',
+            title: "Error",
+            body: "Owner Only"
+        });
+    }
 
-  if (!text) {
-    const helpText = `
+    if (!text) {
+        const helpText = `
 ╭━━━❰ *BROADCAST* ❱━━━╮
 ┃
 ┃ 📢 Kirim pesan ke semua chat
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ .broadcast Pesan
-┃ .bc Pesan
-┃
-┃ *Opsi:*
-┃ .bc gc Pesan (Grup only)
-┃ .bc pc Pesan (Private only)
+┃ .bc <pesan>
+┃ .broadcast <pesan>
 ┃
 ┃ *Contoh:*
 ┃ .bc Halo semuanya!
-┃ .bc gc Update group rules
+┃ .bc 📢 Pengumuman penting!
 ┃
-┃ ⚠️ *Peringatan:*
+⚠️ *Peringatan:*
 ┃ • Gunakan dengan bijak
 ┃ • Jangan spam
-┃ • Bisa membuat bot delay
+┃ • Hanya owner yang bisa
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🗑️ Clear Chat", ".clearchat"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("📋 Menu", ".menuplug"),
+            ...button.flow.quickReply("👤 Owner", ".owner")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Broadcast",
-      body: "Kirim pesan massal"
-    })
-  }
-
-  try {
-    // Get all chats
-    const chats = await conn.groupFetchAllParticipating().catch(() => ({}))
-    const groups = Object.entries(chats).map(([jid, chat]) => ({ jid, ...chat }))
-    
-    // Also get private chats (this is simplified, actual implementation may vary)
-    const allChats = Object.values(conn.chats || {})
-    const privateChats = allChats.filter(chat => chat.id && !chat.id.endsWith('@g.us') && !chat.id.includes('broadcast'))
-
-    let targetChats = []
-    const type = args[0]?.toLowerCase()
-
-    if (type === 'gc' || type === 'group') {
-      targetChats = groups.map(g => g.jid)
-      args.shift()
-    } else if (type === 'pc' || type === 'private') {
-      targetChats = privateChats.map(c => c.id)
-      args.shift()
-    } else {
-      targetChats = [...groups.map(g => g.jid), ...privateChats.map(c => c.id)]
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Broadcast",
+            body: "Owner Feature"
+        });
     }
 
-    const message = args.join(' ') || text
+    try {
+        await replyAdaptive({
+            text: '⏳ Sedang mengirim broadcast...',
+            title: "Broadcast",
+            body: "Please wait..."
+        });
 
-    if (targetChats.length === 0) {
-      return conn.sendMessage(m.chat, {
-        text: "❌ Tidak ada chat yang bisa dikirimi!"
-      }, { quoted: q('fkontak') })
-    }
+        // Get all chats
+        const chats = await conn.groupFetchAllParticipating().catch(() => ({}));
+        const privateChats = Object.keys(conn.chats || {}).filter(jid => 
+            jid.endsWith('@s.whatsapp.net') && !jid.includes('status')
+        );
+        
+        const groupIds = Object.keys(chats);
+        const allChats = [...groupIds, ...privateChats];
+        
+        let success = 0;
+        let failed = 0;
 
-    await conn.sendMessage(m.chat, {
-      text: `📢 *Broadcast dimulai!*\n\n📊 Target: ${targetChats.length} chat\n⏳ Sedang mengirim...`
-    }, { quoted: q('fkontak') })
+        const broadcastText = `
+╭━━━❰ *BROADCAST* ❱━━━╮
+┃
+┃ 📢 *Pesan dari Owner:*
+┃
+┃ ${text}
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    let success = 0
-    let failed = 0
+        // Send to all chats
+        for (const chatId of allChats) {
+            try {
+                await conn.sendMessage(chatId, {
+                    text: broadcastText,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: "📢 BROADCAST",
+                            body: "Pesan dari Owner",
+                            thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg",
+                            sourceUrl: "https://wa.me/62881027174423",
+                            mediaType: 1,
+                            renderLargerThumbnail: true
+                        }
+                    }
+                });
+                success++;
+                await new Promise(r => setTimeout(r, 1000)); // Delay 1s
+            } catch (err) {
+                failed++;
+                console.error(`Failed to send to ${chatId}:`, err.message);
+            }
+        }
 
-    for (const chatId of targetChats) {
-      try {
-        await conn.sendMessage(chatId, {
-          text: `
-📢 *BROADCAST MESSAGE*
-
-${message}
-
-_— ${global.botname || 'Bot'}_`
-        })
-        success++
-        await new Promise(r => setTimeout(r, 1000)) // Delay 1s
-      } catch (e) {
-        failed++
-        console.log(`Failed to send to ${chatId}:`, e.message)
-      }
-    }
-
-    // Result
-    const resultText = `
+        const resultText = `
 ╭━━━❰ *BROADCAST SELESAI* ❱━━━╮
 ┃
-┃ ✅ *Berhasil:* ${success}
-┃ ❌ *Gagal:* ${failed}
-┃ 📊 *Total:* ${targetChats.length}
+┃ ✅ *Berhasil:* ${success} chat
+┃ ❌ *Gagal:* ${failed} chat
+┃ 📊 *Total:* ${allChats.length} chat
 ┃
-┃ 📝 *Pesan:*
-┃ ${message.length > 100 ? message.substring(0, 100) + '...' : message}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🗑️ Clear Chat", ".clearchat"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const resultButtons = [
+            ...button.flow.quickReply("📋 Menu", ".menuplug"),
+            ...button.flow.quickReply("🗑️ Clear Chat", ".clearchat")
+        ];
 
-    await button.sendInteractive(resultText, buttons, {
-      title: "Broadcast Complete",
-      body: `${success} success, ${failed} failed`
-    })
+        return replyAdaptive({
+            text: resultText,
+            buttons: resultButtons,
+            title: "Broadcast Complete",
+            body: `Success: ${success}, Failed: ${failed}`
+        });
 
-  } catch (err) {
-    console.error("Broadcast Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal broadcast: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Broadcast Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal mengirim broadcast'}`,
+            title: "Error",
+            body: "Broadcast Failed"
+        });
+    }
+};
 
-handler.help = ['broadcast']
-handler.tags = ['owner']
-handler.command = ['broadcast', 'bc', 'broad']
-handler.owner = true
+handler.command = ['broadcast', 'bc'];
+handler.tags = ['owner'];
+handler.help = ['broadcast <pesan>', 'bc <pesan>'];
 
-module.exports = handler
+module.exports = handler;

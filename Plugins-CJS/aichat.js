@@ -4,16 +4,16 @@
  * Command: .ai, .aichat
  */
 
-const axios = require('axios')
+const axios = require('axios');
 
 // Store conversation history
-const conversations = new Map()
+const conversations = new Map();
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text, sender } = Obj
+    const { conn, q, button, text, sender, replyAdaptive } = Obj;
 
-  if (!text) {
-    const helpText = `
+    if (!text) {
+        const helpText = `
 ╭━━━❰ *AI CHAT* ❱━━━╮
 ┃
 ┃ 🤖 Chat dengan AI Assistant
@@ -34,139 +34,97 @@ const handler = async (m, Obj) => {
 ┃ • General knowledge
 ┃ • Creative writing
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("💡 Apa itu AI?", ".ai Apa itu Artificial Intelligence?"),
-      ...button.flow.quickReply("🎨 AI Image", ".aimage cat in space"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("💡 Apa itu AI?", ".ai Apa itu Artificial Intelligence?"),
+            ...button.flow.quickReply("🎨 AI Image", ".aimage cat in space"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "AI Chat",
-      body: "Chat dengan AI Assistant"
-    })
-  }
-
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "🤖 AI sedang berpikir..."
-    }, { quoted: q('fkontak') })
-
-    // Get or create conversation history
-    const userId = sender
-    if (!conversations.has(userId)) {
-      conversations.set(userId, [])
-    }
-    const history = conversations.get(userId)
-
-    // Add user message to history
-    history.push({ role: 'user', content: text })
-
-    // Keep only last 10 messages
-    if (history.length > 10) {
-      history.shift()
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "AI Chat",
+            body: "Chat dengan AI Assistant"
+        });
     }
 
-    // Try different AI APIs
-    let aiResponse = null
-
-    // API 1: Blackbox AI
     try {
-      const apiUrl = `https://api.deline.web.id/ai/blackbox?prompt=${encodeURIComponent(text)}`
-      const response = await axios.get(apiUrl, { timeout: 15000 })
-      if (response.data && response.data.result) {
-        aiResponse = response.data.result
-      }
-    } catch (e) {
-      console.log('Blackbox API failed:', e.message)
-    }
+        await conn.sendMessage(m.chat, {
+            text: "🤖 AI sedang berpikir..."
+        }, { quoted: q('fkontak') });
 
-    // API 2: Fallback to other AI
-    if (!aiResponse) {
-      try {
-        const apiUrl = `https://api.vreden.web.id/api/openai?text=${encodeURIComponent(text)}`
-        const response = await axios.get(apiUrl, { timeout: 15000 })
-        if (response.data && response.data.result) {
-          aiResponse = response.data.result
+        // Get or create conversation history
+        const userId = sender;
+        if (!conversations.has(userId)) {
+            conversations.set(userId, []);
         }
-      } catch (e) {
-        console.log('OpenAI API failed:', e.message)
-      }
-    }
+        const history = conversations.get(userId);
 
-    // API 3: Another fallback
-    if (!aiResponse) {
-      try {
-        const apiUrl = `https://api.lolhuman.xyz/api/openai?apikey=&text=${encodeURIComponent(text)}`
-        const response = await axios.get(apiUrl, { timeout: 15000 })
-        if (response.data && response.data.result) {
-          aiResponse = response.data.result
+        // Add user message to history
+        history.push({ role: 'user', content: text });
+
+        // Keep only last 10 messages for context
+        if (history.length > 10) {
+            history.shift();
         }
-      } catch (e) {
-        console.log('Lolhuman API failed:', e.message)
-      }
-    }
 
-    if (!aiResponse) {
-      throw new Error('Semua AI API tidak merespons')
-    }
+        // Call AI API
+        const response = await axios.get(`https://api.ryzendesu.vip/api/ai/chatgpt?text=${encodeURIComponent(text)}`, {
+            timeout: 30000
+        });
 
-    // Add AI response to history
-    history.push({ role: 'assistant', content: aiResponse })
+        let aiResponse = '';
+        if (response.data && response.data.response) {
+            aiResponse = response.data.response;
+        } else if (response.data && response.data.message) {
+            aiResponse = response.data.message;
+        } else if (typeof response.data === 'string') {
+            aiResponse = response.data;
+        } else {
+            aiResponse = 'Maaf, saya tidak bisa memproses permintaan Anda saat ini.';
+        }
 
-    // Format response
-    const responseText = `
+        // Add AI response to history
+        history.push({ role: 'assistant', content: aiResponse });
+
+        const resultText = `
 ╭━━━❰ *AI RESPONSE* ❱━━━╮
 ┃
 ┃ 🤖 *Pertanyaan:*
-┃ ${text.length > 50 ? text.substring(0, 50) + '...' : text}
+┃ ${text}
 ┃
 ┃ 💬 *Jawaban:*
 ┃ ${aiResponse}
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🎨 AI Image", ".aimage"),
-      ...button.flow.quickReply("💬 Lanjut Chat", ".ai "),
-      ...button.flow.quickReply("🗑️ Clear History", ".aiclear"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const resultButtons = [
+            ...button.flow.quickReply("🔄 Lanjutkan", ".ai "),
+            ...button.flow.quickReply("🗑️ Hapus History", ".aiclear"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await button.sendInteractive(responseText, buttons, {
-      title: "AI Response",
-      body: "Powered by AI"
-    })
+        return replyAdaptive({
+            text: resultText,
+            buttons: resultButtons,
+            title: "AI Response",
+            body: "Powered by GPT"
+        });
 
-  } catch (err) {
-    console.error("AI Chat Error:", err)
-    
-    const buttons = [
-      ...button.flow.quickReply("🔄 Coba Lagi", `.ai ${text}`),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+    } catch (error) {
+        console.error('AI Chat Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal terhubung ke AI'}\n\nSilakan coba lagi nanti.`,
+            title: "Error",
+            body: "AI Service"
+        });
+    }
+};
 
-    await button.sendInteractive(
-      `❌ AI tidak dapat merespons.\n\nError: ${err.message}\n\nSilakan coba lagi nanti.`,
-      buttons,
-      { title: "AI Error", body: "Please try again" }
-    )
-  }
-}
+handler.command = ['ai', 'aichat', 'chatgpt'];
+handler.tags = ['ai'];
+handler.help = ['ai <pertanyaan>', 'aichat <pertanyaan>'];
 
-// Clear conversation command
-handler.clear = async (m, Obj) => {
-  const { sender } = Obj
-  conversations.delete(sender)
-  return Obj.conn.sendMessage(m.chat, {
-    text: "✅ Riwayat percakapan AI telah dihapus!"
-  }, { quoted: Obj.q('fkontak') })
-}
-
-handler.help = ['ai']
-handler.tags = ['ai']
-handler.command = ['ai', 'aichat', 'openai', 'gpt']
-handler.limit = true
-
-module.exports = handler
+module.exports = handler;

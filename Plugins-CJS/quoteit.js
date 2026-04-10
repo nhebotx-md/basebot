@@ -4,120 +4,99 @@
  * Command: .quote, .quoteit
  */
 
-const { getBuffer } = require('../Library/myfunction')
-const axios = require('axios')
+const axios = require('axios');
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text, quoted, pushname } = Obj
+    const { conn, q, button, text, replyAdaptive } = Obj;
 
-  // Parse input: .quote Teks | Nama | Avatar
-  let quoteText = text
-  let name = pushname || "Anonymous"
-  let avatar = "https://files.catbox.moe/5x2b8n.jpg"
-
-  if (text && text.includes('|')) {
-    const parts = text.split('|').map(p => p.trim())
-    quoteText = parts[0]
-    if (parts[1]) name = parts[1]
-    if (parts[2]) avatar = parts[2]
-  }
-
-  // If replying to a message, use that message as quote
-  if (quoted && !text) {
-    quoteText = quoted.text || quoted.caption || "No text"
-    name = quoted.pushName || quoted.sender?.split('@')[0] || "Anonymous"
-  }
-
-  if (!quoteText) {
-    const helpText = `
+    if (!text) {
+        const helpText = `
 ╭━━━❰ *QUOTE MAKER* ❱━━━╮
+┃
+┃ 💬 Buat quote aesthetic
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ 1. Reply pesan dengan .quote
-┃ 2. .quote Teks | Nama | AvatarURL
+┃ .quote <teks> | <author>
+┃ .quoteit <teks> | <author>
 ┃
 ┃ *Contoh:*
-┃ .quote Life is beautiful | John
-┃ .quote Hello World | Me
+┃ .quote Hidup ini indah | Anonymous
+┃ .quote Jangan menyerah | Pepatah
 ┃
-┃ (Reply pesan untuk quote otomatis)
+┃ 💡 *Tips:*
+┃ • Pisahkan teks dan author dengan |
+┃ • Jika tidak ada author, akan
+┃   menggunakan "Anonymous"
 ┃
-┃ 🎨 *Fitur:*
-┃ • Quote aesthetic
-┃ • Custom nama & avatar
-┃ • Background cantik
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🔲 QR Code", ".qrcode"),
-      ...button.flow.quickReply("📝 Nulis", ".nulis"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("💬 Contoh", ".quote Hidup ini indah | Anonymous"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Quote Maker",
-      body: "Buat quote aesthetic"
-    })
-  }
-
-  if (quoteText.length > 300) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Teks terlalu panjang! Maksimal 300 karakter."
-    }, { quoted: q('fkontak') })
-  }
-
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "🎨 Sedang membuat quote..."
-    }, { quoted: q('fkontak') })
-
-    // API quote
-    const apiUrl = `https://api.deline.web.id/tools/quote?text=${encodeURIComponent(quoteText)}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`
-    
-    let imageBuffer
-    try {
-      imageBuffer = await getBuffer(apiUrl)
-    } catch (e) {
-      // Fallback API
-      const fallbackUrl = `https://api.lolhuman.xyz/api/quote?apikey=&text=${encodeURIComponent(quoteText)}&name=${encodeURIComponent(name)}`
-      imageBuffer = await getBuffer(fallbackUrl)
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Quote Maker",
+            body: "Create aesthetic quotes"
+        });
     }
 
-    await conn.sendMessage(m.chat, {
-      image: imageBuffer,
-      caption: `
-✅ *Quote berhasil dibuat!*
+    try {
+        await conn.sendMessage(m.chat, {
+            text: `💬 Sedang membuat quote...`
+        }, { quoted: q('fkontak') });
 
-💬 "${quoteText.length > 100 ? quoteText.substring(0, 100) + '...' : quoteText}"
+        // Parse input
+        const parts = text.split('|').map(s => s.trim());
+        const quoteText = parts[0];
+        const author = parts[1] || 'Anonymous';
 
-— *${name}*`
-    }, { quoted: m })
+        // Generate quote using API
+        const quoteUrl = `https://api.ryzendesu.vip/api/canvas/quote?text=${encodeURIComponent(quoteText)}&author=${encodeURIComponent(author)}`;
 
-    // Success buttons
-    const buttons = [
-      ...button.flow.quickReply("🔲 QR Code", ".qrcode"),
-      ...button.flow.quickReply("📝 Nulis", ".nulis"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const quoteBuffer = await axios.get(quoteUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
 
-    await button.sendInteractive("✅ Quote aesthetic siap!", buttons, {
-      title: "Quote Created",
-      body: `By ${name}`
-    })
+        // Send quote image
+        await conn.sendMessage(m.chat, {
+            image: Buffer.from(quoteBuffer.data),
+            caption: `
+╭━━━❰ *QUOTE* ❱━━━╮
+┃
+┃ 💬 *"${quoteText}"*
+┃
+┃ — *${author}*
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+            contextInfo: {
+                externalAdReply: {
+                    title: "Quote Maker",
+                    body: `By ${author}`,
+                    thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg",
+                    sourceUrl: "https://wa.me/62881027174423",
+                    mediaType: 1,
+                    renderLargerThumbnail: true
+                }
+            }
+        }, { quoted: q('fkontak') });
 
-  } catch (err) {
-    console.error("Quote Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal membuat quote: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Quote Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal membuat quote'}`,
+            title: "Error",
+            body: "Quote Failed"
+        });
+    }
+};
 
-handler.help = ['quote']
-handler.tags = ['create']
-handler.command = ['quote', 'quoteit', 'quotemaker']
-handler.limit = true
+handler.command = ['quote', 'quoteit', 'quotes'];
+handler.tags = ['create'];
+handler.help = ['quote <teks> | <author>'];
 
-module.exports = handler
+module.exports = handler;

@@ -8,7 +8,7 @@
  * Berisi:
  * - Plugin loader dengan caching
  * - Tag-based plugin indexing
- * - Reply mode helper (smartReply)
+ * - Reply mode helper (smartReply, replyAdaptive)
  * - UI engine dengan presets
  * - Button helper injection
  *
@@ -29,6 +29,9 @@ const buildButton = require("./buttonHelper");
 
 // Import reply mode module
 const { getUserReplyMode } = require('./replyMode');
+
+// Import adaptive reply module
+const { replyAdaptive, sendSimpleText, sendWithExternalAd, getUserMode } = require('./replyAdaptive');
 
 // =========================================
 // 📌 GLOBAL VARIABLES / CONFIG
@@ -274,6 +277,17 @@ const handleMessage = async (m, commandText, Obj = {}) => {
     // Add smartReply to Obj for plugins to use
     Obj.smartReply = smartReply;
     Obj.getUserMode = getUserMode;
+
+    // =========================================
+    // ADAPTIVE REPLY INJECTION
+    // =========================================
+    /**
+     * Inject adaptive reply functions ke Obj
+     * untuk digunakan oleh semua plugin
+     */
+    Obj.replyAdaptive = (content) => replyAdaptive(m, Obj, content);
+    Obj.sendSimpleText = (text, options) => sendSimpleText(m, Obj, text, options);
+    Obj.sendWithExternalAd = (text, options) => sendWithExternalAd(m, Obj, text, options);
 
     // =========================================
     // FAKE QUOTED WRAPPER

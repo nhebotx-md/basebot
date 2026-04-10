@@ -1,118 +1,109 @@
 /**
  * Plugin: nulis.js
- * Description: Nulis ke gambar buku
+ * Description: Nulis teks ke gambar buku
  * Command: .nulis, .tulis
  */
 
-const { getBuffer } = require('../Library/myfunction')
-const axios = require('axios')
+const axios = require('axios');
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text } = Obj
+    const { conn, q, button, text, replyAdaptive } = Obj;
 
-  if (!text) {
-    const helpText = `
-╭━━━❰ *NULIS GAMBAR* ❱━━━╮
+    if (!text) {
+        const helpText = `
+╭━━━❰ *NULIS* ❱━━━╮
+┃
+┃ 📝 Nulis teks ke gambar buku
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ .nulis Teks yang mau ditulis
-┃ .tulis Teks yang mau ditulis
+┃ .nulis <teks>
+┃ .tulis <teks>
 ┃
 ┃ *Contoh:*
 ┃ .nulis Halo semuanya!
-┃ .tulis Ini tulisan di buku
+┃ .nulis Belajar JavaScript itu menyenangkan
 ┃
-┃ 📖 *Fitur:*
-┃ • Tulis teks ke gambar buku
-┃ • Style tulisan tangan
-┃ • Bisa panjang
+┃ 💡 *Tips:*
+┃ • Maksimal 500 karakter
+┃ • Hasil lebih bagus dengan
+┃   kalimat yang lengkap
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🔲 QR Code", ".qrcode"),
-      ...button.flow.quickReply("💬 Quote", ".quote"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("📝 Contoh", ".nulis Halo semuanya!"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Nulis Gambar",
-      body: "Tulis teks ke gambar buku"
-    })
-  }
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Nulis",
+            body: "Tulis ke gambar buku"
+        });
+    }
 
-  if (text.length > 500) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Teks terlalu panjang! Maksimal 500 karakter."
-    }, { quoted: q('fkontak') })
-  }
+    if (text.length > 500) {
+        return replyAdaptive({
+            text: '❌ Teks terlalu panjang! Maksimal 500 karakter.',
+            title: "Error",
+            body: "Text Too Long"
+        });
+    }
 
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "✍️ Sedang menulis..."
-    }, { quoted: q('fkontak') })
+    try {
+        await conn.sendMessage(m.chat, {
+            text: `📝 Sedang menulis, mohon tunggu...`
+        }, { quoted: q('fkontak') });
 
-    // API nulis
-    const apiUrls = [
-      `https://api.deline.web.id/tools/nulis?text=${encodeURIComponent(text)}`,
-      `https://api.lolhuman.xyz/api/nulis?apikey=&text=${encodeURIComponent(text)}`
-    ]
+        // Call nulis API
+        const response = await axios.get(`https://api.ryzendesu.vip/api/canvas/nulis?text=${encodeURIComponent(text)}`, {
+            timeout: 60000,
+            responseType: 'arraybuffer'
+        });
 
-    let imageUrl = null
-
-    for (const apiUrl of apiUrls) {
-      try {
-        const response = await axios.get(apiUrl, { timeout: 10000 })
-        if (response.data?.result || response.data?.image) {
-          imageUrl = response.data.result || response.data.image
-          break
+        if (!response.data) {
+            throw new Error('No image data received');
         }
-      } catch (e) {
-        continue
-      }
+
+        const imageBuffer = Buffer.from(response.data);
+
+        // Send image
+        await conn.sendMessage(m.chat, {
+            image: imageBuffer,
+            caption: `
+╭━━━❰ *HASIL TULISAN* ❱━━━╮
+┃
+┃ 📝 *Teks:* ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}
+┃
+┃ ✅ Berhasil ditulis!
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+            contextInfo: {
+                externalAdReply: {
+                    title: "Nulis",
+                    body: "Tulisan di buku",
+                    thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg",
+                    sourceUrl: "https://wa.me/62881027174423",
+                    mediaType: 1,
+                    renderLargerThumbnail: true
+                }
+            }
+        }, { quoted: q('fkontak') });
+
+    } catch (error) {
+        console.error('Nulis Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal menulis'}`,
+            title: "Error",
+            body: "Nulis Failed"
+        });
     }
+};
 
-    if (!imageUrl) {
-      // Fallback: use alternative API
-      imageUrl = `https://api.vreden.web.id/api/maker/nulis?text=${encodeURIComponent(text)}`
-    }
+handler.command = ['nulis', 'tulis', 'write'];
+handler.tags = ['create'];
+handler.help = ['nulis <teks>'];
 
-    const imageBuffer = await getBuffer(imageUrl)
-
-    await conn.sendMessage(m.chat, {
-      image: imageBuffer,
-      caption: `
-✅ *Tulisan selesai!*
-
-📝 *Teks:* ${text.length > 100 ? text.substring(0, 100) + '...' : text}
-
-_Terlihat seperti tulisan tangan asli!_`
-    }, { quoted: m })
-
-    // Success buttons
-    const buttons = [
-      ...button.flow.quickReply("🔲 QR Code", ".qrcode"),
-      ...button.flow.quickReply("💬 Quote", ".quote"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
-
-    await button.sendInteractive("✅ Tulisan siap!", buttons, {
-      title: "Nulis Complete",
-      body: "Gambar buku dengan tulisan"
-    })
-
-  } catch (err) {
-    console.error("Nulis Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal menulis: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
-
-handler.help = ['nulis']
-handler.tags = ['create']
-handler.command = ['nulis', 'tulis', 'nuliskanan', 'nuliskiri']
-handler.limit = true
-
-module.exports = handler
+module.exports = handler;

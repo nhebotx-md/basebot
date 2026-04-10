@@ -1,127 +1,97 @@
 /**
  * Plugin: grouppoll.js
  * Description: Buat polling/voting di grup
- * Command: .poll, .voting
+ * Command: .grouppoll, .poll, .voting
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, text, args } = Obj
+    const { conn, q, button, text, isGroup, isAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
-
-  // Parse poll format: .poll Pertanyaan | Opsi1 | Opsi2 | Opsi3
-  if (!text) {
-    const helpText = `
-╭━━━❰ *POLL/VOTING* ❱━━━╮
-┃
-┃ 📝 *Cara Penggunaan:*
-┃
-┃ .poll Pertanyaan | Opsi1 | Opsi2
-┃
-┃ *Contoh:*
-┃ .poll Makanan favorit? | Nasi | Mie | Ayam
-┃
-┃ 📊 *Fitur:*
-┃ • Buat polling interaktif
-┃ • Maksimal 5 opsi
-┃ • Real-time voting
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯`
-
-    const buttons = [
-      ...button.flow.quickReply("📋 Contoh Poll", ".poll Apa warna favoritmu? | Merah | Biru | Hijau"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
-
-    return button.sendInteractive(helpText, buttons, {
-      title: "Poll/Voting",
-      body: "Buat polling di grup"
-    })
-  }
-
-  const parts = text.split('|').map(p => p.trim())
-  
-  if (parts.length < 2) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Format salah! Gunakan: .poll Pertanyaan | Opsi1 | Opsi2"
-    }, { quoted: q('fkontak') })
-  }
-
-  const question = parts[0]
-  const options = parts.slice(1, 6) // Max 5 options
-
-  if (options.length < 2) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Minimal 2 opsi diperlukan!"
-    }, { quoted: q('fkontak') })
-  }
-
-  try {
-    // Create poll using WhatsApp native poll feature
-    const pollMessage = {
-      pollCreationMessage: {
-        name: question,
-        options: options.map(opt => ({ optionName: opt })),
-        selectableOptionsCount: 1
-      }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
     }
 
-    await conn.sendMessage(m.chat, pollMessage)
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-    // Send follow-up with buttons for quick actions
-    const followUpText = `
-✅ *Polling dibuat!*
+    // Parse input: question | option1 | option2 | option3
+    const args = text.split('|').map(s => s.trim()).filter(Boolean);
 
-❓ *${question}*
-${options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}
+    if (args.length < 3) {
+        const helpText = `
+╭━━━❰ *GROUP POLL* ❱━━━╮
+┃
+┃ 📊 Buat polling/voting
+┃
+┃ 📝 *Format:*
+┃ .poll Pertanyaan | Opsi1 | Opsi2 | Opsi3
+┃
+┃ *Contoh:*
+┃ .poll Mau makan apa? | Pizza | Burger | Nasi
+┃ .poll Meeting kapan? | Senin | Selasa | Rabu
+┃
+┃ 💡 *Tips:*
+┃ • Minimal 2 opsi
+┃ • Maksimal 12 opsi
+┃ • Pisahkan dengan |
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-📊 Silakan vote di atas!`
+        const buttons = [
+            ...button.flow.quickReply("📊 Contoh Poll", ".poll Mau makan apa? | Pizza | Burger"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    const buttons = [
-      ...button.flow.quickReply("🗑️ Hapus Poll", ".deletepoll"),
-      ...button.flow.quickReply("📊 Hasil", ".pollresult"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Group Poll",
+            body: "Create voting"
+        });
+    }
 
-    await button.sendInteractive(followUpText, buttons, {
-      title: "Poll Created",
-      body: question
-    })
+    try {
+        const question = args[0];
+        const options = args.slice(1);
 
-  } catch (err) {
-    console.error("Poll Error:", err)
-    
-    // Fallback: kirim sebagai pesan biasa dengan button
-    const fallbackText = `
-📊 *POLLING*
+        if (options.length > 12) {
+            return replyAdaptive({
+                text: '❌ Maksimal 12 opsi!',
+                title: "Error",
+                body: "Too Many Options"
+            });
+        }
 
-❓ *${question}*
+        // Create poll
+        await conn.sendMessage(m.chat, {
+            poll: {
+                name: question,
+                values: options,
+                selectableCount: 1
+            }
+        });
 
-${options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}
+    } catch (error) {
+        console.error('Poll Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal membuat poll'}`,
+            title: "Error",
+            body: "Poll Failed"
+        });
+    }
+};
 
-💬 Reply dengan angka untuk vote!`
+handler.command = ['grouppoll', 'poll', 'voting', 'vote'];
+handler.tags = ['group'];
+handler.help = ['poll Pertanyaan | Opsi1 | Opsi2'];
 
-    const voteButtons = options.map((opt, i) => 
-      button.flow.quickReply(`${i + 1}. ${opt}`, `.vote ${i + 1}`)
-    ).flat()
-
-    await button.sendInteractive(fallbackText, [
-      ...voteButtons,
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ], {
-      title: "Poll/Voting",
-      body: question
-    })
-  }
-}
-
-handler.help = ['poll']
-handler.tags = ['group']
-handler.command = ['poll', 'voting', 'buatpoll']
-handler.group = true
-
-module.exports = handler
+module.exports = handler;

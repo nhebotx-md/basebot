@@ -61,15 +61,17 @@ const buildCategoryButtons = (index, tags, button) => {
 }
 
 const handler = async (m, Obj) => {
-  const { button, conn, q } = Obj
+  const { button, conn, q, replyAdaptive } = Obj
 
   const plugins = Obj.plugins || global.plugins
   const index = plugins?.byTag
 
   if (!index || typeof index.get !== "function") {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Index plugin belum tersedia.\nCoba ulangi beberapa detik lagi."
-    }, { quoted: q("fkontak") })
+    return replyAdaptive({
+      text: "❌ Index plugin belum tersedia.\nCoba ulangi beberapa detik lagi.",
+      title: "Error",
+      body: "Plugin Index Not Ready"
+    })
   }
 
   const availableTags = [
@@ -99,9 +101,11 @@ Klik tombol kategori atau gunakan list di bawah.
     .flat()
 
   if (!sections.length) {
-    return conn.sendMessage(m.chat, {
-      text: "⚠️ Tidak ada kategori tersedia."
-    }, { quoted: q("fkontak") })
+    return replyAdaptive({
+      text: "⚠️ Tidak ada kategori tersedia.",
+      title: "Warning",
+      body: "No Categories Available"
+    })
   }
 
   // 🔥 BUTTON KATEGORI
@@ -120,7 +124,9 @@ Klik tombol kategori atau gunakan list di bawah.
     ...button.flow.ctaUrl("🌐 Repo", "https://github.com/nhebotx-md/basebot"),
   ]
 
-  await button.sendInteractive(menuText, buttons, {
+  await replyAdaptive({
+    text: menuText,
+    buttons: buttons,
     title: `${botName} Category Menu`,
     body: `By ${ownerName}`,
     thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg",

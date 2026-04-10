@@ -1,65 +1,79 @@
 /**
  * Plugin: linkgc.js
- * Description: Link grup
- * Command: .linkgc, .grouplink
+ * Description: Dapatkan link invite grup
+ * Command: .linkgc, .linkgroup, .gclink
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isBotAdmins, isAdmins } = Obj
+    const { conn, q, button, isGroup, isAdmins, isBotAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isBotAdmins) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Bot harus menjadi admin untuk menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  try {
-    const groupLink = await conn.groupInviteCode(m.chat)
-    const fullLink = `https://chat.whatsapp.com/${groupLink}`
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-    const linkText = `
+    try {
+        const groupLink = await conn.groupInviteCode(m.chat);
+        const groupMetadata = await conn.groupMetadata(m.chat);
+
+        const linkText = `
 ╭━━━❰ *LINK GROUP* ❱━━━╮
 ┃
-┃ 🔗 *Link Grup:*
-┃ ${fullLink}
+┃ 📛 *Nama:* ${groupMetadata.subject || 'Unknown'}
 ┃
-┃ ⚠️ *Peringatan:*
-┃ Jangan share link ini
-┃ ke orang yang tidak
-┃ dikenal!
+┃ 🔗 *Link:*
+┃ https://chat.whatsapp.com/${groupLink}
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+┃ 💡 *Cara pakai:*
+┃ Kirim link ini ke orang
+┃ yang ingin diinvite.
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.ctaUrl("🔗 Buka Link", fullLink),
-      ...button.flow.quickReply("🔄 Reset Link", ".resetlinkgc"),
-      ...button.flow.quickReply("📊 Group Info", ".groupinfo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("📋 Copy Link", `.linkgc`),
+            ...button.flow.quickReply("📋 Info Grup", ".groupinfo"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await button.sendInteractive(linkText, buttons, {
-      title: "Group Link",
-      body: "Link invite grup"
-    })
+        return replyAdaptive({
+            text: linkText,
+            buttons: buttons,
+            title: groupMetadata.subject || "Group Link",
+            body: "Invite Link"
+        });
 
-  } catch (err) {
-    console.error("Link GC Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal mengambil link grup: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Link GC Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal mengambil link grup'}`,
+            title: "Error",
+            body: "Get Link Failed"
+        });
+    }
+};
 
-handler.help = ['linkgc']
-handler.tags = ['group']
-handler.command = ['linkgc', 'grouplink', 'linkgroup']
-handler.group = true
-handler.botAdmin = true
+handler.command = ['linkgc', 'linkgroup', 'gclink', 'grouplink'];
+handler.tags = ['group'];
+handler.help = ['linkgc'];
 
-module.exports = handler
+module.exports = handler;

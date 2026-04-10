@@ -1,98 +1,94 @@
 /**
  * Plugin: qrcode.js
- * Description: Generate QR Code
+ * Description: Generate QR Code dari teks/link
  * Command: .qrcode, .qr
  */
 
-const { getBuffer } = require('../Library/myfunction')
-const QRCode = require('qrcode')
+const axios = require('axios');
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text } = Obj
+    const { conn, q, button, text, replyAdaptive } = Obj;
 
-  if (!text) {
-    const helpText = `
+    if (!text) {
+        const helpText = `
 ╭━━━❰ *QR CODE GENERATOR* ❱━━━╮
+┃
+┃ 🔲 Generate QR Code
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ .qrcode Teks/URL
-┃ .qr Teks/URL
+┃ .qrcode <teks/link>
+┃ .qr <teks/link>
 ┃
 ┃ *Contoh:*
-┃ .qr https://google.com
-┃ .qr Hello World
-┃ .qr +6281234567890
+┃ .qrcode https://google.com
+┃ .qr Halo Dunia
+┃ .qr 081234567890
 ┃
-┃ 📱 *Fitur:*
-┃ • Generate QR Code
-┃ • Support URL, teks, nomor
-┃ • High quality
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+        const buttons = [
+            ...button.flow.quickReply("🔲 Contoh", ".qrcode https://google.com"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
+
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "QR Code Generator",
+            body: "Generate QR Code"
+        });
+    }
+
+    try {
+        await conn.sendMessage(m.chat, {
+            text: `🔲 Sedang generate QR Code...`
+        }, { quoted: q('fkontak') });
+
+        // Generate QR Code URL
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(text)}`;
+
+        // Get QR image
+        const qrBuffer = await axios.get(qrUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
+
+        // Send QR Code
+        await conn.sendMessage(m.chat, {
+            image: Buffer.from(qrBuffer.data),
+            caption: `
+╭━━━❰ *QR CODE* ❱━━━╮
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+┃ 🔲 *Data:* ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}
+┃
+┃ ✅ QR Code berhasil dibuat!
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+            contextInfo: {
+                externalAdReply: {
+                    title: "QR Code Generator",
+                    body: "Scan me!",
+                    thumbnailUrl: global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg",
+                    sourceUrl: "https://wa.me/62881027174423",
+                    mediaType: 1,
+                    renderLargerThumbnail: true
+                }
+            }
+        }, { quoted: q('fkontak') });
 
-    const buttons = [
-      ...button.flow.quickReply("📝 Nulis", ".nulis"),
-      ...button.flow.quickReply("💬 Quote", ".quote"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+    } catch (error) {
+        console.error('QR Code Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal generate QR Code'}`,
+            title: "Error",
+            body: "QR Code Failed"
+        });
+    }
+};
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "QR Code Generator",
-      body: "Buat QR Code"
-    })
-  }
+handler.command = ['qrcode', 'qr'];
+handler.tags = ['create'];
+handler.help = ['qrcode <teks/link>'];
 
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "⏳ Sedang membuat QR Code..."
-    }, { quoted: q('fkontak') })
-
-    // Generate QR Code
-    const qrBuffer = await QRCode.toBuffer(text, {
-      type: 'png',
-      width: 500,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
-    })
-
-    // Send QR Code
-    await conn.sendMessage(m.chat, {
-      image: qrBuffer,
-      caption: `
-✅ *QR Code berhasil dibuat!*
-
-📝 *Konten:* ${text.length > 50 ? text.substring(0, 50) + '...' : text}
-📐 *Size:* 500x500px
-
-_Scan dengan aplikasi QR Scanner_`
-    }, { quoted: m })
-
-    // Success buttons
-    const buttons = [
-      ...button.flow.quickReply("📝 Nulis", ".nulis"),
-      ...button.flow.quickReply("💬 Quote", ".quote"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
-
-    await button.sendInteractive("✅ QR Code siap digunakan!", buttons, {
-      title: "QR Code Created",
-      body: "Scan sekarang!"
-    })
-
-  } catch (err) {
-    console.error("QR Code Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal membuat QR Code: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
-
-handler.help = ['qrcode']
-handler.tags = ['create']
-handler.command = ['qrcode', 'qr', 'qrcode']
-
-module.exports = handler
+module.exports = handler;

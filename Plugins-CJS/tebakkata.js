@@ -4,171 +4,167 @@
  * Command: .tebakkata, .tebak
  */
 
-const fs = require('fs')
-const path = require('path')
+const axios = require('axios');
 
-// Game data
-const kataKata = [
-  { kata: "JAVASCRIPT", hint: "Bahasa pemrograman web populer" },
-  { kata: "WHATSAPP", hint: "Aplikasi chat terpopuler" },
-  { kata: "INDONESIA", hint: "Negara dengan ribuan pulau" },
-  { kata: "BAAILEYS", hint: "Library WhatsApp untuk Node.js" },
-  { kata: "JAKARTA", hint: "Ibu kota Indonesia" },
-  { kata: "BANDUNG", hint: "Kota kembang" },
-  { kata: "SURABAYA", hint: "Kota pahlawan" },
-  { kata: "YOGYAKARTA", hint: "Kota budaya dan pelajar" },
-  { kata: "BALI", hint: "Pulau dewata" },
-  { kata: "KOMPUTER", hint: "Alat elektronik untuk bekerja" },
-  { kata: "INTERNET", hint: "Jaringan global" },
-  { kata: "SMARTPHONE", hint: "Ponsel pintar" },
-  { kata: "PROGRAMMER", hint: "Orang yang membuat program" },
-  { kata: "DATABASE", hint: "Tempat menyimpan data" },
-  { kata: "SERVER", hint: "Komputer yang melayani request" },
-  { kata: "API", hint: "Antarmuka untuk berkomunikasi antar aplikasi" },
-  { kata: "GITHUB", hint: "Platform untuk menyimpan kode" },
-  { kata: "NODEJS", hint: "Runtime JavaScript" },
-  { kata: "REACT", hint: "Library UI dari Facebook" },
-  { kata: "TYPESCRIPT", hint: "JavaScript dengan type" }
-]
+// Store active games
+const activeGames = new Map();
 
-// Active games storage
-const activeGames = new Map()
+const kataList = [
+    { kata: 'JAVASCRIPT', hint: 'Bahasa pemrograman untuk web' },
+    { kata: 'WHATSAPP', hint: 'Aplikasi chat populer' },
+    { kata: 'BAILEYS', hint: 'Library WhatsApp untuk Node.js' },
+    { kata: 'JAKARTA', hint: 'Ibukota Indonesia' },
+    { kata: 'INDONESIA', hint: 'Negara dengan ribuan pulau' },
+    { kata: 'PROGRAMMER', hint: 'Orang yang menulis kode' },
+    { kata: 'KOMPUTER', hint: 'Alat elektronik untuk komputasi' },
+    { kata: 'INTERNET', hint: 'Jaringan global yang menghubungkan komputer' },
+    { kata: 'DATABASE', hint: 'Tempat menyimpan data' },
+    { kata: 'FRAMEWORK', hint: 'Kerja kerja untuk membangun aplikasi' },
+    { kata: 'API', hint: 'Antarmuka untuk berkomunikasi antar aplikasi' },
+    { kata: 'SERVER', hint: 'Komputer yang menyediakan layanan' },
+    { kata: 'BROWSER', hint: 'Aplikasi untuk browsing web' },
+    { kata: 'ANDROID', hint: 'Sistem operasi mobile dari Google' },
+    { kata: 'LINUX', hint: 'Sistem operasi open source' }
+];
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, text, sender, isGroup } = Obj
+    const { conn, q, button, text, isGroup, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Game ini hanya bisa dimainkan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    const chatId = m.chat;
+    const userId = m.sender;
 
-  const gameKey = `${m.chat}_${sender}`
-  const currentGame = activeGames.get(gameKey)
+    // Check if there's an active game
+    if (activeGames.has(chatId)) {
+        const game = activeGames.get(chatId);
+        const guess = text.toUpperCase().trim();
 
-  // Check if answering
-  if (text && currentGame) {
-    const jawaban = text.toUpperCase().trim()
-    
-    if (jawaban === currentGame.kata) {
-      // Correct answer
-      activeGames.delete(gameKey)
-      
-      const winText = `
+        if (guess === game.kata) {
+            activeGames.delete(chatId);
+            
+            const winText = `
 ╭━━━❰ *TEBAK KATA* ❱━━━╮
 ┃
 ┃ 🎉 *SELAMAT!*
 ┃
-┃ ✅ Jawaban benar!
-┃ 📖 Kata: *${currentGame.kata}*
+┃ ✅ Jawaban benar: *${game.kata}*
+┃ 👤 Pemenang: @${userId.split('@')[0]}
 ┃
-┃ 🏆 Kamu menang!
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-      const buttons = [
-        ...button.flow.quickReply("🎮 Main Lagi", ".tebakkata"),
-        ...button.flow.quickReply("📋 Menu", ".menuplug")
-      ]
+            const buttons = [
+                ...button.flow.quickReply("🔄 Main Lagi", ".tebakkata"),
+                ...button.flow.quickReply("📋 Menu", ".menuplug")
+            ];
 
-      return button.sendInteractive(winText, buttons, {
-        title: "You Win!",
-        body: "Jawaban benar!"
-      })
-    } else {
-      // Wrong answer
-      currentGame.attempts++
-      
-      if (currentGame.attempts >= 3) {
-        activeGames.delete(gameKey)
-        
-        const loseText = `
+            return replyAdaptive({
+                text: winText,
+                buttons: buttons,
+                mentions: [userId],
+                title: "Tebak Kata",
+                body: "Correct Answer!"
+            });
+        } else {
+            game.attempts++;
+            
+            const wrongText = `
 ╭━━━❰ *TEBAK KATA* ❱━━━╮
 ┃
-┃ 😢 *GAME OVER*
+┃ ❌ *Salah!*
 ┃
-┃ ❌ Kamu sudah 3x salah
-┃ 📖 Jawaban: *${currentGame.kata}*
+┃ 💡 Hint: ${game.hint}
+┃ 📝 Kata: ${game.display}
+┃ ❓ Percobaan: ${game.attempts}
 ┃
-┃ 💡 *Hint:* ${currentGame.hint}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-        const buttons = [
-          ...button.flow.quickReply("🎮 Coba Lagi", ".tebakkata"),
-          ...button.flow.quickReply("📋 Menu", ".menuplug")
-        ]
+            const buttons = [
+                ...button.flow.quickReply("🚫 Menyerah", ".tebakmenyerah"),
+                ...button.flow.quickReply("📋 Menu", ".menuplug")
+            ];
 
-        return button.sendInteractive(loseText, buttons, {
-          title: "Game Over",
-          body: "Better luck next time!"
-        })
-      }
-
-      return conn.sendMessage(m.chat, {
-        text: `❌ *SALAH!*\n\n💡 Hint: ${currentGame.hint}\n📝 Kata: ${currentGame.masked}\n\nPercobaan: ${currentGame.attempts}/3`
-      }, { quoted: m })
+            return replyAdaptive({
+                text: wrongText,
+                buttons: buttons,
+                title: "Tebak Kata",
+                body: "Wrong Answer!"
+            });
+        }
     }
-  }
 
-  // Start new game
-  const randomKata = kataKata[Math.floor(Math.random() * kataKata.length)]
-  const masked = randomKata.kata.replace(/[AIUEO]/gi, '_').replace(/[^A-Z_]/gi, '_')
+    // Start new game
+    const randomKata = kataList[Math.floor(Math.random() * kataList.length)];
+    const display = randomKata.kata.replace(/[AIUEO]/gi, '_');
 
-  activeGames.set(gameKey, {
-    kata: randomKata.kata,
-    hint: randomKata.hint,
-    masked: masked,
-    attempts: 0
-  })
+    activeGames.set(chatId, {
+        kata: randomKata.kata,
+        hint: randomKata.hint,
+        display: display,
+        attempts: 0,
+        startTime: Date.now()
+    });
 
-  const gameText = `
+    const startText = `
 ╭━━━❰ *TEBAK KATA* ❱━━━╮
 ┃
 ┃ 🎮 *Game Dimulai!*
 ┃
-┃ 💡 *Hint:* ${randomKata.hint}
+┃ 💡 Hint: ${randomKata.hint}
+┃ 📝 Kata: ${display}
 ┃
-┃ 📝 *Kata:* ${masked}
-┃ (${randomKata.kata.length} huruf)
+┃ *Cara main:*
+┃ Ketik jawabanmu langsung!
 ┃
-┃ 🎯 *Cara Main:*
-┃ Reply pesan ini dengan
-┃ jawabanmu!
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+    const buttons = [
+        ...button.flow.quickReply("🚫 Menyerah", ".tebakmenyerah"),
+        ...button.flow.quickReply("📋 Menu", ".menuplug")
+    ];
+
+    return replyAdaptive({
+        text: startText,
+        buttons: buttons,
+        title: "Tebak Kata",
+        body: "Game Started!"
+    });
+};
+
+// Surrender command
+handler.surrender = async (m, Obj) => {
+    const { button, replyAdaptive } = Obj;
+    const chatId = m.chat;
+
+    if (activeGames.has(chatId)) {
+        const game = activeGames.get(chatId);
+        activeGames.delete(chatId);
+
+        return replyAdaptive({
+            text: `
+╭━━━❰ *TEBAK KATA* ❱━━━╮
 ┃
-┃ ⚠️ *Kesempatan: 3x*
+┃ 🚫 *Menyerah!*
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+┃ ✅ Jawaban: *${game.kata}*
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+            buttons: [
+                ...button.flow.quickReply("🔄 Main Lagi", ".tebakkata"),
+                ...button.flow.quickReply("📋 Menu", ".menuplug")
+            ],
+            title: "Tebak Kata",
+            body: "Game Over"
+        });
+    }
 
-  const buttons = [
-    ...button.flow.quickReply("🎯 Jawab", `.tebakkata `),
-    ...button.flow.quickReply("❌ Menyerah", ".tebakmenyerah"),
-    ...button.flow.quickReply("📋 Menu", ".menuplug")
-  ]
+    return replyAdaptive({
+        text: '❌ Tidak ada game yang sedang berjalan!',
+        title: "Error",
+        body: "No Active Game"
+    });
+};
 
-  await button.sendInteractive(gameText, buttons, {
-    title: "Tebak Kata",
-    body: "Game started!"
-  })
-}
+handler.command = ['tebakkata', 'tebak'];
+handler.tags = ['game'];
+handler.help = ['tebakkata'];
 
-// Give up command
-handler.menyerah = async (m, Obj) => {
-  const { sender } = Obj
-  const gameKey = `${m.chat}_${sender}`
-  const currentGame = activeGames.get(gameKey)
-  
-  if (currentGame) {
-    activeGames.delete(gameKey)
-    return Obj.conn.sendMessage(m.chat, {
-      text: `😢 Kamu menyerah!\n\n📖 Jawabannya adalah: *${currentGame.kata}*`
-    }, { quoted: Obj.q('fkontak') })
-  }
-}
-
-handler.help = ['tebakkata']
-handler.tags = ['game']
-handler.command = ['tebakkata', 'tebak', 'tebak kata']
-handler.group = true
-
-module.exports = handler
+module.exports = handler;

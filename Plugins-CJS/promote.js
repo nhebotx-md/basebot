@@ -1,105 +1,128 @@
 /**
  * Plugin: promote.js
- * Description: Promote member jadi admin
- * Command: .promote, .prom
+ * Description: Promote member menjadi admin grup
+ * Command: .promote
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, isBotAdmins, quoted, mentions } = Obj
+    const { conn, q, button, isGroup, isAdmins, isBotAdmins, replyAdaptive, mentionedJid } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  if (!isBotAdmins) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Bot harus menjadi admin untuk menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-  // Get target user
-  let target = quoted ? quoted.sender : mentions && mentions[0] ? mentions[0] : null
+    // Get mentioned users
+    let users = mentionedJid || [];
+    
+    // Check quoted message
+    if (m.quoted && m.quoted.sender) {
+        users.push(m.quoted.sender);
+    }
 
-  if (!target) {
-    const helpText = `
+    if (users.length === 0) {
+        const helpText = `
 ╭━━━❰ *PROMOTE* ❱━━━╮
 ┃
-┃ 👑 Promote member jadi admin
+┃ ⬆️ Promote member jadi admin
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ 1. Reply pesan user dengan .promote
-┃ 2. .promote @user
+┃ .promote @user
+┃ .promote (reply pesan user)
 ┃
 ┃ *Contoh:*
 ┃ .promote @6281234567890
-┃ (Reply pesan user)
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🚫 Demote", ".demote"),
-      ...button.flow.quickReply("👥 List Admin", ".listadmin"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("⬇️ Demote", ".demote"),
+            ...button.flow.quickReply("📋 List Admin", ".listadmin"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Promote Member",
-      body: "Jadikan member sebagai admin"
-    })
-  }
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Promote",
+            body: "Make member admin"
+        });
+    }
 
-  try {
-    await conn.groupParticipantsUpdate(m.chat, [target], 'promote')
+    try {
+        let promoted = [];
+        let failed = [];
 
-    const promoteText = `
-╭━━━❰ *PROMOTED* ❱━━━╮
+        for (const user of users) {
+            try {
+                await conn.groupParticipantsUpdate(m.chat, [user], 'promote');
+                promoted.push(user.split('@')[0]);
+            } catch (err) {
+                failed.push(user.split('@')[0]);
+            }
+        }
+
+        let resultText = `
+╭━━━❰ *PROMOTE RESULT* ❱━━━╮
 ┃
-┃ 👑 *User telah dipromote!*
-┃
-┃ 👤 @${target.split('@')[0]}
-┃
-┃ ✅ Sekarang menjadi admin
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+`;
+        
+        if (promoted.length > 0) {
+            resultText += `┃ ✅ *Berhasil promote:*\n┃ ${promoted.map(n => `@${n}`).join('\n┃ ')}\n┃\n`;
+        }
+        
+        if (failed.length > 0) {
+            resultText += `┃ ❌ *Gagal promote:*\n┃ ${failed.map(n => `@${n}`).join('\n┃ ')}\n┃\n`;
+        }
+        
+        resultText += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("🚫 Demote", `.demote @${target.split('@')[0]}`),
-      ...button.flow.quickReply("👥 List Admin", ".listadmin"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("⬇️ Demote", ".demote"),
+            ...button.flow.quickReply("📋 List Admin", ".listadmin"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await conn.sendMessage(m.chat, {
-      text: promoteText,
-      mentions: [target]
-    }, { quoted: m })
+        return replyAdaptive({
+            text: resultText,
+            buttons: buttons,
+            mentions: users,
+            title: "Promote Complete",
+            body: `${promoted.length} users promoted`
+        });
 
-    await button.sendInteractive("✅ Promote berhasil!", buttons, {
-      title: "Promote Success",
-      body: "User is now admin"
-    })
+    } catch (error) {
+        console.error('Promote Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal promote user'}`,
+            title: "Error",
+            body: "Promote Failed"
+        });
+    }
+};
 
-  } catch (err) {
-    console.error("Promote Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal promote: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+handler.command = ['promote', 'makeadmin'];
+handler.tags = ['group'];
+handler.help = ['promote @user'];
 
-handler.help = ['promote']
-handler.tags = ['group']
-handler.command = ['promote', 'prom', 'jadikanadmin']
-handler.group = true
-handler.admin = true
-handler.botAdmin = true
-
-module.exports = handler
+module.exports = handler;

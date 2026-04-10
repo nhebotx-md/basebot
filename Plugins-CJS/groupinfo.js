@@ -1,85 +1,72 @@
 /**
  * Plugin: groupinfo.js
- * Description: Menampilkan informasi lengkap grup
- * Command: .groupinfo, .gcinfo, .infogc
+ * Description: Menampilkan info grup
+ * Command: .groupinfo, .gcinfo
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, groupMetadata, groupAdmins, isBotAdmins, isAdmins, participants } = Obj
+    const { conn, q, button, isGroup, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  try {
-    const meta = groupMetadata || await conn.groupMetadata(m.chat)
-    const totalMembers = meta.participants?.length || 0
-    const adminCount = groupAdmins?.length || meta.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin').length || 0
-    const owner = meta.participants?.find(p => p.admin === 'superadmin')?.id || 'Tidak diketahui'
-    const created = new Date(meta.creation * 1000).toLocaleDateString('id-ID')
-    
-    // Hitung member berdasarkan status
-    const onlineMembers = meta.participants?.filter(p => !p.id.includes('newsletter')).length || 0
+    try {
+        const groupMetadata = await conn.groupMetadata(m.chat);
+        const participants = groupMetadata.participants || [];
+        const admins = participants.filter(p => p.admin === 'admin' || p.admin === 'superadmin');
+        const isAnnouncement = groupMetadata.announce === true;
+        const isRestricted = groupMetadata.restrict === true;
 
-    const infoText = `
-╭━━━❰ *GROUP INFORMATION* ❱━━━╮
+        const infoText = `
+╭━━━❰ *GROUP INFO* ❱━━━╮
 ┃
-┃ 📛 *Nama:* ${meta.subject}
-┃ 📝 *Deskripsi:* ${meta.desc || 'Tidak ada'}
+┃ 📛 *Nama:* ${groupMetadata.subject || 'Unknown'}
+┃ 📝 *Deskripsi:* ${groupMetadata.desc || 'Tidak ada'}
 ┃
-┃ 👥 *Total Member:* ${totalMembers}
-┃ 👑 *Admin:* ${adminCount}
-┃ 👤 *Owner:* @${owner.split('@')[0]}
-┃ 📅 *Dibuat:* ${created}
-┃ 🔗 *ID:* ${meta.id}
+┃ 👥 *Total Member:* ${participants.length}
+┃ 👑 *Total Admin:* ${admins.length}
 ┃
-┃ ⚙️ *Pengaturan:*
-┃ ${meta.announce ? '🔒' : '🔓'} Announce: ${meta.announce ? 'ON' : 'OFF'}
-┃ ${meta.restrict ? '🔒' : '🔓'} Restrict: ${meta.restrict ? 'ON' : 'OFF'}
+┃ 🔒 *Status:* ${isAnnouncement ? '🔒 Tertutup' : '🔓 Terbuka'}
+┃ 🛡️ *Restrict:* ${isRestricted ? '✅ Aktif' : '❌ Nonaktif'}
 ┃
-┃ 🤖 *Bot Status:*
-┃ ${isBotAdmins ? '✅ Admin' : '❌ Bukan Admin'}
-┃ ${isAdmins ? '✅ Kamu Admin' : '❌ Kamu Member'}
+┃ 📅 *Dibuat:* ${new Date(groupMetadata.creation * 1000).toLocaleDateString('id-ID')}
+┃ 👤 *Owner:* @${groupMetadata.owner?.split('@')[0] || 'Unknown'}
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+┃ 🔗 *ID:* ${groupMetadata.id}
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    // Button untuk aksi grup
-    const buttons = [
-      ...button.flow.quickReply("🔗 Link Group", ".linkgc"),
-      ...button.flow.quickReply("👥 List Admin", ".listadmin"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug"),
-      ...button.flow.singleSelect("⚙️ Aksi Grup", [
-        {
-          title: "Group Actions",
-          rows: [
-            { title: "🔓 Buka Group", description: "Buka group untuk semua", id: ".open" },
-            { title: "🔒 Tutup Group", description: "Tutup group (admin only)", id: ".close" },
-            { title: "📢 Tag All", description: "Tag semua member", id: ".tagall" },
-            { title: "👻 Hide Tag", description: "Hide tag semua member", id: ".hidetag" }
-          ]
-        }
-      ])
-    ]
+        const buttons = [
+            ...button.flow.quickReply("👥 List Admin", ".listadmin"),
+            ...button.flow.quickReply("🔗 Link GC", ".linkgc"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    await button.sendInteractive(infoText, buttons, {
-      title: "Group Info",
-      body: meta.subject,
-      thumbnailUrl: meta.subjectPic || global.thumbnail || "https://files.catbox.moe/5x2b8n.jpg"
-    })
+        return replyAdaptive({
+            text: infoText,
+            buttons: buttons,
+            mentions: groupMetadata.owner ? [groupMetadata.owner] : [],
+            title: groupMetadata.subject || "Group Info",
+            body: `${participants.length} members`
+        });
 
-  } catch (err) {
-    console.error("GroupInfo Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal mengambil info grup: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Group Info Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal mengambil info grup'}`,
+            title: "Error",
+            body: "Group Info Failed"
+        });
+    }
+};
 
-handler.help = ['groupinfo']
-handler.tags = ['group']
-handler.command = ['groupinfo', 'gcinfo', 'infogc']
-handler.group = true
+handler.command = ['groupinfo', 'gcinfo', 'infogc'];
+handler.tags = ['group'];
+handler.help = ['groupinfo'];
 
-module.exports = handler
+module.exports = handler;

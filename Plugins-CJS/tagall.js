@@ -5,63 +5,79 @@
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isGroup, isAdmins, isBotAdmins, groupMetadata, participants, text } = Obj
+    const { conn, q, button, text, isGroup, isAdmins, isBotAdmins, replyAdaptive } = Obj;
 
-  if (!isGroup) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya bisa digunakan di grup!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isGroup) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya bisa digunakan di dalam grup!',
+            title: "Error",
+            body: "Group Only"
+        });
+    }
 
-  if (!isAdmins && !Obj.isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Hanya admin yang bisa menggunakan fitur ini!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isAdmins) {
+        return replyAdaptive({
+            text: '❌ Hanya admin grup yang bisa menggunakan fitur ini!',
+            title: "Error",
+            body: "Admin Only"
+        });
+    }
 
-  try {
-    const meta = groupMetadata || await conn.groupMetadata(m.chat)
-    const members = meta.participants || participants || []
-    
-    const message = text || "📢 *Tag All Members*"
+    if (!isBotAdmins) {
+        return replyAdaptive({
+            text: '❌ Bot harus menjadi admin untuk menggunakan fitur ini!',
+            title: "Error",
+            body: "Bot Admin Required"
+        });
+    }
 
-    let tagText = `${message}\n\n`
-    tagText += `👥 *Total Member:* ${members.length}\n\n`
+    try {
+        const groupMetadata = await conn.groupMetadata(m.chat);
+        const participants = groupMetadata.participants || [];
+        const memberJids = participants.map(p => p.id);
 
-    members.forEach((member, i) => {
-      tagText += `@${member.id.split('@')[0]} `
-      if ((i + 1) % 5 === 0) tagText += '\n'
-    })
+        const message = text || '📢 Tag All Members';
 
-    await conn.sendMessage(m.chat, {
-      text: tagText,
-      mentions: members.map(m => m.id)
-    }, { quoted: m })
+        let tagText = `
+╭━━━❰ *TAG ALL* ❱━━━╮
+┃
+┃ 📢 *Pesan:*
+┃ ${message}
+┃
+┃ 👥 *Total Member:* ${participants.length}
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-    // Success buttons
-    const buttons = [
-      ...button.flow.quickReply("👻 Hide Tag", ".hidetag"),
-      ...button.flow.quickReply("📊 Group Info", ".groupinfo"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+`;
 
-    await button.sendInteractive(`✅ Berhasil tag ${members.length} member!`, buttons, {
-      title: "Tag All Complete",
-      body: `${members.length} members tagged`
-    })
+        // Add mentions
+        tagText += memberJids.map(jid => `@${jid.split('@')[0]}`).join(' ');
 
-  } catch (err) {
-    console.error("Tag All Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal tag all: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+        const buttons = [
+            ...button.flow.quickReply("👻 Hidetag", ".hidetag"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-handler.help = ['tagall']
-handler.tags = ['group']
-handler.command = ['tagall', 'all', 'tagsemua']
-handler.group = true
-handler.admin = true
+        return replyAdaptive({
+            text: tagText,
+            buttons: buttons,
+            mentions: memberJids,
+            title: "Tag All",
+            body: `${participants.length} members tagged`
+        });
 
-module.exports = handler
+    } catch (error) {
+        console.error('Tag All Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal tag all'}`,
+            title: "Error",
+            body: "Tag All Failed"
+        });
+    }
+};
+
+handler.command = ['tagall', 'all', 'tagsemua'];
+handler.tags = ['group'];
+handler.help = ['tagall <pesan>'];
+
+module.exports = handler;

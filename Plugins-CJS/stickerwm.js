@@ -1,109 +1,94 @@
 /**
  * Plugin: stickerwm.js
- * Description: Sticker dengan watermark custom
+ * Description: Sticker dengan watermark
  * Command: .stickerwm, .swm
  */
 
-const { writeExifImg, writeExifVid } = require('../Library/exif')
-const fs = require('fs')
+const { writeExifImg, writeExifVid } = require('../Library/uploader');
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, quoted, mime, args, text } = Obj
+    const { conn, q, button, text, replyAdaptive, quoted } = Obj;
 
-  // Parse watermark: .swm pack | author
-  let packname = global.packname || "NHE BOT"
-  let author = global.author || "Created by Bot"
+    // Check if quoted message has image/video
+    const isImage = quoted && (quoted.mtype === 'imageMessage' || quoted.mtype === 'viewOnceMessage');
+    const isVideo = quoted && (quoted.mtype === 'videoMessage');
 
-  if (text) {
-    const parts = text.split('|').map(p => p.trim())
-    if (parts[0]) packname = parts[0]
-    if (parts[1]) author = parts[1]
-  }
-
-  if (!quoted) {
-    const helpText = `
-╭━━━❰ *STICKER WATERMARK* ❱━━━╮
+    if (!isImage && !isVideo) {
+        const helpText = `
+╭━━━❰ *STICKER WM* ❱━━━╮
+┃
+┃ 🏷️ Sticker dengan watermark
 ┃
 ┃ 📝 *Cara Penggunaan:*
 ┃
-┃ Reply gambar/video dengan:
-┃ .stickerwm Pack | Author
+┃ 1. Kirim/reply gambar/video dengan caption:
+┃    .swm <packname> | <author>
 ┃
 ┃ *Contoh:*
-┃ .swm MyPack | MyName
-┃ .swm (pakai default)
+┃ [reply gambar]
+┃ .swm My Sticker | By Me
 ┃
-┃ 📷 *Support:*
-┃ • Gambar (JPG, PNG)
-┃ • Video (MP4, GIF)
+┃ 💡 *Tips:*
+┃ • Default packname: NHE BOT
+┃ • Default author: Owner
+┃ • Maksimal video 10 detik
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("📋 Menu", ".menuplug"),
-      ...button.flow.quickReply("🎨 Sticker Meme", ".stickermeme")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("😂 Meme Sticker", ".stickermeme"),
+            ...button.flow.quickReply("📋 Menu", ".menuplug")
+        ];
 
-    return button.sendInteractive(helpText, buttons, {
-      title: "Sticker Watermark",
-      body: "Buat sticker dengan watermark"
-    })
-  }
-
-  const isImage = /image/.test(mime)
-  const isVideo = /video/.test(mime)
-  const isSticker = /webp/.test(mime)
-
-  if (!isImage && !isVideo && !isSticker) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Reply gambar/video/sticker untuk membuat sticker!"
-    }, { quoted: q('fkontak') })
-  }
-
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "⏳ Sedang membuat sticker..."
-    }, { quoted: q('fkontak') })
-
-    let media = await quoted.download()
-    if (!media) throw new Error('Gagal download media')
-
-    let stickerBuffer
-
-    if (isImage || isSticker) {
-      stickerBuffer = await writeExifImg(media, { packname, author })
-    } else if (isVideo) {
-      stickerBuffer = await writeExifVid(media, { packname, author })
+        return replyAdaptive({
+            text: helpText,
+            buttons: buttons,
+            title: "Sticker WM",
+            body: "Sticker with watermark"
+        });
     }
 
-    if (!stickerBuffer) throw new Error('Gagal membuat sticker')
+    try {
+        await conn.sendMessage(m.chat, {
+            text: `🏷️ Sedang membuat sticker...`
+        }, { quoted: q('fkontak') });
 
-    await conn.sendMessage(m.chat, {
-      sticker: stickerBuffer
-    }, { quoted: m })
+        // Parse watermark text
+        const parts = text.split('|').map(s => s.trim());
+        const packname = parts[0] || global.botname || 'NHE BOT';
+        const author = parts[1] || global.namaowner || 'Owner';
 
-    // Send success message with buttons
-    const buttons = [
-      ...button.flow.quickReply("🎨 Sticker Meme", ".stickermeme"),
-      ...button.flow.quickReply("⚡ Triggered", ".trigger"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        // Download media
+        const mediaBuffer = await quoted.download();
+        if (!mediaBuffer) {
+            throw new Error('Failed to download media');
+        }
 
-    await button.sendInteractive(`✅ Sticker berhasil dibuat!\n\n🏷️ Pack: ${packname}\n👤 Author: ${author}`, buttons, {
-      title: "Sticker Created",
-      body: "Watermark applied"
-    })
+        let webpBuffer;
 
-  } catch (err) {
-    console.error("StickerWM Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal membuat sticker: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+        if (isImage) {
+            webpBuffer = await writeExifImg(mediaBuffer, { packname, author });
+        } else {
+            webpBuffer = await writeExifVid(mediaBuffer, { packname, author });
+        }
 
-handler.help = ['stickerwm']
-handler.tags = ['sticker']
-handler.command = ['stickerwm', 'swm', 'stickwm']
+        // Send sticker
+        await conn.sendMessage(m.chat, {
+            sticker: webpBuffer
+        }, { quoted: q('fkontak') });
 
-module.exports = handler
+    } catch (error) {
+        console.error('Sticker WM Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal membuat sticker'}`,
+            title: "Error",
+            body: "Sticker WM Failed"
+        });
+    }
+};
+
+handler.command = ['stickerwm', 'swm', 'wm'];
+handler.tags = ['sticker'];
+handler.help = ['stickerwm <packname> | <author> (reply media)'];
+
+module.exports = handler;

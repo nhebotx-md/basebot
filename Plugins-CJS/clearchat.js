@@ -1,129 +1,106 @@
 /**
  * Plugin: clearchat.js
- * Description: Hapus semua chat
+ * Description: Clear semua chat
  * Command: .clearchat, .cc
  */
 
 const handler = async (m, Obj) => {
-  const { conn, q, button, isOwner, args } = Obj
+    const { conn, q, button, isOwn, replyAdaptive } = Obj;
 
-  if (!isOwner) {
-    return conn.sendMessage(m.chat, {
-      text: "❌ Fitur ini hanya untuk Owner!"
-    }, { quoted: q('fkontak') })
-  }
+    if (!isOwn) {
+        return replyAdaptive({
+            text: '❌ Fitur ini hanya untuk owner bot!',
+            title: "Error",
+            body: "Owner Only"
+        });
+    }
 
-  // Check for confirmation
-  const confirmed = args[0] === 'confirm' || args[0] === 'yes'
-
-  if (!confirmed) {
-    const confirmText = `
+    try {
+        const helpText = `
 ╭━━━❰ *CLEAR CHAT* ❱━━━╮
 ┃
-┃ ⚠️ *PERINGATAN!*
+┃ 🗑️ Hapus semua chat
 ┃
-┃ Anda akan menghapus SEMUA
-┃ chat dari database bot.
+┃ ⚠️ *Peringatan:*
+┃ Tindakan ini akan menghapus
+┃ semua chat dari database.
 ┃
-┃ 📊 *Ini akan:*
-┃ • Hapus semua chat
-┃ • Hapus riwayat pesan
-┃ • Bersihkan cache
+┃ Lanjutkan?
 ┃
-┃ ❗ *Tindakan ini tidak bisa
-┃ dibatalkan!*
-┃
-┃ Ketik .clearchat confirm
-┃ untuk melanjutkan.
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("✅ Konfirmasi", ".clearchat confirm"),
-      ...button.flow.quickReply("❌ Batal", ".menuplug"),
-      ...button.flow.quickReply("📢 Broadcast", ".broadcast")
-    ]
+        const buttons = [
+            ...button.flow.quickReply("✅ Ya, Hapus", ".clearchat confirm"),
+            ...button.flow.quickReply("❌ Batal", ".menuplug")
+        ];
 
-    return button.sendInteractive(confirmText, buttons, {
-      title: "Clear Chat Confirmation",
-      body: "Please confirm to continue"
-    })
-  }
-
-  try {
-    await conn.sendMessage(m.chat, {
-      text: "🗑️ Sedang membersihkan chat..."
-    }, { quoted: q('fkontak') })
-
-    let clearedCount = 0
-    let errorCount = 0
-
-    // Clear chats from store
-    if (conn.chats) {
-      const chatIds = Object.keys(conn.chats)
-      
-      for (const chatId of chatIds) {
-        try {
-          // Delete chat messages from store
-          if (conn.chats[chatId]) {
-            delete conn.chats[chatId]
-            clearedCount++
-          }
-        } catch (e) {
-          errorCount++
-          console.log(`Failed to clear ${chatId}:`, e.message)
+        // Check if confirmation
+        const isConfirm = m.text && m.text.includes('confirm');
+        
+        if (!isConfirm) {
+            return replyAdaptive({
+                text: helpText,
+                buttons: buttons,
+                title: "Clear Chat",
+                body: "Confirmation Required"
+            });
         }
-      }
-    }
 
-    // Clear message store if exists
-    if (conn.store && conn.store.chats) {
-      const storeChats = Object.keys(conn.store.chats)
-      for (const chatId of storeChats) {
-        try {
-          if (conn.store.chats[chatId]) {
-            conn.store.chats[chatId].clear()
-            clearedCount++
-          }
-        } catch (e) {
-          errorCount++
+        await replyAdaptive({
+            text: '⏳ Sedang menghapus chat...',
+            title: "Clear Chat",
+            body: "Please wait..."
+        });
+
+        // Get all chats
+        const chats = Object.keys(conn.chats || {});
+        let cleared = 0;
+
+        for (const chatId of chats) {
+            try {
+                await conn.chatModify({
+                    delete: true,
+                    lastMessages: [{ key: m.key, messageTimestamp: m.messageTimestamp }]
+                }, chatId);
+                cleared++;
+            } catch (err) {
+                console.error(`Failed to clear ${chatId}:`, err.message);
+            }
         }
-      }
-    }
 
-    // Result
-    const resultText = `
+        const resultText = `
 ╭━━━❰ *CLEAR CHAT SELESAI* ❱━━━╮
 ┃
-┃ ✅ *Chat dihapus:* ${clearedCount}
-┃ ❌ *Gagal:* ${errorCount}
+┃ ✅ *Chat dihapus:* ${cleared}
 ┃
-┃ 🗑️ Semua chat telah
-┃ dibersihkan dari database.
+┃ Semua chat telah dibersihkan.
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-    const buttons = [
-      ...button.flow.quickReply("📢 Broadcast", ".broadcast"),
-      ...button.flow.quickReply("📋 Menu", ".menuplug")
-    ]
+        const resultButtons = [
+            ...button.flow.quickReply("📋 Menu", ".menuplug"),
+            ...button.flow.quickReply("📢 Broadcast", ".bc Hello!")
+        ];
 
-    await button.sendInteractive(resultText, buttons, {
-      title: "Clear Chat Complete",
-      body: "All chats cleared"
-    })
+        return replyAdaptive({
+            text: resultText,
+            buttons: resultButtons,
+            title: "Clear Chat Complete",
+            body: `${cleared} chats cleared`
+        });
 
-  } catch (err) {
-    console.error("Clear Chat Error:", err)
-    conn.sendMessage(m.chat, {
-      text: "❌ Gagal membersihkan chat: " + err.message
-    }, { quoted: q('fkontak') })
-  }
-}
+    } catch (error) {
+        console.error('Clear Chat Error:', error);
+        return replyAdaptive({
+            text: `❌ *Error:* ${error.message || 'Gagal menghapus chat'}`,
+            title: "Error",
+            body: "Clear Chat Failed"
+        });
+    }
+};
 
-handler.help = ['clearchat']
-handler.tags = ['owner']
-handler.command = ['clearchat', 'cc', 'clearchats']
-handler.owner = true
+handler.command = ['clearchat', 'cc', 'clear'];
+handler.tags = ['owner'];
+handler.help = ['clearchat'];
 
-module.exports = handler
+module.exports = handler;
