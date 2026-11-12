@@ -17,3 +17,9 @@
 - Menambahkan log JSON bertimestamp, error stack teredaksi, ringkasan plugin discovery, serta klasifikasi lifecycle/reconnect.
 - Memuat voicechanger tanpa import binari FFmpeg saat startup agar dependency media yang hilang tidak menghilangkan command; kegagalan memberikan instruksi install.
 - Menambah regresi test offline untuk reconnect 515, process liveness, credential flush, logger, pairing dan voicechanger.
+
+## Logger visual — Terminal observability
+
+- Menambahkan tema terminal berwarna dengan banner startup, ringkasan plugin, panel koneksi, level berikon, dan kartu command berhasil.
+- Menjaga mode JSON terstruktur untuk integrasi log; warna terminal otomatis nonaktif pada output non-TTY/`NO_COLOR` dan bisa dikontrol melalui `LOG_COLOR`.
+- Kartu aktivitas tidak menampilkan identitas pengirim atau isi chat; redaksi logger juga mencakup field identitas umum.

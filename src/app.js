@@ -12,17 +12,19 @@ const { createConnectionManager } = require('./core/connection/connection-manage
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
-  const logger = options.logger || createLogger({ level: config.logging.level });
+  const logger = options.logger || createLogger({ level: config.logging.level, format: config.logging.format, colors: config.logging.color === 'always' ? true : config.logging.color === 'never' ? false : undefined });
   for (const directory of [config.paths.session, config.paths.temp, config.paths.logs]) fs.mkdirSync(path.resolve(directory), { recursive: true, mode: 0o700 });
 
-  logger.info('BASEBOT memulai runtime.', {
+  const startupDetails = {
     version: packageInfo.version,
     node: process.version,
     mode: config.publicMode ? 'public' : 'self',
     prefix: config.prefix,
     timezone: config.timezone,
     baileysLogLevel: config.logging.baileysLevel || 'warn'
-  });
+  };
+  if (typeof logger.banner === 'function') logger.banner({ name: config.botName, ...startupDetails });
+  else logger.info('BASEBOT memulai runtime.', startupDetails);
 
   const pluginDirectory = path.resolve(config.plugins.directory);
   const pluginFiles = findPluginFiles(pluginDirectory);
@@ -31,6 +33,7 @@ async function createApp(options = {}) {
   const activePlugins = registry.list({ includeDisabled: false });
   const commandCount = activePlugins.reduce((total, plugin) => total + plugin.commands.length, 0);
   const skippedFiles = Math.max(0, pluginFiles.length - loaded.length);
+  if (typeof logger.plugins === 'function') logger.plugins({ discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount, plugins: activePlugins.map(plugin => plugin.name).sort() });
   if (skippedFiles) {
     logger.warn('Pemuatan plugin belum lengkap; plugin yang gagal tetap dicatat beserta penyebabnya.', {
       directory: path.relative(process.cwd(), pluginDirectory) || '.',
@@ -40,7 +43,7 @@ async function createApp(options = {}) {
       commands: commandCount
     });
   } else {
-    logger.info('Plugin registry siap.', {
+    if (typeof logger.plugins !== 'function') logger.info('Plugin registry siap.', {
       directory: path.relative(process.cwd(), pluginDirectory) || '.',
       discovered: pluginFiles.length,
       loaded: loaded.length,

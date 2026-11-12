@@ -15,6 +15,11 @@ test('configuration reads owner/prefix, accepts legacy custom pairing config as 
   assert.equal(config.welcomeEnabled, true);
   assert.equal(config.pairing.code, 'SHONNHEE');
   assert.equal(config.logging.baileysLevel, 'debug');
+  assert.equal(config.logging.format, 'pretty');
+  assert.equal(config.logging.color, 'auto');
+  assert.equal(loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FORMAT: 'json', LOG_COLOR: 'never' }).logging.format, 'json');
+  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FORMAT: 'xml' }), /LOG_FORMAT/);
+  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_COLOR: 'sometimes' }), /LOG_COLOR/);
   assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', BAILEYS_LOG_LEVEL: 'verbose' }), /BAILEYS_LOG_LEVEL/);
   assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', TIMEZONE: 'Not/AZone' }), /TIMEZONE/);
 });
@@ -57,6 +62,35 @@ test('logger emits timestamped structured records and redacts metadata', () => {
   assert.equal(record.message, 'Socket aktif.');
   assert.equal(record.data.token, '[REDACTED]');
   assert.equal(record.data.statusCode, 515);
+});
+
+test('pretty logger renders branded cards, honors color settings, and redacts private identity fields', () => {
+  const lines = [];
+  const sink = { log(line) { lines.push(line); }, info(line) { lines.push(line); }, warn(line) { lines.push(line); }, error(line) { lines.push(line); }, debug(line) { lines.push(line); } };
+  const logger = createLogger({ level: 'debug', format: 'pretty', colors: false, sink, component: 'test', clock: () => new Date('2026-11-12T14:00:00.000Z') });
+  logger.banner({ name: 'BASEBOT', version: '2.0.0', mode: 'public', prefix: '.' });
+  logger.plugins({ discovered: 24, loaded: 24, skipped: 0, commands: 52, plugins: ['menu', 'ping'] });
+  logger.connection('open', { credentialsRegistered: true, phoneNumber: '6281234567890' });
+  logger.activity({ command: 'menu', plugin: 'menu', scope: 'group', durationMs: 12, sender: '6281234567890@s.whatsapp.net' });
+  logger.info('Uji kontrol\u001b[31m dan metadata.', { phone: '6281234567890', token: 'private-token', statusCode: 200 });
+  const output = lines.join('\n');
+  assert.match(output, /BASEBOT/);
+  assert.match(output, /PLUGIN ECOSYSTEM/);
+  assert.match(output, /CONNECTED/);
+  assert.match(output, /\.menu.*menu.*GROUP/);
+  assert.match(output, /INFO.*Uji kontrol dan metadata/);
+  assert.doesNotMatch(output, /\x1b\[/);
+  assert.doesNotMatch(output, /6281234567890|private-token/);
+});
+
+test('pretty logger can force terminal colors and strips ANSI control sequences from messages', () => {
+  const lines = [];
+  const sink = { info(line) { lines.push(line); }, log(line) { lines.push(line); } };
+  const logger = createLogger({ level: 'info', format: 'pretty', colors: true, sink });
+  logger.info('Color test\u001b[2J');
+  assert.match(lines[0], /\x1b\[/);
+  assert.doesNotMatch(lines[0], /\x1b\[2J/);
+  assert.match(lines[0], /Color test/);
 });
 
 test('public URL validator rejects loopback addresses before opening a request', async () => {

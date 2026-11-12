@@ -8,6 +8,8 @@ Gunakan Node.js 20 atau lebih baru. Jalankan `npm ci`, salin `.env.example` menj
 
 Jalankan `npm test` untuk unit test tanpa menghubungkan WhatsApp dan `npm run check` untuk pemeriksaan sintaks. Dependency Baileys dikunci pada `@itsliaaa/baileys@0.4.4`; dependency tree dikunci di `package-lock.json`.
 
+Logger terminal memakai tema warna BASEBOT dengan banner startup, ringkasan plugin, panel status koneksi, dan aktivitas command. `LOG_FORMAT=pretty` adalah format terminal standar; gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY dan `NO_COLOR`, atau pilih `always`/`never`. Kartu aktivitas hanya memuat nama command/plugin, jenis chat, dan durasi; identitas dan isi pesan tidak ditampilkan.
+
 ## Struktur
 
 - `src/core/client` dan `src/core/connection`: socket, pairing, reconnect, dan lifecycle.
