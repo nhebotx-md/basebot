@@ -36,3 +36,7 @@ Lihat [Panduan pengembangan plugin](docs/PLUGIN_DEVELOPMENT.md) sebelum menambah
 Plugin `sticker-rest-api` menambahkan `.stickerapi brat <teks>` untuk Brat statis dan `.stickerapi animated <teks>` untuk animasi. Output API bukan sticker WhatsApp siap pakai; BASEBOT memvalidasi signature PNG/GIF, membatasi respons hingga 8 MiB dan timeout 15 detik, lalu mengonversi media memakai FFmpeg/WebP serta metadata pack. Input dibatasi 300 karakter dan dikirim ke penyedia pihak ketiga, jadi jangan gunakan teks rahasia/pribadi.
 
 Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana (`scraper.asepharyana.my.id`) berbeda dari URL dokumentasi `asepharyana.cloud` yang diberikan pengguna, sehingga fallback itu **nonaktif secara default**; aktifkan hanya bila Anda menerima host alternate dengan `STICKER_API_ASEPHARYANA_ENABLED=true`. Temuan, sumber, dan batas verifikasi ada di [audit REST API sticker](docs/STICKER_API_AUDIT.md).
+
+## Quote Sticker `.qc`
+
+Gunakan `.qc pink Hai semuanya!` untuk membuat quote sticker dengan warna latar, atau balas pesan dengan `.qc pink`. Plugin menerima warna yang tercantum pada bantuan dan kode hex `#RRGGBB`; teks dibatasi 80 karakter. Request POST ke Siputzx memakai HTTPS dengan DNS pinning, tanpa redirect, serta batas timeout dan ukuran. Avatar profil diunduh lewat transport publik yang tervalidasi dan dikirim sebagai data URL; teks quote dan avatar diproses oleh API pihak ketiga, jadi jangan kirim konten rahasia.

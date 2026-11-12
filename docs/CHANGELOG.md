@@ -30,3 +30,9 @@
 - Provider Asepharyana pada host alternate hanya tersedia setelah `STICKER_API_ASEPHARYANA_ENABLED=true`; default nonaktif karena host berbeda dari domain dokumentasi awal.
 - Mengisolasi temporary input/output FFmpeg di direktori privat, membersihkannya pada sukses/gagal, memberi timeout proses 45 detik, dan menambah regression test converter.
 - Dokumentasi audit API mencatat kandidat yang tidak dipilih, sumber verifikasi, serta batas bahwa tidak ada API yang menghasilkan WhatsApp sticker siap kirim secara langsung.
+
+## Quote Sticker `.qc` — Warna custom
+
+- Mengganti generator quote lama dengan `.qc <warna|#RRGGBB> <teks>` dan mode balas pesan, serta menambahkan alias `qcstc`, `stcqc`, `qcstic`, `qcstick`, dan `quotesticker`.
+- Menambahkan layanan POST JSON HTTPS dengan DNS pinning, batas ukuran body/response, timeout, dan tanpa redirect; respons PNG diverifikasi sebelum dikonversi menjadi sticker.
+- Avatar profil diambil melalui downloader DNS-pinned dengan signature-check dan batas 1 MiB, lalu disisipkan sebagai data URL agar API tidak mengambil URL avatar pengguna secara langsung.
