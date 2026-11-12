@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createMenuService, normalizeCategory, formatUptime } = require('../../src/core/messaging/menu.service');
+const { CommandDispatcher } = require('../../src/core/messaging/command-dispatcher');
 
 const plugins = [
   { name: 'yt-download', category: 'download', commands: ['ytmp4', 'ytv'], description: 'Unduh video dari YouTube.', usage: '.ytmp4 <url>', permissions: {} },
@@ -72,4 +73,20 @@ test('.catmenu exposes owner-only plugins to the owner only', async () => {
   const owner = createContext({ command: 'catmenu', args: ['owner'], isOwner: true });
   await service.execute(owner.ctx);
   assert.match(owner.replies[0], /\.setmode/);
+});
+
+test('dispatcher handles built-in menu commands before plugin lookup', async () => {
+  let executed = false;
+  const dispatcher = new CommandDispatcher({
+    registry: { getByCommand() { throw new Error('plugin lookup should not run for built-in menu'); } },
+    menuService: {
+      canHandle: command => command === 'menu',
+      execute: async () => { executed = true; }
+    },
+    rateLimit: 0
+  });
+  const { ctx } = createContext({ command: 'menu', m: { id: 'menu-test-message' } });
+  const result = await dispatcher.dispatch(ctx);
+  assert.equal(executed, true);
+  assert.equal(result.builtin, true);
 });
