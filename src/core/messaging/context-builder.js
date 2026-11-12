@@ -5,7 +5,7 @@ const { normalizeIdentity } = require('../security/permission-manager');
 const { createMessageService } = require('../services/message.service');
 const { createStorageService } = require('../services/storage.service');
 const { downloadBuffer } = require('../services/media.service');
-const { fetchPublic } = require('../security/safe-url');
+const { fetchPublic, postPublicJson } = require('../security/safe-url');
 
 async function buildContext({ client, m, chatUpdate, store, config, registry, logger }) {
   const parsed = parseCommand(m.body, config.prefix);
@@ -35,6 +35,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     ...messageService, config, logger, store,
     storage: createStorageService(config.paths.temp),
     media: { downloadBuffer },
+    http: { postJsonPublic: postPublicJson },
     fetchJson: async url => {
       const response = await fetchPublic(url, { timeoutMs: 15000, maxBytes: 512 * 1024 });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

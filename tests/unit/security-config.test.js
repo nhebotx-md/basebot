@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { loadConfig, readDotEnv } = require('../../src/config/config-loader');
 const { createLogger, redact } = require('../../src/core/services/logger.service');
-const { assertPublicHttpUrl } = require('../../src/core/security/safe-url');
+const { assertPublicHttpUrl, postPublicJson } = require('../../src/core/security/safe-url');
 
 test('configuration reads owner/prefix, accepts legacy custom pairing config as deprecated, and validates logging/timezone', () => {
   const config = loadConfig({ OWNER_NUMBERS: '6281234567890, 6281111111111', BOT_PREFIX: '!', PAIRING_PHONE: '6281234567890', PAIRING_CODE: 'SHONNHEE', BAILEYS_LOG_LEVEL: 'debug', TIMEZONE: 'Asia/Jakarta' });
@@ -97,6 +97,7 @@ test('pretty logger can force terminal colors and strips ANSI control sequences 
 
 test('public URL validator rejects loopback addresses before opening a request', async () => {
   await assert.rejects(() => assertPublicHttpUrl('http://127.0.0.1/private'), /private|publik/i);
+  await assert.rejects(() => postPublicJson('https://127.0.0.1/quoted', { text: 'test' }), /private|publik/i);
 });
 
 test('silent logger suppresses branded banner, plugin, connection and activity cards', () => {

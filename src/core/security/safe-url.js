@@ -123,6 +123,47 @@ async function fetchPublic(input, { timeoutMs = 15000, maxBytes = 8 * 1024 * 102
   });
 }
 
+async function postPublicJson(input, payload, { timeoutMs = 30000, maxBytes = 8 * 1024 * 1024, maxRequestBytes = 2 * 1024 * 1024 } = {}) {
+  const { url, hostname, address, family } = await resolvePublicTarget(input);
+  if (url.protocol !== 'https:') throw new Error('POST JSON hanya diizinkan melalui HTTPS.');
+  if (!Number.isFinite(maxBytes) || maxBytes < 0 || !Number.isFinite(maxRequestBytes) || maxRequestBytes < 0) throw new Error('Batas ukuran request/response tidak valid.');
+  const body = Buffer.from(JSON.stringify(payload));
+  if (body.length > maxRequestBytes) throw new Error('Payload POST melebihi batas ukuran.');
+  const pinnedLookup = (_hostname, options, callback) => {
+    if (options?.all) callback(null, [{ address, family }]);
+    else callback(null, address, family);
+  };
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = error => { if (settled) return; settled = true; reject(error); };
+    const request = https.request({
+      protocol: url.protocol, hostname, port: url.port || undefined,
+      path: `${url.pathname}${url.search}`, method: 'POST',
+      headers: { accept: 'image/png, application/json', 'content-type': 'application/json', 'content-length': body.length },
+      servername: net.isIP(hostname) ? undefined : hostname, lookup: pinnedLookup
+    }, response => {
+      const declared = Number(response.headers['content-length']);
+      if (Number.isFinite(declared) && declared > maxBytes) { request.destroy(new Error('Respons melebihi batas ukuran.')); return; }
+      const chunks = []; let size = 0;
+      response.on('data', chunk => {
+        size += chunk.length;
+        if (size > maxBytes) { request.destroy(new Error('Respons melebihi batas ukuran.')); return; }
+        chunks.push(Buffer.from(chunk));
+      });
+      response.on('error', fail);
+      response.on('end', () => {
+        if (settled) return;
+        settled = true;
+        resolve({ status: response.statusCode || 0, ok: response.statusCode >= 200 && response.statusCode < 300,
+          contentType: response.headers['content-type'] || 'application/octet-stream', buffer: Buffer.concat(chunks, size) });
+      });
+    });
+    request.setTimeout(timeoutMs, () => request.destroy(new Error('Request melewati batas waktu.')));
+    request.on('error', fail);
+    request.end(body);
+  });
+}
+
 async function readResponseLimited(response, maximumBytes) {
   const declared = Number(response.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > maximumBytes) throw new Error('Respons melebihi batas ukuran.');
@@ -135,4 +176,4 @@ async function readResponseLimited(response, maximumBytes) {
   return Buffer.concat(chunks, size);
 }
 
-module.exports = { assertPublicHttpUrl, fetchPublic, isPrivateAddress, readResponseLimited };
+module.exports = { assertPublicHttpUrl, fetchPublic, isPrivateAddress, postPublicJson, readResponseLimited };
