@@ -1,7 +1,7 @@
 'use strict';
 
 const LEVELS = { debug: 10, info: 20, warn: 30, error: 40, silent: Infinity };
-const SECRET_KEY = /(token|secret|password|passwd|api.?key|pairing.?code|authorization|cookie|^(?:me|jid|remotejid|chatid|participant|participantjid|phone|phonenumber|pushname|sender|chat)$/i;
+const SECRET_KEY = /(?:token|secret|password|passwd|api.?key|pairing.?code|authorization|cookie)|^(?:me|jid|remotejid|chatid|participant|participantjid|phone|phonenumber|pushname|sender|chat)$/i;
 const SECRET_TEXT = /(\b(?:authorization|cookie|set-cookie|x-api-key|api[_-]?key|apikey|key|token|secret|password|pairing[_-]?code)\b["']?\s*[=:]\s*)(?:"[^"]*"|'[^']*'|[^&\s,;]+)/gi;
 const ANSI = {
   reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m',
