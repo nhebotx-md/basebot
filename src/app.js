@@ -8,6 +8,7 @@ const { createLogger } = require('./core/services/logger.service');
 const { PluginRegistry } = require('./core/plugins/plugin-registry');
 const { findPluginFiles, loadPlugins } = require('./core/plugins/plugin-loader');
 const { CommandDispatcher } = require('./core/messaging/command-dispatcher');
+const { createMenuService } = require('./core/messaging/menu.service');
 const { createConnectionManager } = require('./core/connection/connection-manager');
 
 async function createApp(options = {}) {
@@ -55,7 +56,8 @@ async function createApp(options = {}) {
   }
   if (pluginFiles.length === 0) logger.warn('Tidak ada file plugin yang ditemukan.', { directory: path.relative(process.cwd(), pluginDirectory) || '.' });
 
-  const dispatcher = new CommandDispatcher({ registry, logger });
+  const menuService = createMenuService({ registry, config, version: packageInfo.version, startedAt: Date.now() });
+  const dispatcher = new CommandDispatcher({ registry, logger, menuService });
   const connection = createConnectionManager({ config, registry, dispatcher, logger });
   return {
     config,
