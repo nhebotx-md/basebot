@@ -7,8 +7,7 @@ function createConnectionUpdateHandler({ logger = console, onUpdate = () => {} }
       isNewLogin: Boolean(update.isNewLogin),
       pendingNotifications: update.receivedPendingNotifications
     };
-    if (update.connection) logger.info('Status koneksi WhatsApp berubah.', details);
-    else if (update.qr || update.isNewLogin || update.receivedPendingNotifications !== undefined) logger.debug('Sinyal lifecycle Baileys diterima.', details);
+    if (!update.connection && (update.qr || update.isNewLogin || update.receivedPendingNotifications !== undefined)) logger.debug('Sinyal lifecycle Baileys diterima; payload sensitif disembunyikan.', details);
     onUpdate(update);
   };
 }

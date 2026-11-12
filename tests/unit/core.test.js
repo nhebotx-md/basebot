@@ -64,6 +64,18 @@ test('dispatcher executes a message once and isolates plugin errors', async () =
   assert.match(replies[0], /kesalahan/);
 });
 
+test('dispatcher sends privacy-safe activity summary after a successful command', async () => {
+  const registry = new PluginRegistry();
+  registry.register(plugin({ execute: async () => {} }));
+  const activities = [];
+  const dispatcher = new CommandDispatcher({ registry, logger: { info() {}, warn() {}, error() {}, debug() {}, activity(event) { activities.push(event); } } });
+  await dispatcher.dispatch({ m: { id: 'activity-one' }, command: 'ping', sender: '6281234567890@s.whatsapp.net', isOwner: true, isGroup: true, isPrivate: false, publicMode: true, reply: async () => {} });
+  assert.equal(activities.length, 1);
+  assert.deepEqual({ command: activities[0].command, plugin: activities[0].plugin, category: activities[0].category, scope: activities[0].scope }, { command: 'ping', plugin: 'ping', category: 'system', scope: 'group' });
+  assert.equal(Object.hasOwn(activities[0], 'sender'), false);
+  assert.equal(Object.hasOwn(activities[0], 'message'), false);
+});
+
 test('URL safety utility blocks private and reserved address ranges', () => {
   for (const address of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '192.168.1.1', '192.0.2.1', '169.254.10.2', '::1', '::ffff:7f00:1', 'ff02::1', '2001:db8::1', 'fc00::1']) assert.equal(isPrivateAddress(address), true, address);
   assert.equal(isPrivateAddress('8.8.8.8'), false);

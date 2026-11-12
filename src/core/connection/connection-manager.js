@@ -97,7 +97,8 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       logger.info('WhatsApp mengonfirmasi login perangkat baru.', { credentialsRegistered: Boolean(client.authState?.creds?.registered) });
     }
     if (update.connection === 'connecting') {
-      logger.info('Handshake WhatsApp sedang berlangsung.');
+      if (typeof logger.connection === 'function') logger.connection('connecting', { step: 'Handshake WhatsApp' });
+      else logger.info('Handshake WhatsApp sedang berlangsung.');
       return;
     }
     if (update.connection === 'open') {
@@ -105,7 +106,9 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       restartRequiredCount = 0;
       if (reconnectTimer) timerApi.clearTimeout(reconnectTimer);
       reconnectTimer = null;
-      logger.info('Koneksi WhatsApp aktif.', { credentialsRegistered: Boolean(client.authState?.creds?.registered), pendingNotifications: update.receivedPendingNotifications === true });
+      const details = { credentialsRegistered: Boolean(client.authState?.creds?.registered), pendingNotifications: update.receivedPendingNotifications === true };
+      if (typeof logger.connection === 'function') logger.connection('open', details);
+      else logger.info('Koneksi WhatsApp aktif.', details);
       return;
     }
     if (update.connection !== 'close' || closedClients.has(client)) return;
@@ -128,7 +131,9 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
         occurrence: restartRequiredCount
       });
     } else {
-      logger.warn('Socket WhatsApp ditutup.', { statusCode, reason, ...errorContext(disconnectError) });
+      const details = { statusCode, reason, ...errorContext(disconnectError) };
+      if (typeof logger.connection === 'function') logger.connection('close', details);
+      else logger.warn('Socket WhatsApp ditutup.', details);
     }
 
     let credentialsFlushed = true;

@@ -37,7 +37,7 @@ function loadConfig(env = readDotEnv()) {
     timezone: env.TIMEZONE || 'Asia/Jakarta',
     sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '' },
     tts: { apiKey: env.TTS_API_KEY || '', voiceId: env.TTS_VOICE_ID || '' },
-    logging: { level: env.LOG_LEVEL || 'info', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
+    logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
     paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs' },
     plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false) }
   };

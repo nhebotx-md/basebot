@@ -68,9 +68,12 @@ class CommandDispatcher {
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
     this.activeCommands += 1;
+    const startedAt = Date.now();
     try {
       await plugin.execute(ctx);
-      this.logger.info('Plugin berhasil dijalankan.', { plugin: plugin.name, command: ctx.command });
+      const activity = { plugin: plugin.name, command: ctx.command, category: plugin.category, scope: ctx.isGroup ? 'group' : 'private', durationMs: Date.now() - startedAt };
+      if (typeof this.logger.activity === 'function') this.logger.activity(activity);
+      else this.logger.info('Plugin berhasil dijalankan.', { plugin: plugin.name, command: ctx.command });
       return { handled: true, plugin: plugin.name };
     } catch (error) {
       this.logger.error('Plugin gagal saat dieksekusi.', { plugin: plugin.name, command: ctx.command, error });
