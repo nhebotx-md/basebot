@@ -226,6 +226,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine('  ' + colorize(colorEnabled, ANSI.violet, '↳', true) + ' ' + colorize(colorEnabled, ANSI.white, '.' + command, true) + ' ' + colorize(colorEnabled, ANSI.gray, '→') + ' ' + colorize(colorEnabled, ANSI.teal, plugin) + category + ' ' + colorize(colorEnabled, ANSI.gray, '[' + scope + '] ' + elapsed));
   };
   logger.message = info => {
+    if (LEVELS.info < threshold) return;
     const data = info || {};
     const group = data.chatType === 'group' || data.isGroup;
     const channel = data.chatType === 'newsletter' || data.isNewsletter;
