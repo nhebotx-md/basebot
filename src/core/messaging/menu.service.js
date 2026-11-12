@@ -26,10 +26,14 @@ function formatUptime(seconds) {
   const hours = Math.floor((total % 86400) / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
-  return [days ? `${days}h` : '', hours ? `${hours}j` : '', minutes ? `${minutes}m` : '', `${secs}dtk`].filter(Boolean).join(' ');
+  return [days ? \`\${days} hari\` : '', hours ? \`\${hours}j\` : '', minutes ? \`\${minutes}m\` : '', \`\${secs}dtk\`].filter(Boolean).join(' ');
 }
 
-function timeZoneLabel(timeZone) {\n  return ({ 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' })[timeZone] || timeZone || 'WIB';\n}\n\nfunction dateParts(timeZone, now = new Date()) {
+function timeZoneLabel(timeZone) {
+  return ({ 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' })[timeZone] || timeZone || 'WIB';
+}
+
+function dateParts(timeZone, now = new Date()) {
   const options = { timeZone: timeZone || 'Asia/Jakarta' };
   try {
     return {
@@ -64,34 +68,36 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     const plugins = getVisiblePlugins(ctx);
     const categories = getCategories(ctx);
     const commandCount = plugins.reduce((total, plugin) => total + plugin.commands.length, 0);
-    const { time, date } = dateParts(config.timezone, clock());
+    const now = clock();
+    const { time, date } = dateParts(config.timezone, now);
     const role = ctx.isOwner ? '👑 Owner' : ctx.isGroupAdmin ? '🛡️ Admin' : 'Member';
     const userName = cleanLabel(ctx.pushname, 'Pengguna');
     const botName = cleanLabel(config.botName, 'BASEBOT');
     const ownerName = cleanLabel(config.ownerName, 'Owner');
     const mode = config.publicMode ? 'PUBLIC' : 'SELF';
-    const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');\n    const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
+    const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
+    const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const lines = [
-      `Hai *${userName}* 🪸`,
+      \`Hai *\${userName}* 🪸\`,
       '',
-      `Aku *${botName}*, bot WhatsApp yang siap membantu aktivitasmu.`,
+      \`Aku *\${botName}*, bot WhatsApp yang siap membantu aktivitasmu.\`,
       '',
       '╭─〔 🤖 *BOT INFO* 〕',
-      `*│* 🌙 Nama       : *${botName}*`,
-      `*│* 🔑 Versi      : *v${cleanLabel(version)}*`,
-      `*│* ⚙️ Mode       : *${mode}*`,
-      `*│* 🧶 Prefix     : *[ ${prefixLabel} ]*`,
-      `*│* ⏱️ Uptime     : *${formatUptime((clock().getTime() - startedAt) / 1000)}*`,
-      `*│* 🧩 Plugin     : *${plugins.length} aktif*`,
-      `*│* 🛠️ Command    : *${commandCount} terdaftar*`,
-      `*│* 👑 Owner      : *${ownerName}*`,
+      \`*│* 🌙 Nama       : *\${botName}*\`,
+      \`*│* 🔑 Versi      : *v\${cleanLabel(version)}*\`,
+      \`*│* ⚙️ Mode       : *\${mode}*\`,
+      \`*│* 🧶 Prefix     : *[ \${prefixLabel} ]*\`,
+      \`*│* ⏱️ Uptime     : *\${formatUptime((now.getTime() - startedAt) / 1000)}*\`,
+      \`*│* 🧩 Plugin     : *\${plugins.length} aktif*\`,
+      \`*│* 🛠️ Command    : *\${commandCount} terdaftar*\`,
+      \`*│* 👑 Owner      : *\${ownerName}*\`,
       '╰────────────────⎯',
       '',
       '╭─〔 👤 *USER INFO* 〕',
-      `*│* 🙋 Nama       : *${userName}*`,
-      `*│* 🎭 Role       : *${role}*`,
-      `*│* 🕒 Waktu      : *${time} ${timeZoneLabel(config.timezone)}*`,
-      `*│* 📅 Tanggal    : *${date}*`,
+      \`*│* 🙋 Nama       : *\${userName}*\`,
+      \`*│* 🎭 Role       : *\${role}*\`,
+      \`*│* 🕒 Waktu      : *\${time} \${timeZoneLabel(config.timezone)}*\`,
+      \`*│* 📅 Tanggal    : *\${date}*\`,
       '╰────────────────⎯',
       '',
       '📂 *DAFTAR MENU*'
@@ -99,44 +105,45 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     if (!categories.length) lines.push('- Belum ada plugin aktif yang dapat ditampilkan.');
     else for (const category of categories) {
       const icon = CATEGORY_ICONS[category.slug] || '📁';
-      lines.push(`- \`⎯\` ${prefix}catmenu ${category.slug} ${icon}`);
+      lines.push(\`- \\\`⎯\\\` \${commandPrefix}catmenu \${category.slug} \${icon}\`);
     }
     lines.push('', '_Statistik EXP, koin, HP, mana, dan stamina belum tersedia karena BASEBOT belum memiliki sistem profil pengguna._');
-    return lines.join('\n');
+    return lines.join('\\n');
   }
 
   function renderCategory(ctx) {
+    const commandPrefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const requested = normalizeCategory((ctx.args || []).join(' '));
     const categories = getCategories(ctx);
     if (!requested) {
       return [
         '📂 *DAFTAR KATEGORI MENU*',
-        ...categories.map(category => `- ${config.prefix}catmenu ${category.slug} ${CATEGORY_ICONS[category.slug] || '📁'}`),
+        ...categories.map(category => \`- \${commandPrefix}catmenu \${category.slug} \${CATEGORY_ICONS[category.slug] || '📁'}\`),
         '',
-        `Gunakan *${config.prefix}catmenu <kategori>* untuk melihat command.`
-      ].join('\n');
+        \`Gunakan *\${commandPrefix}catmenu <kategori>* untuk melihat command.\`
+      ].join('\\n');
     }
     const category = categories.find(item => item.slug === requested);
     if (!category) {
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
-      return `Kategori *${requested}* tidak ditemukan.\nKategori tersedia: ${available}\nKetik *${config.prefix}menu* untuk melihat daftar kategori.`;
+      return \`Kategori *\${requested}* tidak ditemukan.\\nKategori tersedia: \${available}\\nKetik *\${commandPrefix}menu* untuk melihat daftar kategori.\`;
     }
     const lines = [
-      `╭─〔 ${CATEGORY_ICONS[category.slug] || '📁'} *MENU ${category.label.toLocaleUpperCase('id-ID')}* 〕`,
-      `*│* Total plugin: *${category.plugins.length}*`,
+      \`╭─〔 \${CATEGORY_ICONS[category.slug] || '📁'} *MENU \${category.label.toLocaleUpperCase('id-ID')}* 〕\`,
+      \`*│* Total plugin: *\${category.plugins.length}*\`,
       '╰────────────────⎯',
       ''
     ];
     for (const plugin of category.plugins.sort((a, b) => a.name.localeCompare(b.name, 'id'))) {
       const primary = plugin.commands[0];
-      lines.push(`➤ *${config.prefix}${primary}*`);
-      if (plugin.commands.length > 1) lines.push(`  Alias: ${plugin.commands.slice(1).map(command => `\`${config.prefix}${command}\``).join(', ')}`);
-      if (plugin.description) lines.push(`  _${cleanLabel(plugin.description, '')}_`);
-      if (plugin.usage && plugin.usage !== `${commandPrefix}${primary}`) lines.push(`  Cara pakai: ${plugin.usage}`);
+      lines.push(\`➤ *\${commandPrefix}\${primary}*\`);
+      if (plugin.commands.length > 1) lines.push(\`  Alias: \${plugin.commands.slice(1).map(command => \`\\\`\${commandPrefix}\${command}\\\`\`).join(', ')}\`);
+      if (plugin.description) lines.push(\`  _\${cleanLabel(plugin.description, '')}_\`);
+      if (plugin.usage && plugin.usage !== \`\${commandPrefix}\${primary}\`) lines.push(\`  Cara pakai: \${plugin.usage}\`);
       lines.push('');
     }
-    lines.push(`Ketik *${config.prefix}menu* untuk kembali ke daftar kategori.`);
-    return lines.join('\n').trim();
+    lines.push(\`Ketik *\${commandPrefix}menu* untuk kembali ke daftar kategori.\`);
+    return lines.join('\\n').trim();
   }
 
   return Object.freeze({
