@@ -13,6 +13,7 @@ function validateConfig(config) {
   if (!['pretty', 'json'].includes(config.logging.format || 'pretty')) throw new Error('LOG_FORMAT harus bernilai pretty atau json.');
   if (!['auto', 'always', 'never'].includes(config.logging.color || 'auto')) throw new Error('LOG_COLOR harus bernilai auto, always, atau never.');
   if (!['debug', 'info', 'warn', 'error', 'silent'].includes(config.logging.baileysLevel || 'warn')) throw new Error('BAILEYS_LOG_LEVEL tidak dikenal.');
+  if (config.sticker?.apis && typeof config.sticker.apis.asepharyanaEnabled !== 'boolean') throw new Error('STICKER_API_ASEPHARYANA_ENABLED harus berupa boolean.');
   try { new Intl.DateTimeFormat('id-ID', { timeZone: config.timezone }).format(); } catch { throw new Error('TIMEZONE harus berupa zona waktu IANA yang valid.'); }
   return true;
 }

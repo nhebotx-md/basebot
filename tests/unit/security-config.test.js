@@ -17,6 +17,8 @@ test('configuration reads owner/prefix, accepts legacy custom pairing config as 
   assert.equal(config.logging.baileysLevel, 'debug');
   assert.equal(config.logging.format, 'pretty');
   assert.equal(config.logging.color, 'auto');
+  assert.equal(config.sticker.apis.asepharyanaEnabled, false);
+  assert.equal(loadConfig({ OWNER_NUMBERS: '6281234567890', STICKER_API_ASEPHARYANA_ENABLED: 'true' }).sticker.apis.asepharyanaEnabled, true);
   assert.equal(loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FORMAT: 'json', LOG_COLOR: 'never' }).logging.format, 'json');
   assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FORMAT: 'xml' }), /LOG_FORMAT/);
   assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_COLOR: 'sometimes' }), /LOG_COLOR/);
@@ -95,4 +97,16 @@ test('pretty logger can force terminal colors and strips ANSI control sequences 
 
 test('public URL validator rejects loopback addresses before opening a request', async () => {
   await assert.rejects(() => assertPublicHttpUrl('http://127.0.0.1/private'), /private|publik/i);
+});
+
+test('silent logger suppresses branded banner, plugin, connection and activity cards', () => {
+  const lines = [];
+  const sink = { log(line) { lines.push(line); }, info(line) { lines.push(line); }, warn(line) { lines.push(line); }, error(line) { lines.push(line); } };
+  const logger = createLogger({ level: 'silent', format: 'pretty', colors: false, sink });
+  logger.banner({ name: 'BASEBOT', version: '2.0.0' });
+  logger.plugins({ discovered: 24, loaded: 24, commands: 52 });
+  logger.connection('open', { credentialsRegistered: true });
+  logger.activity({ command: 'menu', plugin: 'menu' });
+  logger.info('should be hidden');
+  assert.deepEqual(lines, []);
 });
