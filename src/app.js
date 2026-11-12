@@ -25,6 +25,7 @@ async function createApp(options = {}) {
   };
   if (typeof logger.banner === 'function') logger.banner({ name: config.botName, ...startupDetails });
   else logger.info('BASEBOT memulai runtime.', startupDetails);
+  if (typeof logger.startup === 'function') logger.startup({ name: config.botName, ...startupDetails });
 
   const pluginDirectory = path.resolve(config.plugins.directory);
   const pluginFiles = findPluginFiles(pluginDirectory);
