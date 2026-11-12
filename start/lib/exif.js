@@ -21,7 +21,7 @@ async function imageToWebp (media) {
     const tmpFileOut = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
     const tmpFileIn = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.jpg`)
 
-    fs.writeFileSync(tmpFileIn, media)
+    fs.writeFileSync(tmpFileIn, media, { mode: 0o600, flag: "wx" })
 
     await new Promise((resolve, reject) => {
         ff(tmpFileIn)
@@ -37,6 +37,7 @@ async function imageToWebp (media) {
             .save(tmpFileOut)
     })
 
+    fs.chmodSync(tmpFileOut, 0o600)
     const buff = fs.readFileSync(tmpFileOut)
     fs.unlinkSync(tmpFileOut)
     fs.unlinkSync(tmpFileIn)
@@ -48,7 +49,7 @@ async function videoToWebp (media) {
     const tmpFileOut = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
     const tmpFileIn = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.mp4`)
 
-    fs.writeFileSync(tmpFileIn, media)
+    fs.writeFileSync(tmpFileIn, media, { mode: 0o600, flag: "wx" })
 
     await new Promise((resolve, reject) => {
         ff(tmpFileIn)
@@ -75,6 +76,7 @@ async function videoToWebp (media) {
             .save(tmpFileOut)
     })
 
+    fs.chmodSync(tmpFileOut, 0o600)
     const buff = fs.readFileSync(tmpFileOut)
     fs.unlinkSync(tmpFileOut)
     fs.unlinkSync(tmpFileIn)
@@ -85,7 +87,7 @@ async function writeExifImg (media, metadata) {
     let wMedia = await imageToWebp(media)
     const tmpFileIn = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
     const tmpFileOut = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
-    fs.writeFileSync(tmpFileIn, wMedia)
+    fs.writeFileSync(tmpFileIn, wMedia, { mode: 0o600, flag: "wx" })
 
     if (metadata.packname || metadata.author) {
         const img = new webp.Image()
@@ -98,6 +100,7 @@ async function writeExifImg (media, metadata) {
         fs.unlinkSync(tmpFileIn)
         img.exif = exif
         await img.save(tmpFileOut)
+        fs.chmodSync(tmpFileOut, 0o600)
         return tmpFileOut
     }
 }
@@ -106,7 +109,7 @@ async function writeExifVid (media, metadata) {
     let wMedia = await videoToWebp(media)
     const tmpFileIn = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
     const tmpFileOut = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
-    fs.writeFileSync(tmpFileIn, wMedia)
+    fs.writeFileSync(tmpFileIn, wMedia, { mode: 0o600, flag: "wx" })
 
     if (metadata.packname || metadata.author) {
         const img = new webp.Image()
@@ -119,6 +122,7 @@ async function writeExifVid (media, metadata) {
         fs.unlinkSync(tmpFileIn)
         img.exif = exif
         await img.save(tmpFileOut)
+        fs.chmodSync(tmpFileOut, 0o600)
         return tmpFileOut
     }
 }
@@ -127,7 +131,7 @@ async function writeExif (media, metadata) {
     let wMedia = /webp/.test(media.mimetype) ? media.data : /image/.test(media.mimetype) ? await imageToWebp(media.data) : /video/.test(media.mimetype) ? await videoToWebp(media.data) : ""
     const tmpFileIn = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
     const tmpFileOut = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`)
-    fs.writeFileSync(tmpFileIn, wMedia)
+    fs.writeFileSync(tmpFileIn, wMedia, { mode: 0o600, flag: "wx" })
 
     if (metadata.packname || metadata.author) {
         const img = new webp.Image()
@@ -140,6 +144,7 @@ async function writeExif (media, metadata) {
         fs.unlinkSync(tmpFileIn)
         img.exif = exif
         await img.save(tmpFileOut)
+        fs.chmodSync(tmpFileOut, 0o600)
         return tmpFileOut
     }
 }
