@@ -29,7 +29,7 @@ function formatUptime(seconds) {
   return [days ? `${days}h` : '', hours ? `${hours}j` : '', minutes ? `${minutes}m` : '', `${secs}dtk`].filter(Boolean).join(' ');
 }
 
-function dateParts(timeZone, now = new Date()) {
+function timeZoneLabel(timeZone) {\n  return ({ 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' })[timeZone] || timeZone || 'WIB';\n}\n\nfunction dateParts(timeZone, now = new Date()) {
   const options = { timeZone: timeZone || 'Asia/Jakarta' };
   try {
     return {
@@ -70,7 +70,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     const botName = cleanLabel(config.botName, 'BASEBOT');
     const ownerName = cleanLabel(config.ownerName, 'Owner');
     const mode = config.publicMode ? 'PUBLIC' : 'SELF';
-    const prefix = Array.isArray(config.prefix) ? config.prefix.join(' / ') : String(config.prefix || '.');
+    const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');\n    const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const lines = [
       `Hai *${userName}* 🪸`,
       '',
@@ -80,7 +80,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
       `*│* 🌙 Nama       : *${botName}*`,
       `*│* 🔑 Versi      : *v${cleanLabel(version)}*`,
       `*│* ⚙️ Mode       : *${mode}*`,
-      `*│* 🧶 Prefix     : *[ ${prefix} ]*`,
+      `*│* 🧶 Prefix     : *[ ${prefixLabel} ]*`,
       `*│* ⏱️ Uptime     : *${formatUptime((clock().getTime() - startedAt) / 1000)}*`,
       `*│* 🧩 Plugin     : *${plugins.length} aktif*`,
       `*│* 🛠️ Command    : *${commandCount} terdaftar*`,
@@ -90,7 +90,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
       '╭─〔 👤 *USER INFO* 〕',
       `*│* 🙋 Nama       : *${userName}*`,
       `*│* 🎭 Role       : *${role}*`,
-      `*│* 🕒 Waktu      : *${time} WIB*`,
+      `*│* 🕒 Waktu      : *${time} ${timeZoneLabel(config.timezone)}*`,
       `*│* 📅 Tanggal    : *${date}*`,
       '╰────────────────⎯',
       '',
@@ -132,7 +132,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
       lines.push(`➤ *${config.prefix}${primary}*`);
       if (plugin.commands.length > 1) lines.push(`  Alias: ${plugin.commands.slice(1).map(command => `\`${config.prefix}${command}\``).join(', ')}`);
       if (plugin.description) lines.push(`  _${cleanLabel(plugin.description, '')}_`);
-      if (plugin.usage && plugin.usage !== `${config.prefix}${primary}`) lines.push(`  Cara pakai: ${plugin.usage}`);
+      if (plugin.usage && plugin.usage !== `${commandPrefix}${primary}`) lines.push(`  Cara pakai: ${plugin.usage}`);
       lines.push('');
     }
     lines.push(`Ketik *${config.prefix}menu* untuk kembali ke daftar kategori.`);
