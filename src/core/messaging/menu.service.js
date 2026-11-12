@@ -26,7 +26,7 @@ function formatUptime(seconds) {
   const hours = Math.floor((total % 86400) / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
-  return [days ? `${days}h` : '', hours ? `${hours}j` : '', minutes ? `${minutes}m` : '', `${secs}d`].filter(Boolean).join(' ');
+  return [days ? `${days}h` : '', hours ? `${hours}j` : '', minutes ? `${minutes}m` : '', `${secs}dtk`].filter(Boolean).join(' ');
 }
 
 function dateParts(timeZone, now = new Date()) {
