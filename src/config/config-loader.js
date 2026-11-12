@@ -35,7 +35,7 @@ function loadConfig(env = readDotEnv()) {
     welcomeEnabled: parseBoolean(env.WELCOME_ENABLED, true),
     newsletter: { name: env.NEWSLETTER_NAME || '', id: env.NEWSLETTER_ID || '', url: env.NEWSLETTER_URL || '' },
     timezone: env.TIMEZONE || 'Asia/Jakarta',
-    sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '' },
+    sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '', apis: { asepharyanaEnabled: parseBoolean(env.STICKER_API_ASEPHARYANA_ENABLED, false) } },
     tts: { apiKey: env.TTS_API_KEY || '', voiceId: env.TTS_VOICE_ID || '' },
     logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
     paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs' },

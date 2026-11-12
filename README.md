@@ -30,3 +30,9 @@ Lihat [Panduan pengembangan plugin](docs/PLUGIN_DEVELOPMENT.md) sebelum menambah
 - Jika log menyatakan ada plugin yang dilewati, periksa `file`, `stage`, dan stack error di record JSON. Setelah deployment jalankan `npm ci` dari direktori BASEBOT agar dependency sesuai lockfile; perbaiki error spesifik plugin, bukan hanya mengabaikan jumlah plugin yang berkurang.
 - Jika command media gagal, verifikasi konektivitas endpoint pihak ketiga serta limit ukuran/timeout. Sticker dan voice changer memakai binary FFmpeg dari dependency; bila binari voice changer hilang, plugin tetap dimuat dan command memberi instruksi install.
 - Pastikan proses dapat membuat `SESSION_DIR` dan `TEMP_DIR`; session harus direktori privat dan symlink tidak diizinkan.
+
+## Sticker REST API
+
+Plugin `sticker-rest-api` menambahkan `.stickerapi brat <teks>` untuk Brat statis dan `.stickerapi animated <teks>` untuk animasi. Output API bukan sticker WhatsApp siap pakai; BASEBOT memvalidasi signature PNG/GIF, membatasi respons hingga 8 MiB dan timeout 15 detik, lalu mengonversi media memakai FFmpeg/WebP serta metadata pack. Input dibatasi 300 karakter dan dikirim ke penyedia pihak ketiga, jadi jangan gunakan teks rahasia/pribadi.
+
+Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana (`scraper.asepharyana.my.id`) berbeda dari URL dokumentasi `asepharyana.cloud` yang diberikan pengguna, sehingga fallback itu **nonaktif secara default**; aktifkan hanya bila Anda menerima host alternate dengan `STICKER_API_ASEPHARYANA_ENABLED=true`. Temuan, sumber, dan batas verifikasi ada di [audit REST API sticker](docs/STICKER_API_AUDIT.md).

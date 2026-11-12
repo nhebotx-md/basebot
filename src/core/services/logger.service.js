@@ -148,6 +148,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   };
   logger.divider = () => panelLine(colorize(colorEnabled, ANSI.border, '  ' + '─'.repeat(Math.max(32, Math.min(terminalWidth() - 4, 76)))));
   logger.banner = info => {
+    if (threshold > LEVELS.info) return;
     const name = clip(info?.name || 'BASEBOT', 32).toUpperCase();
     const version = clip(info?.version || '', 20);
     const mode = clip(String(info?.mode || 'public').toUpperCase(), 16);
@@ -180,6 +181,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(border(width, '  ╰', '╯'));
   };
   logger.plugins = summary => {
+    if (threshold > LEVELS.info) return;
     if (!pretty) return record('info', 'Plugin registry siap.', summary);
     const loaded = Number(summary?.loaded || 0);
     const discovered = Number(summary?.discovered || 0);
@@ -202,6 +204,8 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
       connecting: ['CONNECTING', ANSI.yellow, '◐'], close: ['DISCONNECTED', ANSI.red, '○'],
       disconnected: ['DISCONNECTED', ANSI.red, '○'], closing: ['CLOSING', ANSI.yellow, '◌']
     };
+    const score = String(status).toLowerCase() === 'close' || String(status).toLowerCase() === 'disconnected' ? LEVELS.warn : LEVELS.info;
+    if (score < threshold) return;
     const [label, color, icon] = map[String(status).toLowerCase()] || ['CONNECTION', ANSI.blue, '●'];
     if (!pretty) return record(status === 'close' ? 'warn' : 'info', 'WhatsApp ' + label.toLowerCase() + '.', { status, ...details });
     const safeDetails = redact(details);
@@ -216,6 +220,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine('  ' + colorize(colorEnabled, ANSI.teal, '╰' + '─'.repeat(panelWidth), true));
   };
   logger.activity = info => {
+    if (threshold > LEVELS.info) return;
     const data = redact(info || {});
     if (!pretty) return record('info', 'Command selesai.', data);
     const command = clip(data.command || 'unknown', 30);
