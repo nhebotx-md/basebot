@@ -20,6 +20,15 @@ function createMessagesUpsertHandler({ dispatcher, config, registry, logger }) {
       if (client.public === false && !m.fromMe) continue;
       try {
         const ctx = await buildContext({ client, m, chatUpdate, store, config, registry, logger });
+        if (typeof logger.message === 'function') logger.message({
+          chatType: m.isGroup ? 'group' : 'private',
+          pushName: m.pushName,
+          mtype: m.mtype,
+          hasText: Boolean(m.body),
+          isOwner: ctx.isOwner,
+          isAdmin: ctx.isGroupAdmin,
+          device: 'WhatsApp'
+        });
         await dispatcher.dispatch(ctx);
       } catch (error) {
         logger.error('Gagal memproses pesan WhatsApp.', { messageId: m.id, error });
