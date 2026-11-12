@@ -4,10 +4,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const Module = require('node:module');
 const { findPluginFiles, loadPlugins } = require('../../src/core/plugins/plugin-loader');
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 
-test('loader sorts recursively, ignores hidden/dependency folders, and continues after invalid plugin', async t => {
+test('loader sorts recursively, ignores hidden/dependency folders, and logs import/validation failure detail', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-loader-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, 'system', '.hidden'), { recursive: true });
@@ -26,4 +27,37 @@ test('loader sorts recursively, ignores hidden/dependency folders, and continues
   const loaded = loadPlugins({ directory: root, registry, logger: { error(...args) { errors.push(args); }, info() {}, warn() {}, debug() {} } });
   assert.deepEqual(loaded.map(plugin => plugin.name), ['a', 'child', 'z']);
   assert.equal(errors.length, 1);
+  assert.equal(errors[0][1].file, 'bad.js');
+  assert.equal(errors[0][1].stage, 'metadata-validation/registration');
+  assert.ok(errors[0][1].error instanceof Error);
+  assert.match(errors[0][1].error.stack, /plugin-validator|plugin-registry/);
+});
+
+test('voicechanger registers all aliases even when its optional FFmpeg binary is unavailable', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-ffmpeg-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const pluginPath = require.resolve('../../plugins/media/voicechanger');
+  const originalLoad = Module._load;
+  Module._load = function(request, parent, isMain) {
+    if (request === '@ffmpeg-installer/ffmpeg') throw Object.assign(new Error('simulated missing binary package'), { code: 'MODULE_NOT_FOUND' });
+    return originalLoad.call(this, request, parent, isMain);
+  };
+  try {
+    delete require.cache[pluginPath];
+    const plugin = require(pluginPath);
+    assert.equal(plugin.commands.length, 12);
+    const replies = [];
+    await plugin.execute({
+      mime: 'audio/ogg', prefix: '.', command: 'bass', chat: 'test@s.whatsapp.net',
+      config: { paths: { temp: root } },
+      quoted: { async download() { return Buffer.from('audio'); } },
+      m: { raw: {} },
+      async reply(text) { replies.push(text); },
+      async sendMessage() { throw new Error('FFmpeg should not be invoked'); }
+    });
+    assert.ok(replies.some(text => /npm ci/i.test(text)));
+  } finally {
+    Module._load = originalLoad;
+    delete require.cache[pluginPath];
+  }
 });

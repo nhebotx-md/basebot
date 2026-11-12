@@ -4,7 +4,7 @@ BASEBOT adalah framework bot WhatsApp CommonJS yang menempatkan command di `plug
 
 ## Memulai
 
-Gunakan Node.js 20 atau lebih baru. Jalankan `npm ci`, salin `.env.example` menjadi `.env`, lalu atur setidaknya `OWNER_NUMBERS` dan `PAIRING_PHONE` menggunakan angka dengan kode negara. Setelah itu jalankan `npm start`. Pairing code hanya dicetak ke terminal saat sesi belum terdaftar. Jangan membagikan `.env`, `session/`, log yang berisi identitas chat, atau data autentikasi.
+Gunakan Node.js 20 atau lebih baru. Jalankan `npm ci`, salin `.env.example` menjadi `.env`, lalu atur setidaknya `OWNER_NUMBERS` dan `PAIRING_PHONE` menggunakan angka dengan kode negara. Setelah itu jalankan `npm start`. Pairing code yang dihasilkan Baileys hanya dicetak ke terminal saat sesi belum terdaftar; jangan mengatur kode tetap melalui `PAIRING_CODE`. Jangan membagikan `.env`, `session/`, log yang berisi identitas chat, atau data autentikasi.
 
 Jalankan `npm test` untuk unit test tanpa menghubungkan WhatsApp dan `npm run check` untuk pemeriksaan sintaks. Dependency Baileys dikunci pada `@itsliaaa/baileys@0.4.4`; dependency tree dikunci di `package-lock.json`.
 
@@ -23,7 +23,8 @@ Lihat [Panduan pengembangan plugin](docs/PLUGIN_DEVELOPMENT.md) sebelum menambah
 
 ## Troubleshooting
 
-- Jika pairing code tidak muncul, pastikan `PAIRING_PHONE` berisi angka dengan kode negara; code hanya diminta untuk sesi yang belum terdaftar. Jangan menghapus `SESSION_DIR` sebagai langkah pertama karena session adalah kredensial login.
-- Jika startup berhenti setelah banyak reconnect, periksa koneksi jaringan dan log status. Reconnect memiliki backoff dan batas percobaan; restart manual tidak mengubah session kecuali direktori tersebut dihapus operator.
-- Jika command media gagal, verifikasi konektivitas endpoint pihak ketiga serta limit ukuran/timeout. Sticker dan voice changer memakai binary FFmpeg yang dipaketkan bersama dependency.
+- Jika pairing code tidak muncul, pastikan `PAIRING_PHONE` berisi angka dengan kode negara; code hanya diminta untuk sesi yang belum terdaftar. Hapus nilai lama `PAIRING_CODE` dari `.env` bila ada; kode kustom diabaikan dan kode valid dihasilkan Baileys. Jangan menghapus `SESSION_DIR` sebagai langkah pertama karena session adalah kredensial login.
+- Status `515 / restartRequired` setelah pairing dapat merupakan langkah normal: BASEBOT menunggu kredensial tersimpan, membuka socket baru, lalu harus menerima status `open`. Jangan hentikan proses setelah log reconnect dijadwalkan. Jika berulang, cek log terstruktur untuk `credentialsRegistered`, `isNewLogin`, dan alasan/status disconnect.
+- Jika log menyatakan ada plugin yang dilewati, periksa `file`, `stage`, dan stack error di record JSON. Setelah deployment jalankan `npm ci` dari direktori BASEBOT agar dependency sesuai lockfile; perbaiki error spesifik plugin, bukan hanya mengabaikan jumlah plugin yang berkurang.
+- Jika command media gagal, verifikasi konektivitas endpoint pihak ketiga serta limit ukuran/timeout. Sticker dan voice changer memakai binary FFmpeg dari dependency; bila binari voice changer hilang, plugin tetap dimuat dan command memberi instruksi install.
 - Pastikan proses dapat membuat `SESSION_DIR` dan `TEMP_DIR`; session harus direktori privat dan symlink tidak diizinkan.

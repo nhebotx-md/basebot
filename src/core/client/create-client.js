@@ -6,7 +6,6 @@ const crypto = require('node:crypto');
 const { createLogger } = require('../services/logger.service');
 const { downloadBuffer } = require('../services/media.service');
 
-
 function securePrivateDirectory(directory) {
   const root = path.resolve(directory);
   fs.mkdirSync(root, { recursive: true, mode: 0o700 });
@@ -36,6 +35,15 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
     securePrivateDirectory(config.paths.temp);
     const { state, saveCreds } = await baileys.useMultiFileAuthState(sessionDirectory);
     securePrivateDirectory(sessionDirectory);
+    const baileysLogOptions = {
+      level: config.logging?.baileysLevel || 'warn',
+      base: { component: 'baileys' },
+      redact: {
+        paths: ['token', 'secret', 'password', 'authorization', 'cookie', 'qr', 'creds', 'auth', 'authState.creds', 'pairingCode', 'apiKey', 'me', 'jid', 'remoteJid', 'chatId', 'participant', 'participantJid', 'phone', 'phoneNumber', 'user', 'name'],
+        censor: '[REDACTED]'
+      }
+    };
+    if (typeof pino.stdTimeFunctions?.isoTime === 'function') baileysLogOptions.timestamp = pino.stdTimeFunctions.isoTime;
     const sock = baileys.makeWASocket({
       auth: state,
       printQRInTerminal: false,
@@ -44,13 +52,33 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 30000,
       keepAliveIntervalMs: 15000,
-      logger: pino({ level: 'silent' })
+      logger: pino(baileysLogOptions)
     });
     // Baileys exposes this in some builds but not all forks; keep the auth state explicit.
     sock.authState = state;
+
+    let credentialSaveQueue = Promise.resolve();
+    let credentialSaveError = null;
     sock.ev.on('creds.update', update => {
-      void Promise.resolve(saveCreds(update)).then(() => securePrivateDirectory(sessionDirectory)).catch(error => logger.error('Penyimpanan kredensial gagal.', { error }));
+      credentialSaveQueue = credentialSaveQueue.then(async () => {
+        await saveCreds(update);
+        securePrivateDirectory(sessionDirectory);
+        credentialSaveError = null;
+        logger.debug('Pembaruan kredensial WhatsApp tersimpan.', { registered: Boolean(state.creds?.registered), hasIdentity: Boolean(state.creds?.me?.id) });
+      }).catch(error => {
+        credentialSaveError = error;
+        logger.error('Penyimpanan kredensial WhatsApp gagal.', { error });
+      });
     });
+    sock.waitForCredentialPersistence = async () => {
+      let queue;
+      do {
+        queue = credentialSaveQueue;
+        await queue;
+      } while (queue !== credentialSaveQueue);
+      if (credentialSaveError) throw new Error('Pembaruan kredensial WhatsApp terakhir tidak berhasil disimpan.', { cause: credentialSaveError });
+    };
+
     sock.decodeJid = jid => {
       if (!jid || !/:\d+@/.test(jid)) return jid;
       const decoded = baileys.jidDecode(jid);
@@ -110,7 +138,7 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
       return result;
     };
     sock.sendStatusMention = async (content, jids = []) => sock.sendMessage('status@broadcast', content, { statusJidList: jids });
-    logger.info('Socket WhatsApp dibuat.');
+    logger.info('Socket WhatsApp dibuat.', { authDirectory: sessionDirectory, baileysLogLevel: baileysLogOptions.level });
     return sock;
   };
 }

@@ -2,7 +2,8 @@
 
 - Runtime ditetapkan Node.js `>=20` dan aplikasi tetap menggunakan CommonJS. Package Baileys bertipe ESM; core memuatnya dengan `await import()` dari CommonJS agar tidak mengandalkan dukungan `require(ESM)` eksperimental antarversi Node.
 - Baileys dipin tepat pada `@itsliaaa/baileys@0.4.4`. Perubahan versi harus ditinjau ulang terhadap API dan diikuti lockfile serta tes.
-- Auth memakai `useMultiFileAuthState`, kredensial disimpan melalui event `creds.update`, dan pairing code hanya diminta ketika socket mengeluarkan QR saat sesi belum terdaftar.
+- Auth memakai `useMultiFileAuthState`; event `creds.update` disimpan serial dan di-flush sebelum reconnect/shutdown. Pairing code generated diminta setelah sinyal socket siap dan tidak memakai kode kustom.
+- Disconnect `515` (`restartRequired`) bukan logout: setelah write auth selesai, BASEBOT segera membuat socket baru. Koneksi yang berhasil tetap harus berakhir di event `open`; kode pairing tercetak atau 515 saja tidak membuktikan pairing telah diterima.
 - Versi protokol WhatsApp tidak diambil dinamis dari URL `master` pada setiap startup.
 - Untuk thumbnail dan pemrosesan gambar, project memasang `@napi-rs/image@1.16.0`, salah satu backend yang didukung fork. `ws@8.22.2` dipasang eksplisit karena dokumentasi fork mensyaratkannya pada Node sebelum 22. QR terminal tidak digunakan.
 - Quality gate dijalankan pada Node.js `v22.23.4`; minimum runtime tetap `>=20` berdasarkan engine package dan dynamic import. Node 20 tidak tersedia untuk diuji pada sesi ini. Unit tests tidak membuat sesi/koneksi WhatsApp; uji pairing penuh memerlukan akun uji operator.

@@ -66,18 +66,18 @@ Konfigurasi rahasia berpindah ke `.env` berbasis `.env.example`; owner/pairing/c
 - Request HTTP(S) memvalidasi seluruh jawaban DNS, menolak alamat privat/reserved, mengikat koneksi ke IP publik tervalidasi, menolak redirect dan membatasi waktu/byte. `.get`, helper media, dan downloader memakai jalur aman.
 - Menghapus remote `eval`/`exec`; voice changer memakai executable FFmpeg terpaket dan argumen tetap melalui `spawn`.
 - Permission owner/group/private/admin/public/self, rate limit per pengirim, batas concurrency command/event, deduplikasi dan error boundary per plugin.
-- Reconnect memakai backoff/batas percobaan; initial socket menggunakan single-flight agar tidak membuat socket paralel.
-- Logger meredaksi token, API key, Authorization/Bearer, Cookie, pairing code, buffer dan secret field.
+- Reconnect memakai timer referenced agar CLI tetap hidup, special-case `restartRequired/515`, backoff/batas percobaan, flush auth, dan single-flight socket.
+- Logger JSON menyertakan timestamp/level/context, stack error teredaksi, serta meredaksi token, API key, Authorization/Bearer, Cookie, pairing code, buffer, field identitas Pino (`me`, JID, nomor, nama), dan secret field.
 - Loader mengisolasi plugin tidak valid; alias/command bentrok ditolak saat startup.
 
 ## Pengujian: berhasil diuji
 
 Quality gate terakhir dijalankan pada Node.js `v22.23.4`:
 
-- `npm test`: **31 lulus, 0 gagal**. Mencakup loader nested/invalid, duplicate/alias/disable, parser case-insensitive dan args, non-command/body kosong, permission owner/admin/group/private/self, pairing/config update, socket single-flight, reconnect transient/logout, file session/storage, batas byte response, safe URL, rate/concurrency, dan integrasi mock `messages.upsert → context → dispatcher → reply`.
+- `npm test`: **38 lulus, 0 gagal**. Selain cakupan awal, tes memverifikasi 515 membuat socket kedua, timer reconnect mempertahankan event loop CLI, auth flush serial sebelum reconnect/shutdown, generated pairing code, pairing rejection terlog, structured log/redaction (termasuk output Pino info nyata), error detail plugin, dan voicechanger tetap diregistrasi tanpa binari FFmpeg.
 - `npm run check`: lulus untuk entrypoint, `src/`, `plugins/`, dan `start/lib/`.
 - `npm audit --omit=dev --audit-level=high`: 0 vulnerability.
-- Smoke load: 24 plugin / 52 command; Baileys named exports tersedia.
+- Smoke load: 24 plugin / 52 command; 0 error loader; voicechanger tersedia; Baileys named exports tersedia.
 - Smoke HTTP publik DNS-pinned: `https://example.com/` mengembalikan HTTP 200; tidak memakai akun WhatsApp.
 - `git diff --check`: lulus.
 
@@ -88,7 +88,7 @@ Quality gate terakhir dijalankan pada Node.js `v22.23.4`:
 - Timeout request diterapkan pada transport; suite otomatis memverifikasi batas byte dan safe URL, sedangkan request HTTP aktual yang dilakukan di smoke test adalah endpoint publik yang berhasil, bukan timeout/redirect.
 - Sejumlah layanan AI/downloader pihak ketiga tidak dapat dijamin tersedia permanen.
 - Credential SMTP yang tertanam di baseline telah dihapus dari working tree, tetapi riwayat penuh tidak dipindai karena checkout dangkal. Rotasi credential dan scan secret pada clone penuh tetap diperlukan.
-- Branch pengembangan: `refactor/plugin-architecture`. Commit implementasi: `b64183d1322e9e62238eccf5afc2aa3ac7ca721a`. Pull request terbuka: https://github.com/nhebotx-md/basebot/pull/1.
+- Branch pengembangan: `refactor/plugin-architecture`. Commit arsitektur awal: `b64183d1322e9e62238eccf5afc2aa3ac7ca721a`; patch koneksi ini menjadi commit lanjutan pada branch dan pull request yang sama: https://github.com/nhebotx-md/basebot/pull/1.
 
 ## Cara menjalankan
 

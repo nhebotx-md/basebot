@@ -4,7 +4,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 
 const FILTERS = {
   bass: ['-af', 'equalizer=f=54:width_type=o:width=2:g=12'],
@@ -21,9 +20,24 @@ const FILTERS = {
   tupai: ['-af', 'asetrate=65100,atempo=0.68']
 };
 
+function resolveFfmpegPath() {
+  try {
+    const executable = require('@ffmpeg-installer/ffmpeg').path;
+    if (!executable || !path.isAbsolute(executable) || !fs.existsSync(executable)) throw new Error('Executable FFmpeg tidak ditemukan.');
+    return executable;
+  } catch (cause) {
+    const error = new Error('Binari FFmpeg tidak tersedia. Jalankan `npm ci` pada direktori BASEBOT lalu mulai ulang bot.', { cause });
+    error.code = 'FFMPEG_BINARY_MISSING';
+    throw error;
+  }
+}
+
 function runFfmpeg(input, output, filterArgs) {
+  let executable;
+  try { executable = resolveFfmpegPath(); }
+  catch (error) { return Promise.reject(error); }
   return new Promise((resolve, reject) => {
-    const child = spawn(ffmpegPath, ['-nostdin', '-hide_banner', '-loglevel', 'error', '-y', '-i', input, ...filterArgs, '-vn', output], { stdio: 'ignore' });
+    const child = spawn(executable, ['-nostdin', '-hide_banner', '-loglevel', 'error', '-y', '-i', input, ...filterArgs, '-vn', output], { stdio: 'ignore' });
     const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('Pemrosesan audio melewati batas waktu.')); }, 30000);
     child.once('error', error => { clearTimeout(timer); reject(error); });
     child.once('close', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`FFmpeg keluar dengan status ${code}.`)); });
@@ -48,6 +62,9 @@ module.exports = {
       const result = await fs.promises.readFile(output);
       if (result.length > 20 * 1024 * 1024) throw new Error('Audio hasil melebihi batas ukuran.');
       await ctx.sendMessage(ctx.chat, { audio: result, mimetype: 'audio/mpeg', ptt: true }, { quoted: ctx.m.raw });
+    } catch (error) {
+      if (error.code === 'FFMPEG_BINARY_MISSING') return ctx.reply(error.message);
+      throw error;
     } finally {
       await Promise.all([fs.promises.unlink(input).catch(() => {}), fs.promises.unlink(output).catch(() => {})]);
     }

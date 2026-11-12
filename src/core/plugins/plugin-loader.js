@@ -26,13 +26,19 @@ function loadPlugins({ directory, registry, logger = console, reload = false }) 
   const root = path.resolve(directory);
   const loaded = [];
   for (const filePath of findPluginFiles(root)) {
+    let stage = 'import';
     try {
       const resolved = require.resolve(filePath);
       if (reload) delete require.cache[resolved];
       const plugin = require(resolved);
+      stage = 'metadata-validation/registration';
       loaded.push(registry.register(plugin, path.relative(root, filePath)));
     } catch (error) {
-      logger.error('Plugin dilewati karena gagal dimuat/validasi.', { file: path.relative(root, filePath), error: error.message });
+      logger.error('Plugin gagal dimuat atau divalidasi; fitur pada file ini tidak aktif.', {
+        file: path.relative(root, filePath),
+        stage,
+        error
+      });
     }
   }
   return loaded;

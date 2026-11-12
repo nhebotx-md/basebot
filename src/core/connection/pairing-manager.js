@@ -2,7 +2,8 @@
 
 function normalizePhone(value) { return String(value || '').replace(/\D/g, ''); }
 
-function createPairingManager({ config, logger = console, output = process.stdout }) {
+function createPairingManager({ config, logger = console, output = process.stdout, delay = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
+  let customCodeWarningLogged = false;
   return {
     async onSocketReady(client) {
       if (client.authState?.creds?.registered) return;
@@ -17,13 +18,20 @@ function createPairingManager({ config, logger = console, output = process.stdou
       client._pairingRequested = true;
       try {
         const delayMs = Number.isFinite(config.pairing.delayMs) ? config.pairing.delayMs : 1500;
-        if (delayMs > 0) await new Promise(resolve => setTimeout(resolve, delayMs));
+        if (delayMs > 0) await delay(delayMs);
         if (client.authState?.creds?.registered) return;
-        const code = await client.requestPairingCode(phone, config.pairing.code || undefined);
+        if (client.ws && client.ws.isOpen === false) throw new Error('WebSocket sudah tertutup sebelum pairing code diminta.');
+        if (config.pairing.code && !customCodeWarningLogged) {
+          customCodeWarningLogged = true;
+          logger.warn('PAIRING_CODE kustom diabaikan; gunakan kode Crockford yang dihasilkan Baileys agar kompatibel dengan WhatsApp.');
+        }
+        // Do not pass a fixed custom code. The library generates a protocol-compatible code.
+        const code = await client.requestPairingCode(phone);
+        logger.info('Pairing code berhasil diminta; tunggu persetujuan di ponsel.', { codeLength: String(code).length });
         output.write(`Pairing code WhatsApp: ${code}\n`);
       } catch (error) {
         client._pairingRequested = false;
-        logger.error('Permintaan pairing code gagal.', { error: error.message });
+        logger.error('Permintaan pairing code gagal.', { error });
       }
     }
   };
