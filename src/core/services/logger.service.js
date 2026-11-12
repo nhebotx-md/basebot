@@ -42,16 +42,39 @@ function redact(value, key = '', seen = new WeakSet(), depth = 0) {
 }
 
 function stripAnsi(value) { return String(value).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, ''); }
+function visibleWidth(value) {
+  return Array.from(stripAnsi(value)).reduce((width, char) => {
+    // Termux commonly renders these Unicode ranges as two terminal cells.
+    return width + (/[[\\u1100-\\u115F\\u2E80-\\uA4CF\\uAC00-\\uD7A3\\uF900-\\uFAFF\\uFE10-\\uFE6F\\uFF00-\\uFF60\\uFFE0-\\uFFE6]]/u.test(char) ? 2 : 1);
+  }, 0);
+}
 function padVisible(value, width) {
   const text = String(value);
-  return text + ' '.repeat(Math.max(0, width - stripAnsi(text).length));
+  return text + ' '.repeat(Math.max(0, width - visibleWidth(text)));
+}
+function terminalWidth() {
+  const columns = Number(process.stdout.columns);
+  return Number.isFinite(columns) && columns >= 48 ? Math.min(columns, 100) : 80;
+}
+function fitVisible(value, width) {
+  const text = String(value);
+  if (visibleWidth(text) <= width) return text;
+  let output = '';
+  let used = 0;
+  for (const char of Array.from(text)) {
+    const size = visibleWidth(char);
+    if (used + size > Math.max(0, width - 1)) break;
+    output += char;
+    used += size;
+  }
+  return `${output}…`;
 }
 function clip(value, max = 68) {
   const text = sanitizeText(value).replace(/[\r\n]+/g, ' ').trim();
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 function shortTime(date) {
-  return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(date);
+  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(date);
 }
 function colorize(enabled, color, value, bold = false) {
   const text = String(value);
@@ -100,13 +123,13 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const version = clip(info?.version || '', 20);
     const mode = clip(String(info?.mode || 'public').toUpperCase(), 16);
     const node = clip(info?.node || process.version, 20);
-    const width = 54;
+    const width = Math.max(42, Math.min(64, terminalWidth() - 6));
     const edge = colorize(colorEnabled, ANSI.teal, `  ╭${'─'.repeat(width)}╮`, true);
     const bottom = colorize(colorEnabled, ANSI.teal, `  ╰${'─'.repeat(width)}╯`, true);
     const border = colorize(colorEnabled, ANSI.teal, '  │', true);
     const rightBorder = colorize(colorEnabled, ANSI.teal, '│', true);
-    const title = `  ${name}  ${colorize(colorEnabled, ANSI.violet, `v${version}`)}  ${colorize(colorEnabled, ANSI.gray, '·')}  ${colorize(colorEnabled, ANSI.white, 'PLUGIN WHATSAPP FRAMEWORK', true)}`;
-    const details = `  ${colorize(colorEnabled, ANSI.gray, 'NODE')} ${node}   ${colorize(colorEnabled, ANSI.gray, 'MODE')} ${colorize(colorEnabled, info?.mode === 'public' ? ANSI.green : ANSI.yellow, mode, true)}   ${colorize(colorEnabled, ANSI.gray, 'PREFIX')} ${clip(info?.prefix || '.', 8)}`;
+    const title = fitVisible(`  ${name}  ${colorize(colorEnabled, ANSI.violet, `v${version}`)}  ${colorize(colorEnabled, ANSI.gray, '·')}  ${colorize(colorEnabled, ANSI.white, 'PLUGIN WHATSAPP FRAMEWORK', true)}`, width);
+    const details = fitVisible(`  ${colorize(colorEnabled, ANSI.gray, 'NODE')} ${node}   ${colorize(colorEnabled, ANSI.gray, 'MODE')} ${colorize(colorEnabled, info?.mode === 'public' ? ANSI.green : ANSI.yellow, mode, true)}   ${colorize(colorEnabled, ANSI.gray, 'PREFIX')} ${clip(info?.prefix || '.', 8)}`, width);
     if (pretty) writeLine(`\n${edge}\n${border}${padVisible(title, width)}${rightBorder}\n${border}${padVisible(details, width)}${rightBorder}\n${bottom}`);
     else record('info', 'Runtime banner.', info);
   };
@@ -134,12 +157,13 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const [label, color, icon] = map[String(status).toLowerCase()] || ['CONNECTION', ANSI.blue, '●'];
     if (!pretty) return record(status === 'close' ? 'warn' : 'info', `WhatsApp ${label.toLowerCase()}.`, { status, ...details });
     const safeDetails = redact(details);
-    writeLine(`\n  ${colorize(colorEnabled, ANSI.teal, '╭─', true)} ${colorize(colorEnabled, color, `${icon} ${label}`, true)} ${colorize(colorEnabled, ANSI.gray, '─'.repeat(34))}`);
+    const panelWidth = Math.max(38, Math.min(58, terminalWidth() - 8));
+    writeLine(`\n  ${colorize(colorEnabled, ANSI.teal, '╭─', true)} ${colorize(colorEnabled, color, `${icon} ${label}`, true)} ${colorize(colorEnabled, ANSI.gray, '─'.repeat(Math.max(8, panelWidth - 12)))}`);
     for (const [key, value] of Object.entries(safeDetails || {})) {
       if (value === undefined || value === false || value === '') continue;
       writeLine(`  ${colorize(colorEnabled, ANSI.teal, '│')} ${colorize(colorEnabled, ANSI.gray, padVisible(`${clip(key, 26)}:`, 28))} ${colorize(colorEnabled, ANSI.white, clip(typeof value === 'object' ? JSON.stringify(value) : value, 70))}`);
     }
-    writeLine(`  ${colorize(colorEnabled, ANSI.teal, '╰' + '─'.repeat(48), true)}`);
+    writeLine(`  ${colorize(colorEnabled, ANSI.teal, '╰' + '─'.repeat(panelWidth), true)}`);
   };
 
   logger.activity = info => {
