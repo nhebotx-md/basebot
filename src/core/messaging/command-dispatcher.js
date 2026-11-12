@@ -3,9 +3,10 @@
 const { validatePermission } = require('../security/permission-manager');
 
 class CommandDispatcher {
-  constructor({ registry, logger = console, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, maxConcurrentCommands = 20 }) {
+  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, maxConcurrentCommands = 20 }) {
     this.registry = registry;
     this.logger = logger;
+    this.menuService = menuService;
     this.dedupeTtlMs = dedupeTtlMs;
     this.maxDedupeEntries = maxDedupeEntries;
     this.rateLimit = rateLimit;
@@ -50,6 +51,21 @@ class CommandDispatcher {
       this.seen.set(id, Date.now());
     }
     if (!ctx.command) return { handled: false, reason: 'not-command' };
+    if (this.menuService?.canHandle(ctx.command)) {
+      if (!this.allowRate(ctx)) {
+        const key = ctx.sender || ctx.chat || 'unknown';
+        if (!this.rateWarnings.has(key)) { this.rateWarnings.set(key, Date.now()); await ctx.reply('Terlalu banyak command. Tunggu sebentar lalu coba lagi.'); }
+        return { handled: true, command: ctx.command, reason: 'rate-limit' };
+      }
+      try {
+        await this.menuService.execute(ctx);
+        return { handled: true, command: ctx.command, builtin: true };
+      } catch (error) {
+        this.logger.error('Menu bawaan gagal ditampilkan.', { command: ctx.command, error });
+        try { await ctx.reply('Menu gagal ditampilkan. Coba lagi sebentar.'); } catch { /* chat mungkin sudah tidak tersedia */ }
+        return { handled: true, command: ctx.command, error };
+      }
+    }
     const plugin = this.registry.getByCommand(ctx.command);
     if (!plugin) return { handled: false, reason: 'unknown-command' };
     if (!this.allowRate(ctx)) {
