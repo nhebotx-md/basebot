@@ -88,7 +88,7 @@ Quality gate terakhir dijalankan pada Node.js `v22.23.4`:
 - Timeout request diterapkan pada transport; suite otomatis memverifikasi batas byte dan safe URL, sedangkan request HTTP aktual yang dilakukan di smoke test adalah endpoint publik yang berhasil, bukan timeout/redirect.
 - Sejumlah layanan AI/downloader pihak ketiga tidak dapat dijamin tersedia permanen.
 - Credential SMTP yang tertanam di baseline telah dihapus dari working tree, tetapi riwayat penuh tidak dipindai karena checkout dangkal. Rotasi credential dan scan secret pada clone penuh tetap diperlukan.
-- Detail branch/commit/PR mengikuti hasil integrasi Git yang menyertai laporan penyerahan.
+- Branch pengembangan: `refactor/plugin-architecture`. Commit implementasi: `b64183d1322e9e62238eccf5afc2aa3ac7ca721a`. Pull request terbuka: https://github.com/nhebotx-md/basebot/pull/1.
 
 ## Cara menjalankan
 
