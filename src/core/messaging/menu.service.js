@@ -12,11 +12,11 @@ const CATEGORY_ICONS = Object.freeze({
 });
 
 function normalizeCategory(value) {
-  return String(value || '').trim().toLocaleLowerCase('id-ID').replace(/\s+/g, '-');
+  return String(value || '').trim().toLocaleLowerCase('id-ID').replace(/\\s+/g, '-');
 }
 
 function cleanLabel(value, fallback = '-') {
-  const text = String(value || fallback).replace(/[\r\n\t]/g, ' ').replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  const text = String(value || fallback).replace(/[\\r\\n\\t]/g, ' ').replace(/[\\u0000-\\u001f\\u007f]/g, '').trim();
   return (text || fallback).slice(0, 64);
 }
 
@@ -26,7 +26,7 @@ function formatUptime(seconds) {
   const hours = Math.floor((total % 86400) / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
-  return [days ? \`\${days} hari\` : '', hours ? \`\${hours}j\` : '', minutes ? \`\${minutes}m\` : '', \`\${secs}dtk\`].filter(Boolean).join(' ');
+  return [days ? `${days} hari` : '', hours ? `${hours}j` : '', minutes ? `${minutes}m` : '', `${secs}dtk`].filter(Boolean).join(' ');
 }
 
 function timeZoneLabel(timeZone) {
@@ -78,26 +78,26 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const lines = [
-      \`Hai *\${userName}* 🪸\`,
+      `Hai *${userName}* 🪸`,
       '',
-      \`Aku *\${botName}*, bot WhatsApp yang siap membantu aktivitasmu.\`,
+      `Aku *${botName}*, bot WhatsApp yang siap membantu aktivitasmu.`,
       '',
       '╭─〔 🤖 *BOT INFO* 〕',
-      \`*│* 🌙 Nama       : *\${botName}*\`,
-      \`*│* 🔑 Versi      : *v\${cleanLabel(version)}*\`,
-      \`*│* ⚙️ Mode       : *\${mode}*\`,
-      \`*│* 🧶 Prefix     : *[ \${prefixLabel} ]*\`,
-      \`*│* ⏱️ Uptime     : *\${formatUptime((now.getTime() - startedAt) / 1000)}*\`,
-      \`*│* 🧩 Plugin     : *\${plugins.length} aktif*\`,
-      \`*│* 🛠️ Command    : *\${commandCount} terdaftar*\`,
-      \`*│* 👑 Owner      : *\${ownerName}*\`,
+      `*│* 🌙 Nama       : *${botName}*`,
+      `*│* 🔑 Versi      : *v${cleanLabel(version)}*`,
+      `*│* ⚙️ Mode       : *${mode}*`,
+      `*│* 🧶 Prefix     : *[ ${prefixLabel} ]*`,
+      `*│* ⏱️ Uptime     : *${formatUptime((now.getTime() - startedAt) / 1000)}*`,
+      `*│* 🧩 Plugin     : *${plugins.length} aktif*`,
+      `*│* 🛠️ Command    : *${commandCount} terdaftar*`,
+      `*│* 👑 Owner      : *${ownerName}*`,
       '╰────────────────⎯',
       '',
       '╭─〔 👤 *USER INFO* 〕',
-      \`*│* 🙋 Nama       : *\${userName}*\`,
-      \`*│* 🎭 Role       : *\${role}*\`,
-      \`*│* 🕒 Waktu      : *\${time} \${timeZoneLabel(config.timezone)}*\`,
-      \`*│* 📅 Tanggal    : *\${date}*\`,
+      `*│* 🙋 Nama       : *${userName}*`,
+      `*│* 🎭 Role       : *${role}*`,
+      `*│* 🕒 Waktu      : *${time} ${timeZoneLabel(config.timezone)}*`,
+      `*│* 📅 Tanggal    : *${date}*`,
       '╰────────────────⎯',
       '',
       '📂 *DAFTAR MENU*'
@@ -105,7 +105,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     if (!categories.length) lines.push('- Belum ada plugin aktif yang dapat ditampilkan.');
     else for (const category of categories) {
       const icon = CATEGORY_ICONS[category.slug] || '📁';
-      lines.push(\`- \\\`⎯\\\` \${commandPrefix}catmenu \${category.slug} \${icon}\`);
+      lines.push(`- \`⎯\` ${commandPrefix}catmenu ${category.slug} ${icon}`);
     }
     lines.push('', '_Statistik EXP, koin, HP, mana, dan stamina belum tersedia karena BASEBOT belum memiliki sistem profil pengguna._');
     return lines.join('\\n');
@@ -118,31 +118,31 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     if (!requested) {
       return [
         '📂 *DAFTAR KATEGORI MENU*',
-        ...categories.map(category => \`- \${commandPrefix}catmenu \${category.slug} \${CATEGORY_ICONS[category.slug] || '📁'}\`),
+        ...categories.map(category => `- ${commandPrefix}catmenu ${category.slug} ${CATEGORY_ICONS[category.slug] || '📁'}`),
         '',
-        \`Gunakan *\${commandPrefix}catmenu <kategori>* untuk melihat command.\`
+        `Gunakan *${commandPrefix}catmenu <kategori>* untuk melihat command.`
       ].join('\\n');
     }
     const category = categories.find(item => item.slug === requested);
     if (!category) {
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
-      return \`Kategori *\${requested}* tidak ditemukan.\\nKategori tersedia: \${available}\\nKetik *\${commandPrefix}menu* untuk melihat daftar kategori.\`;
+      return `Kategori *${requested}* tidak ditemukan.\\nKategori tersedia: ${available}\\nKetik *${commandPrefix}menu* untuk melihat daftar kategori.`;
     }
     const lines = [
-      \`╭─〔 \${CATEGORY_ICONS[category.slug] || '📁'} *MENU \${category.label.toLocaleUpperCase('id-ID')}* 〕\`,
-      \`*│* Total plugin: *\${category.plugins.length}*\`,
+      `╭─〔 ${CATEGORY_ICONS[category.slug] || '📁'} *MENU ${category.label.toLocaleUpperCase('id-ID')}* 〕`,
+      `*│* Total plugin: *${category.plugins.length}*`,
       '╰────────────────⎯',
       ''
     ];
     for (const plugin of category.plugins.sort((a, b) => a.name.localeCompare(b.name, 'id'))) {
       const primary = plugin.commands[0];
-      lines.push(\`➤ *\${commandPrefix}\${primary}*\`);
-      if (plugin.commands.length > 1) lines.push(\`  Alias: \${plugin.commands.slice(1).map(command => \`\\\`\${commandPrefix}\${command}\\\`\`).join(', ')}\`);
-      if (plugin.description) lines.push(\`  _\${cleanLabel(plugin.description, '')}_\`);
-      if (plugin.usage && plugin.usage !== \`\${commandPrefix}\${primary}\`) lines.push(\`  Cara pakai: \${plugin.usage}\`);
+      lines.push(`➤ *${commandPrefix}${primary}*`);
+      if (plugin.commands.length > 1) lines.push(`  Alias: ${plugin.commands.slice(1).map(command => `\\`${commandPrefix}${command}\\``).join(', ')}`);
+      if (plugin.description) lines.push(`  _${cleanLabel(plugin.description, '')}_`);
+      if (plugin.usage && plugin.usage !== `${commandPrefix}${primary}`) lines.push(`  Cara pakai: ${plugin.usage}`);
       lines.push('');
     }
-    lines.push(\`Ketik *\${commandPrefix}menu* untuk kembali ke daftar kategori.\`);
+    lines.push(`Ketik *${commandPrefix}menu* untuk kembali ke daftar kategori.`);
     return lines.join('\\n').trim();
   }
 
