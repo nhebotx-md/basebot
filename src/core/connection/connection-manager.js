@@ -1,6 +1,5 @@
 'use strict';
 
-const { createClientFactory } = require('../client/create-client');
 const { createPairingManager } = require('./pairing-manager');
 const { createConnectionUpdateHandler } = require('../events/connection-update');
 const { createMessagesUpsertHandler } = require('../events/messages-upsert');
@@ -18,9 +17,8 @@ function disconnectName(DisconnectReason, statusCode) {
   return entry?.[0] || 'unknown';
 }
 
-function createConnectionManager({ config, registry, dispatcher, logger = console, createClient = createClientFactory({ config, logger }), timerApi = globalThis }) {
-  let baileys = null;
-  const getBaileys = async () => { baileys ||= await import('@itsliaaa/baileys'); return baileys; };
+function createConnectionManager({ config, registry, dispatcher, logger = console, createClient, timerApi = globalThis }) {
+  if (typeof createClient !== 'function') throw new TypeError('createConnectionManager membutuhkan createClient dari integration adapter.');
   const pairing = createPairingManager({ config, logger });
   let current = null;
   let connecting = null;
@@ -116,10 +114,10 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
 
     const disconnectError = update.lastDisconnect?.error;
     const statusCode = disconnectError?.output?.statusCode ?? disconnectError?.statusCode;
-    const { DisconnectReason } = await getBaileys();
-    const reason = disconnectName(DisconnectReason, statusCode);
-    const loggedOut = statusCode === DisconnectReason.loggedOut;
-    const restartRequired = statusCode === DisconnectReason.restartRequired;
+    const lifecycleReasons = client.lifecycleReasons || {};
+    const reason = disconnectName(lifecycleReasons, statusCode);
+    const loggedOut = lifecycleReasons.loggedOut !== undefined && statusCode === lifecycleReasons.loggedOut;
+    const restartRequired = lifecycleReasons.restartRequired !== undefined && statusCode === lifecycleReasons.restartRequired;
 
     if (restartRequired) {
       restartRequiredCount += 1;
