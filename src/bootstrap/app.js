@@ -10,6 +10,7 @@ const { findPluginFiles, loadPlugins } = require('../core/plugins/plugin-loader'
 const { CommandDispatcher } = require('../core/messaging/command-dispatcher');
 const { createMenuService } = require('../core/messaging/menu.service');
 const { createConnectionManager } = require('../core/connection/connection-manager');
+const { createClientFactory } = require('../integrations/whatsapp/client');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
@@ -58,7 +59,8 @@ async function createApp(options = {}) {
 
   const menuService = createMenuService({ registry, config, version: packageInfo.version, startedAt: Date.now() });
   const dispatcher = new CommandDispatcher({ registry, logger, menuService });
-  const connection = createConnectionManager({ config, registry, dispatcher, logger });
+  const createClient = createClientFactory({ config, logger });
+  const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient });
   return {
     config,
     logger,
