@@ -35,11 +35,22 @@ function isPhoneJid(value) {
   return typeof value === 'string' && /@(s\.whatsapp\.net|c\.us)$/i.test(value);
 }
 
-function getSenderCandidates(raw, client) {
+function getSenderCandidates(raw, client, isNewsletter) {
   const key = raw.key;
   if (key.fromMe) {
     return [client?.user?.id, key.senderPn, key.participantAlt, key.participant, key.remoteJidAlt]
       .filter(value => typeof value === 'string' && value);
+  }
+  if (isNewsletter) {
+    // A newsletter JID identifies the channel, not the human who published the post.
+    // Only use explicit publisher metadata; never infer the publisher from remoteJid.
+    return [
+      raw.newsletterMeta?.adminProfile?.id,
+      raw.newsletterMeta?.adminProfile?.jid,
+      key.senderPn,
+      key.participantAlt,
+      key.participant
+    ].filter(value => typeof value === 'string' && value);
   }
   if ((key.remoteJid || '').endsWith('@g.us')) {
     return [key.senderPn, key.participantAlt, key.participant]
@@ -53,7 +64,8 @@ function normalizeMessage(raw, client) {
   if (!raw || !raw.key || !raw.message) return null;
   const chat = raw.key.remoteJid || '';
   const decode = client?.decodeJid || (jid => jid);
-  const senderCandidates = getSenderCandidates(raw, client);
+  const isNewsletter = chat.endsWith('@newsletter');
+  const senderCandidates = getSenderCandidates(raw, client, isNewsletter);
   const preferredSender = senderCandidates.find(isPhoneJid) || senderCandidates[0] || '';
   let sender = preferredSender;
   try { sender = decode(preferredSender) || preferredSender; } catch { /* preserve original JID */ }
@@ -61,9 +73,12 @@ function normalizeMessage(raw, client) {
   const mtype = Object.keys(content)[0] || '';
   const msg = content[mtype] || {};
   const isGroup = chat.endsWith('@g.us');
+  const isChannel = isNewsletter;
   return {
     raw, key: raw.key, id: raw.key.id || '', chat, sender, senderCandidates, fromMe: Boolean(raw.key.fromMe),
-    isGroup, isPrivate: !isGroup, pushName: raw.pushName || 'No Name',
+    isGroup, isPrivate: !isGroup && !isChannel, isNewsletter, isChannel,
+    channelPublisher: raw.newsletterMeta?.adminProfile || null,
+    pushName: raw.pushName || raw.newsletterMeta?.adminProfile?.name || 'No Name',
     message: content, mtype, msg, body: getMessageText(content), text: getMessageText(content),
     quoted: msg.contextInfo?.quotedMessage || null,
     mentionedJid: msg.contextInfo?.mentionedJid || []
