@@ -88,6 +88,8 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     client, sock: client, m, chatUpdate, store, registry, config, logger, services,
     command: parsed?.command || '', prefix: parsed?.prefix || config.prefix, args: parsed?.args || [], text: parsed?.text || '',
     sender, chat: m.chat, pushname: m.pushName, isGroup: m.isGroup, isPrivate: m.isPrivate,
+    isNewsletter: Boolean(m.isNewsletter), isChannel: Boolean(m.isChannel),
+    channelPublisher: m.channelPublisher || null,
     isOwner: ownerSet.has(sender) || (m.fromMe && Boolean(bot) && sender === bot), isGroupAdmin: Boolean(m.isGroup && adminIds.has(sender)),
     isBotAdmin: Boolean(m.isGroup && adminIds.has(bot)), groupMetadata, publicMode: client.public !== false,
     reply: (text, options) => messageService.reply(m, text, options),
