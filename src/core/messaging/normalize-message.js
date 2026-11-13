@@ -38,14 +38,14 @@ function isPhoneJid(value) {
 function getSenderCandidates(raw, client) {
   const key = raw.key;
   if (key.fromMe) {
-    return [client?.user?.id, key.participantAlt, key.participant, key.remoteJidAlt]
+    return [client?.user?.id, key.senderPn, key.participantAlt, key.participant, key.remoteJidAlt]
       .filter(value => typeof value === 'string' && value);
   }
   if ((key.remoteJid || '').endsWith('@g.us')) {
-    return [key.participantAlt, key.participant]
+    return [key.senderPn, key.participantAlt, key.participant]
       .filter(value => typeof value === 'string' && value);
   }
-  return [key.remoteJidAlt, key.remoteJid]
+  return [key.senderPn, key.remoteJidAlt, key.remoteJid]
     .filter(value => typeof value === 'string' && value);
 }
 
