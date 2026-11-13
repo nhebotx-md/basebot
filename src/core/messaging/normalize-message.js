@@ -31,17 +31,38 @@ function getMessageText(message) {
   return '';
 }
 
+function isPhoneJid(value) {
+  return typeof value === 'string' && /@(s\.whatsapp\.net|c\.us)$/i.test(value);
+}
+
+function getSenderCandidates(raw, client) {
+  const key = raw.key;
+  if (key.fromMe) {
+    return [client?.user?.id, key.participantAlt, key.participant, key.remoteJidAlt]
+      .filter(value => typeof value === 'string' && value);
+  }
+  if ((key.remoteJid || '').endsWith('@g.us')) {
+    return [key.participantAlt, key.participant]
+      .filter(value => typeof value === 'string' && value);
+  }
+  return [key.remoteJidAlt, key.remoteJid]
+    .filter(value => typeof value === 'string' && value);
+}
+
 function normalizeMessage(raw, client) {
   if (!raw || !raw.key || !raw.message) return null;
   const chat = raw.key.remoteJid || '';
   const decode = client?.decodeJid || (jid => jid);
-  const sender = decode(raw.key.fromMe ? client?.user?.id : (raw.key.participant || chat)) || '';
+  const senderCandidates = getSenderCandidates(raw, client);
+  const preferredSender = senderCandidates.find(isPhoneJid) || senderCandidates[0] || '';
+  let sender = preferredSender;
+  try { sender = decode(preferredSender) || preferredSender; } catch { /* preserve original JID */ }
   const content = unwrapMessage(raw.message);
   const mtype = Object.keys(content)[0] || '';
   const msg = content[mtype] || {};
   const isGroup = chat.endsWith('@g.us');
   return {
-    raw, key: raw.key, id: raw.key.id || '', chat, sender, fromMe: Boolean(raw.key.fromMe),
+    raw, key: raw.key, id: raw.key.id || '', chat, sender, senderCandidates, fromMe: Boolean(raw.key.fromMe),
     isGroup, isPrivate: !isGroup, pushName: raw.pushName || 'No Name',
     message: content, mtype, msg, body: getMessageText(content), text: getMessageText(content),
     quoted: msg.contextInfo?.quotedMessage || null,
@@ -49,4 +70,4 @@ function normalizeMessage(raw, client) {
   };
 }
 
-module.exports = { normalizeMessage, unwrapMessage, getMessageText };
+module.exports = { normalizeMessage, unwrapMessage, getMessageText, isPhoneJid };
