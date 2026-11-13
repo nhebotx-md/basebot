@@ -113,7 +113,7 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
       return target;
     };
     sock.sendImageAsSticker = async (jid, input, quoted, options = {}) => {
-      const { addExif, writeExifImg } = require('../../../start/lib/exif');
+      const { addExif, writeExifImg } = require('../../core/services/sticker.service');
       let buffer;
       if (Buffer.isBuffer(input)) buffer = input;
       else if (typeof input === 'string' && /^https?:\/\//i.test(input)) { buffer = (await downloadBuffer(input, { maxBytes: 15 * 1024 * 1024, timeoutMs: 15000 })).buffer; }
