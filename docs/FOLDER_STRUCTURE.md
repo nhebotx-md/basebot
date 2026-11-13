@@ -19,9 +19,9 @@ Dokumen ini adalah kontrak struktur. Perpindahan kode dilakukan bertahap dengan 
 │   │   ├── messaging/            # Parser, context, dispatcher, menu
 │   │   ├── plugins/              # Discovery, validation, registry, lifecycle plugin
 │   │   ├── security/             # Permission, URL policy, sanitasi
-│   │   └── services/             # Logger, storage, media, message services
+│   │   └── services/             # Logger, storage, media, message, sticker services
 │   ├── integrations/
-│   │   └── whatsapp/             # Implementasi provider WhatsApp/Baileys (target ekstraksi)
+│   │   └── whatsapp/             # Adapter provider WhatsApp/Baileys
 │   ├── shared/
 │   │   ├── constants/
 │   │   ├── errors/
