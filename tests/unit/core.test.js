@@ -54,6 +54,29 @@ test('normalizer prefers PN alternate JIDs over LID for private and group sender
   assert.equal(senderPnMessage.sender, '6281234567890@s.whatsapp.net');
 });
 
+test('normalizer identifies newsletter channel posts and extracts publisher identity without using channel JID', () => {
+  const post = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'channel-post-1' },
+    newsletterMeta: { adminProfile: { id: '6281234567890@s.whatsapp.net', name: 'Channel Owner' } },
+    message: { extendedTextMessage: { text: '.get https://example.com' } }
+  }, {});
+  assert.equal(post.isNewsletter, true);
+  assert.equal(post.isChannel, true);
+  assert.equal(post.isGroup, false);
+  assert.equal(post.isPrivate, false);
+  assert.equal(post.sender, '6281234567890@s.whatsapp.net');
+  assert.equal(post.pushName, 'Channel Owner');
+  assert.equal(post.body, '.get https://example.com');
+
+  const unknownPublisher = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'channel-post-2' },
+    message: { conversation: '.get' }
+  }, {});
+  assert.equal(unknownPublisher.isNewsletter, true);
+  assert.equal(unknownPublisher.sender, '');
+  assert.deepEqual(unknownPublisher.senderCandidates, []);
+});
+
 test('identities normalize device suffix and permissions deny unavailable admin metadata', () => {
   assert.equal(normalizeIdentity('628123:4@s.whatsapp.net'), '628123@s.whatsapp.net');
   assert.deepEqual(validatePermission(plugin({ permissions: { ownerOnly: true } }), { isOwner: false, isGroup: false, isPrivate: true }), { allowed: false, reason: 'owner' });
