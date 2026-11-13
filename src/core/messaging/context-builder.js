@@ -18,7 +18,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     catch (error) { logger.warn('Metadata grup tidak tersedia; izin admin ditolak.', { error: error.message }); }
   }
   const decode = client.decodeJid || (jid => jid);
-  const ownerSet = new Set(config.owners.map(owner => normalizeIdentity(`${owner.replace(/\\D/g, '')}@s.whatsapp.net`, decode)));
+  const ownerSet = new Set(config.owners.map(owner => normalizeIdentity(`${owner.replace(/\D/g, '')}@s.whatsapp.net`, decode)));
   const sender = normalizeIdentity(m.sender, decode);
   const bot = normalizeIdentity(client.user?.id || '', decode);
   const participantList = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
