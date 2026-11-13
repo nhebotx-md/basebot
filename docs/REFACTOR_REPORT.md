@@ -57,7 +57,7 @@ Tidak ada command aman yang teridentifikasi tertinggal di dispatcher lama. `eval
 
 ## Dependency dan konfigurasi
 
-Baileys dipatok ke `@itsliaaa/baileys@0.4.4`; manifest/lockfile diperbarui, versi `ws` dan `@napi-rs/image` dipatok untuk runtime/media, serta `minimatch` transitif mendapat override versi perbaikan. Versi dependency rinci ada di `package.json` dan `package-lock.json`. Node minimum ditetapkan `>=20`, CommonJS tetap digunakan dan paket Baileys ESM dimuat melalui dynamic import.
+Baileys dipatok ke `@itsliaaa/baileys@0.4.4`; manifest/lockfile diperbarui, versi `ws` dan `@napi-rs/image` dipatok untuk runtime/media, serta `minimatch` transitif mendapat override versi perbaikan. Versi dependency rinci ada di `package.json` dan `package-lock.json`. Node minimum ditetapkan `>=22.13.0`, CommonJS tetap digunakan dan paket Baileys ESM dimuat melalui dynamic import.
 
 Konfigurasi rahasia berpindah ke `.env` berbasis `.env.example`; owner/pairing/config TTS tidak ditulis dalam source. Session directory diproteksi `0700`, file auth menjadi `0600`, symlink ditolak, storage membatasi path ke root yang diizinkan, dan file sticker sementara diberi izin privat serta dibersihkan setelah pengiriman.
 
@@ -80,7 +80,7 @@ Verifikasi lokal yang dilaporkan pengguna pada 2026-11-13:
 ## Belum diuji / batasan
 
 - Tidak ada pairing, login, atau koneksi WhatsApp nyata; tes event dan socket menggunakan mock sebagaimana disyaratkan. Lakukan uji terkontrol dengan akun uji operator sebelum deploy.
-- Node 20 tidak tersedia pada sesi ini; minimum versi diturunkan dari engine dependency, sedangkan tes aktual memakai Node 22.23.4.
+- Node.js 20 tidak didukung karena fork Baileys memerlukan peer dependency native `better-sqlite3` pada runtime di bawah 22.13; BASEBOT menetapkan minimum 22.13 dan CI menguji Node 22/24.
 - Timeout request diterapkan pada transport; suite otomatis memverifikasi batas byte dan safe URL, sedangkan request HTTP aktual yang dilakukan di smoke test adalah endpoint publik yang berhasil, bukan timeout/redirect.
 - Sejumlah layanan AI/downloader pihak ketiga tidak dapat dijamin tersedia permanen.
 - Credential SMTP yang tertanam di baseline telah dihapus dari working tree, tetapi riwayat penuh tidak dipindai karena checkout dangkal. Rotasi credential dan scan secret pada clone penuh tetap diperlukan.
@@ -88,7 +88,7 @@ Verifikasi lokal yang dilaporkan pengguna pada 2026-11-13:
 
 ## Cara menjalankan
 
-1. Gunakan Node.js 20+; salin `.env.example` ke `.env` dan atur `OWNER_NUMBERS`, `PAIRING_PHONE` serta konfigurasi yang diperlukan.
+1. Gunakan Node.js 22.13.0+; salin `.env.example` ke `.env` dan atur `OWNER_NUMBERS`, `PAIRING_PHONE` serta konfigurasi yang diperlukan.
 2. Jalankan `npm ci` lalu `npm start`.
 3. Untuk pemeriksaan tanpa WhatsApp: `npm test`, `npm run check`, dan `npm audit --omit=dev --audit-level=high`.
 
