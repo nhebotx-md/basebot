@@ -51,9 +51,9 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   }
   const decode = client.decodeJid || (jid => jid);
   const ownerSet = new Set(config.owners.map(owner => normalizeIdentity(`${owner.replace(/\D/g, '')}@s.whatsapp.net`, decode)));
-  const senderCandidates = Array.isArray(m.senderCandidates) && m.senderCandidates.length
-    ? m.senderCandidates
-    : [m.sender];
+  const senderCandidates = m.fromMe
+    ? [client.user?.id, ...(Array.isArray(m.senderCandidates) ? m.senderCandidates : [])]
+    : (Array.isArray(m.senderCandidates) && m.senderCandidates.length ? m.senderCandidates : [m.sender]);
   const sender = await resolveBestIdentity(senderCandidates, client, decode);
   const bot = await resolveBestIdentity([client.user?.id], client, decode);
   const participantList = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
