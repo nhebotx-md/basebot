@@ -4,7 +4,7 @@ module.exports = {
   description: 'Meningkatkan kualitas gambar yang dikutip.', usage: '.remini (balas gambar)', permissions: {},
   async execute(ctx) {
     if (!ctx.quoted) return ctx.reply(`Balas gambar dengan ${ctx.prefix}${ctx.command}.`);
-    if (!/^image\\/(jpeg|jpg|png)$/i.test(ctx.mime)) return ctx.reply('Format yang didukung hanya JPEG dan PNG.');
+    if (!/^image\/(jpeg|jpg|png)$/i.test(ctx.mime)) return ctx.reply('Format yang didukung hanya JPEG dan PNG.');
     const active = ctx.client._enhancerJobs || (ctx.client._enhancerJobs = new Set());
     if (active.has(ctx.sender)) return ctx.reply('Permintaan sebelumnya masih diproses.');
     active.add(ctx.sender);
