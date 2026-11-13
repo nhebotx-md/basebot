@@ -72,14 +72,10 @@ Konfigurasi rahasia berpindah ke `.env` berbasis `.env.example`; owner/pairing/c
 
 ## Pengujian: berhasil diuji
 
-Quality gate terakhir dijalankan pada Node.js `v22.23.4`:
+Verifikasi lokal yang dilaporkan pengguna pada 2026-11-13:
 
-- `npm test`: **38 lulus, 0 gagal**. Selain cakupan awal, tes memverifikasi 515 membuat socket kedua, timer reconnect mempertahankan event loop CLI, auth flush serial sebelum reconnect/shutdown, generated pairing code, pairing rejection terlog, structured log/redaction (termasuk output Pino info nyata), error detail plugin, dan voicechanger tetap diregistrasi tanpa binari FFmpeg.
+- `npm test`: **76 lulus, 0 gagal**. Selain cakupan awal, tes memverifikasi 515 membuat socket kedua, timer reconnect mempertahankan event loop CLI, auth flush serial sebelum reconnect/shutdown, generated pairing code, pairing rejection terlog, structured log/redaction (termasuk output Pino info nyata), error detail plugin, dan voicechanger tetap diregistrasi tanpa binari FFmpeg.
 - `npm run check`: lulus untuk entrypoint, `src/`, `plugins/`, dan `start/lib/`.
-- `npm audit --omit=dev --audit-level=high`: 0 vulnerability.
-- Smoke load: 24 plugin / 52 command; 0 error loader; voicechanger tersedia; Baileys named exports tersedia.
-- Smoke HTTP publik DNS-pinned: `https://example.com/` mengembalikan HTTP 200; tidak memakai akun WhatsApp.
-- `git diff --check`: lulus.
 
 ## Belum diuji / batasan
 
@@ -88,10 +84,19 @@ Quality gate terakhir dijalankan pada Node.js `v22.23.4`:
 - Timeout request diterapkan pada transport; suite otomatis memverifikasi batas byte dan safe URL, sedangkan request HTTP aktual yang dilakukan di smoke test adalah endpoint publik yang berhasil, bukan timeout/redirect.
 - Sejumlah layanan AI/downloader pihak ketiga tidak dapat dijamin tersedia permanen.
 - Credential SMTP yang tertanam di baseline telah dihapus dari working tree, tetapi riwayat penuh tidak dipindai karena checkout dangkal. Rotasi credential dan scan secret pada clone penuh tetap diperlukan.
-- Branch pengembangan: `refactor/plugin-architecture`. Commit arsitektur awal: `b64183d1322e9e62238eccf5afc2aa3ac7ca721a`; patch koneksi ini menjadi commit lanjutan pada branch dan pull request yang sama: https://github.com/nhebotx-md/basebot/pull/1.
+- Branch pengembangan terkini: `refactor/architecture-foundation`. PR arsitektur aktif: https://github.com/nhebotx-md/basebot/pull/9. Commit yang diuji lokal pengguna pada 2026-11-13: `e0704dc96583baa42ffc212d20d248cd597bf46c`.
 
 ## Cara menjalankan
 
 1. Gunakan Node.js 20+; salin `.env.example` ke `.env` dan atur `OWNER_NUMBERS`, `PAIRING_PHONE` serta konfigurasi yang diperlukan.
 2. Jalankan `npm ci` lalu `npm start`.
 3. Untuk pemeriksaan tanpa WhatsApp: `npm test`, `npm run check`, dan `npm audit --omit=dev --audit-level=high`.
+
+
+## Verifikasi terbaru pengguna (2026-11-13)
+
+Pada commit `e0704dc96583baa42ffc212d20d248cd597bf46c`, pengguna menjalankan `npm test` (76/76 lulus), `npm run check` (lulus), dan `git status --short --branch` (working tree bersih, branch sinkron dengan origin). Ini adalah verifikasi lokal, bukan hasil CI atau bukti koneksi WhatsApp live.
+
+## Rilis berikutnya
+
+PR #9 tetap Draft sampai workflow CI pada branch ini hijau dan smoke test runtime selesai dengan akun WhatsApp uji. Uji minimal: pairing, koneksi awal, reconnect setelah jaringan putus, logout, serta shutdown tanpa meninggalkan socket/timer aktif.
