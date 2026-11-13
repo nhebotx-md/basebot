@@ -16,18 +16,19 @@ Dokumen ini adalah kontrak struktur. Perpindahan kode dilakukan bertahap dengan 
 │   │   ├── client/              # Kontrak client dan facade transport
 │   │   ├── connection/          # Lifecycle koneksi, pairing, reconnect
 │   │   ├── events/              # Adapter event masuk
-│   │   ├── messaging/            # Parser, context, dispatcher, menu
-│   │   ├── plugins/              # Discovery, validation, registry, lifecycle plugin
-│   │   ├── security/             # Permission, URL policy, sanitasi
-│   │   └── services/             # Logger, storage, media, message, sticker services
+│   │   ├── messaging/           # Parser, context, dispatcher, menu
+│   │   ├── plugins/             # Discovery, validation, registry, lifecycle plugin
+│   │   ├── security/            # Permission, URL policy, sanitasi
+│   │   └── services/            # Logger, storage, media, message, sticker, downloader services
 │   ├── integrations/
-│   │   └── whatsapp/             # Adapter provider WhatsApp/Baileys
+│   │   ├── whatsapp/            # Adapter provider WhatsApp/Baileys
+│   │   └── providers/           # Adapter API eksternal: Instagram, YouTube, image enhancer
 │   ├── shared/
 │   │   ├── constants/
 │   │   ├── errors/
 │   │   ├── utils/
 │   │   └── validators/
-│   └── legacy/                   # Adapter sementara untuk API helper lama
+│   └── legacy/                  # Adapter sementara untuk API helper lama
 ├── plugins/
 │   ├── ai/
 │   ├── downloader/
@@ -35,16 +36,16 @@ Dokumen ini adalah kontrak struktur. Perpindahan kode dilakukan bertahap dengan 
 │   ├── media/
 │   ├── owner/
 │   └── system/
-├── storage/                      # Runtime data; tidak berisi source atau credential contoh
+├── storage/                     # Runtime data; tidak berisi source atau credential contoh
 │   ├── temp/
 │   └── data/
-├── logs/                         # Runtime logs, tidak di-commit
+├── logs/                        # Runtime logs, tidak di-commit
 ├── tests/
 │   ├── unit/
 │   ├── integration/
 │   ├── fixtures/
 │   └── helpers/
-├── scripts/                      # Tooling maintenance, migration, release
+├── scripts/                     # Tooling maintenance, migration, release
 └── docs/
     ├── architecture/
     ├── development/
@@ -57,7 +58,7 @@ Dokumen ini adalah kontrak struktur. Perpindahan kode dilakukan bertahap dengan 
 2. `bootstrap` boleh merakit modul, tetapi tidak boleh berisi business logic command.
 3. `core` tidak boleh mengimpor file dari `plugins`; plugin menggunakan API context dan service yang disediakan core.
 4. Plugin tidak boleh mengimpor file plugin lain secara langsung. Kebutuhan lintas-plugin harus menjadi service atau dependency yang dideklarasikan.
-5. Implementasi Baileys berada di lapisan integrasi. Core menggunakan kontrak/facade, bukan detail library provider.
+5. Implementasi Baileys dan API eksternal berada di lapisan integrasi. Core mengakses provider melalui service, bukan detail provider.
 6. `shared` hanya berisi kode murni tanpa side effect dan tanpa ketergantungan pada WhatsApp.
 7. Runtime data, session, log, dan temp harus berada di luar source, tidak masuk Git, dan memakai permission minimum.
 8. Hindari barrel file yang membuat circular dependency. Import modul langsung dan jaga arah dependensi satu arah.
