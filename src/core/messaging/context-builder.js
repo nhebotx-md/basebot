@@ -40,6 +40,42 @@ async function resolveBestIdentity(values, client, decode) {
   return fallback;
 }
 
+const newsletterOwnerCache = new WeakMap();
+const NEWSLETTER_OWNER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function resolveNewsletterOwner({ client, newsletterJid, ownerSet, decode }) {
+  if (!newsletterJid || !newsletterJid.endsWith('@newsletter')) return { isOwner: false, metadata: null };
+  if (typeof client.newsletterMetadata !== 'function') return { isOwner: false, metadata: null };
+
+  let cache = newsletterOwnerCache.get(client);
+  if (!cache) {
+    cache = new Map();
+    newsletterOwnerCache.set(client, cache);
+  }
+
+  const cached = cache.get(newsletterJid);
+  let metadata;
+  if (cached && cached.expiresAt > Date.now()) {
+    metadata = cached.metadata;
+  } else {
+    try {
+      metadata = await client.newsletterMetadata(newsletterJid);
+      cache.set(newsletterJid, { metadata: metadata || null, expiresAt: Date.now() + NEWSLETTER_OWNER_CACHE_TTL_MS });
+    } catch {
+      // Metadata lookup failure must never grant channel owner permissions.
+      cache.delete(newsletterJid);
+      return { isOwner: false, metadata: null };
+    }
+  }
+
+  const channelOwner = await resolveIdentity(metadata?.owner, client, decode);
+  return {
+    isOwner: Boolean(channelOwner && ownerSet.has(channelOwner)),
+    metadata: metadata || null,
+    channelOwner
+  };
+}
+
 async function buildContext({ client, m, chatUpdate, store, config, registry, logger }) {
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
@@ -56,6 +92,9 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     : (Array.isArray(m.senderCandidates) && m.senderCandidates.length ? m.senderCandidates : [m.sender]);
   const sender = await resolveBestIdentity(senderCandidates, client, decode);
   const bot = await resolveBestIdentity([client.user?.id], client, decode);
+  const newsletterOwnership = m.isNewsletter
+    ? await resolveNewsletterOwner({ client, newsletterJid: m.chat, ownerSet, decode })
+    : { isOwner: false, metadata: null, channelOwner: '' };
   const participantList = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
   const adminIds = new Set(await Promise.all(
     participantList
@@ -90,7 +129,9 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     sender, chat: m.chat, pushname: m.pushName, isGroup: m.isGroup, isPrivate: m.isPrivate,
     isNewsletter: Boolean(m.isNewsletter), isChannel: Boolean(m.isChannel),
     channelPublisher: m.channelPublisher || null,
-    isOwner: ownerSet.has(sender) || (m.fromMe && Boolean(bot) && sender === bot), isGroupAdmin: Boolean(m.isGroup && adminIds.has(sender)),
+    channelMetadata: newsletterOwnership.metadata,
+    channelOwner: newsletterOwnership.channelOwner || '',
+    isOwner: ownerSet.has(sender) || newsletterOwnership.isOwner || (m.fromMe && Boolean(bot) && sender === bot), isGroupAdmin: Boolean(m.isGroup && adminIds.has(sender)),
     isBotAdmin: Boolean(m.isGroup && adminIds.has(bot)), groupMetadata, publicMode: client.public !== false,
     reply: (text, options) => messageService.reply(m, text, options),
     react: emoji => messageService.react(m, emoji),
@@ -99,4 +140,4 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   };
 }
 
-module.exports = { buildContext, resolveIdentity, resolveBestIdentity };
+module.exports = { buildContext, resolveIdentity, resolveBestIdentity, resolveNewsletterOwner };
