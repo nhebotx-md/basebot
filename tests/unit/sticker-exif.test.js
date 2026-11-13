@@ -3,10 +3,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
-const { imageToWebp, videoToWebp, addExif, writeExifImg, writeExifVid } = require('../../start/lib/exif');
+const { imageToWebp, videoToWebp, addExif, writeExifImg, writeExifVid } = require('../../src/core/services/sticker.service');
+const legacyExif = require('../../start/lib/exif');
 
 const PNG_FIXTURE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAmklEQVR4nO3QQRHAIADAMEAD/g9heBky8lijoNe5z/3Gjy0doDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA1gAdoDVAB2gN0AFaA3SA9gC2qAMPikGtXAAAAABJRU5ErkJggg==', 'base64');
 const GIF_FIXTURE = Buffer.from('R0lGODlhQABAAIEAAP8AAAAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQAFAAAACwAAAAAQABAAAAIaQABCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJsqTJkyhTqlzJsqXLlzBjypxJs6bNmzhz6tzJs6fPn0CDCh1KtKjRo0iTKl3KtKnTp1CjSp1KtarVq1izagUQEAAh+QQBFAABACwAAAAAQABAAIEAAP8AAAAAAAAAAAAIaQABCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJsqTJkyhTqlzJsqXLlzBjypxJs6bNmzhz6tzJs6fPn0CDCh1KtKjRo0iTKl3KtKnTp1CjSp1KtarVq1izagUQEAA7', 'base64');
+
+test('legacy EXIF facade preserves the public helper API', () => {
+  for (const name of ['imageToWebp', 'videoToWebp', 'writeExifImg', 'writeExifVid', 'writeExif', 'exifAvatar', 'addExif']) assert.equal(typeof legacyExif[name], 'function');
+});
 
 function tempStickerDirectories() {
   return new Set(fs.readdirSync(os.tmpdir()).filter(name => name.startsWith('basebot-sticker-')));
