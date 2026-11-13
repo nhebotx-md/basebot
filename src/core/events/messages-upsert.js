@@ -21,7 +21,7 @@ function createMessagesUpsertHandler({ dispatcher, config, registry, logger }) {
       try {
         const ctx = await buildContext({ client, m, chatUpdate, store, config, registry, logger });
         if (typeof logger.message === 'function') logger.message({
-          chatType: m.isGroup ? 'group' : 'private',
+          chatType: m.isNewsletter ? 'newsletter' : (m.isGroup ? 'group' : 'private'),
           pushName: m.pushName,
           mtype: m.mtype,
           hasText: Boolean(m.body),

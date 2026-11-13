@@ -20,7 +20,7 @@ function createManager(createClient, options = {}) {
   return createConnectionManager({ config, registry, dispatcher, logger, createClient, ...options });
 }
 
-function fakeClient() { return { ev: new EventEmitter(), end() {} }; }
+function fakeClient(reasons) { return { ev: new EventEmitter(), lifecycleReasons: reasons ? { loggedOut: reasons.loggedOut, restartRequired: reasons.restartRequired } : undefined, end() {} }; }
 
 test('connection manager shares a single in-flight socket initialization', async () => {
   let created = 0;
@@ -34,7 +34,7 @@ test('connection manager shares a single in-flight socket initialization', async
 test('connection manager reconnects after transient close and does not reconnect after logout', async () => {
   const baileys = await import('@itsliaaa/baileys');
   let created = 0;
-  const transient = createManager(async () => { created += 1; return fakeClient(); });
+  const transient = createManager(async () => { created += 1; return fakeClient(baileys.DisconnectReason); });
   const first = await transient.start();
   first.ev.emit('connection.update', { connection: 'close', lastDisconnect: { error: { output: { statusCode: 503 } } } });
   await new Promise(resolve => setTimeout(resolve, 1200));
@@ -42,7 +42,7 @@ test('connection manager reconnects after transient close and does not reconnect
   await transient.stop();
 
   created = 0;
-  const loggedOut = createManager(async () => { created += 1; return fakeClient(); });
+  const loggedOut = createManager(async () => { created += 1; return fakeClient(baileys.DisconnectReason); });
   const session = await loggedOut.start();
   session.ev.emit('connection.update', { connection: 'close', lastDisconnect: { error: { output: { statusCode: baileys.DisconnectReason.loggedOut } } } });
   await new Promise(resolve => setTimeout(resolve, 30));
@@ -63,7 +63,7 @@ test('restartRequired 515 waits for auth persistence and immediately creates a f
     },
     clearTimeout(timer) { timer.cleared = true; }
   };
-  const manager = createManager(async () => { created += 1; return fakeClient(); }, { timerApi });
+  const manager = createManager(async () => { created += 1; return fakeClient(baileys.DisconnectReason); }, { timerApi });
   const first = await manager.start();
   first.authState = { creds: { registered: true } };
   let credentialsFlushed = false;
@@ -111,7 +111,7 @@ test('CLI process remains alive until the reconnect timer creates the next socke
       async createClient() {
         sockets += 1;
         if (sockets === 2) process.stdout.write('SECOND_SOCKET_CREATED\\n');
-        return { ev: new EventEmitter(), authState: { creds: { registered: true } }, async waitForCredentialPersistence() {}, end() {} };
+        return { ev: new EventEmitter(), authState: { creds: { registered: true } }, lifecycleReasons: { loggedOut: 401, restartRequired: 515 }, async waitForCredentialPersistence() {}, end() {} };
       }
     });
     (async () => {

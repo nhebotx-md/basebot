@@ -7,18 +7,21 @@ const os = require('node:os');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { Readable } = require('node:stream');
-const { createClientFactory, securePrivateDirectory } = require('../../src/core/client/create-client');
+const { createClientFactory, securePrivateDirectory } = require('../../src/integrations/whatsapp/client');
+const legacyClientFactory = require('../../src/core/client/create-client');
 const { createPairingManager } = require('../../src/core/connection/pairing-manager');
 
 test('client factory serializes async credential writes and exposes a flush barrier', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-client-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
+  assert.equal(legacyClientFactory.createClientFactory, createClientFactory);
   const state = { creds: { registered: true }, keys: {} };
   const saved = [];
   let activeSaves = 0;
   let maxActiveSaves = 0;
   let options;
   const baileys = {
+    DisconnectReason: { loggedOut: 401, restartRequired: 515 },
     async useMultiFileAuthState() {
       return {
         state,
@@ -43,6 +46,7 @@ test('client factory serializes async credential writes and exposes a flush barr
   });
   const client = await createClient();
   assert.equal(client.authState, state);
+  assert.deepEqual(client.lifecycleReasons, { loggedOut: 401, restartRequired: 515 });
   assert.equal(options.printQRInTerminal, false);
   assert.equal(pinoOptions.level, 'warn');
   client.ev.emit('creds.update', { id: 'first' });
@@ -100,6 +104,7 @@ test('Baileys Pino logger redacts account identity at info level', async t => {
   pinoFactory.stdTimeFunctions = realPino.stdTimeFunctions;
   let baileysLogger;
   const baileys = {
+    DisconnectReason: { loggedOut: 401, restartRequired: 515 },
     async useMultiFileAuthState() { return { state: { creds: { registered: true }, keys: {} }, async saveCreds() {} }; },
     makeWASocket(options) { baileysLogger = options.logger; return { ev: new EventEmitter(), end() {} }; },
     jidDecode() { return null; },

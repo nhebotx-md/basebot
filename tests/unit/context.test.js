@@ -36,3 +36,119 @@ test('self-sent messages from the connected bot account are treated as owner', a
   const context = await buildContext({ ...f, config: config(), logger, store: {} });
   assert.equal(context.isOwner, true);
 });
+
+test('owner is recognized when the incoming sender LID resolves to the configured phone JID', async () => {
+  const f = fixture('ping');
+  let mappedLid = '';
+  f.client.signalRepository = {
+    lidMapping: {
+      async getPNForLID(lid) {
+        mappedLid = lid;
+        return '6281234567890@s.whatsapp.net';
+      }
+    }
+  };
+  f.m.sender = '987654321@lid';
+  f.m.senderCandidates = ['987654321@lid'];
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(mappedLid, '987654321@lid');
+  assert.equal(context.sender, '6281234567890@s.whatsapp.net');
+  assert.equal(context.isOwner, true);
+});
+
+test('unmapped LID never matches a configured phone-number owner', async () => {
+  const f = fixture('ping');
+  f.client.signalRepository = { lidMapping: { async getPNForLID() { return null; } } };
+  f.m.sender = '987654321@lid';
+  f.m.senderCandidates = ['987654321@lid'];
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isOwner, false);
+});
+
+test('newsletter publisher is recognized as owner without treating the channel JID as sender', async () => {
+  const f = fixture('ping');
+  const raw = {
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-owner-post' },
+    newsletterMeta: { adminProfile: { id: '6281234567890@s.whatsapp.net', name: 'Channel Owner' } },
+    message: { conversation: '.ping' }
+  };
+  f.m = normalizeMessage(raw, f.client);
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isNewsletter, true);
+  assert.equal(context.isChannel, true);
+  assert.equal(context.isPrivate, false);
+  assert.equal(context.sender, '6281234567890@s.whatsapp.net');
+  assert.equal(context.isOwner, true);
+});
+
+test('newsletter post without publisher identity is not granted owner permissions', async () => {
+  const f = fixture('ping');
+  f.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-unknown-post' },
+    message: { conversation: '.ping' }
+  }, f.client);
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isNewsletter, true);
+  assert.equal(context.sender, '');
+  assert.equal(context.isOwner, false);
+});
+
+test('newsletter owner is recognized from verified channel metadata when post has no author JID', async () => {
+  const f = fixture('ping');
+  f.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-meta-owner' },
+    message: { conversation: '.ping' }
+  }, f.client);
+  let metadataLookups = 0;
+  f.client.newsletterMetadata = async jid => {
+    metadataLookups += 1;
+    assert.equal(jid, '120363000000000000@newsletter');
+    return { id: jid, owner: '6281234567890@s.whatsapp.net', name: 'Owner Channel' };
+  };
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isNewsletter, true);
+  assert.equal(context.sender, '');
+  assert.equal(context.channelOwner, '6281234567890@s.whatsapp.net');
+  assert.equal(context.isOwner, true);
+  assert.equal(metadataLookups, 1);
+
+  await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(metadataLookups, 1, 'channel owner metadata should be cached');
+});
+
+test('newsletter channel owned by a different account does not receive owner permissions', async () => {
+  const f = fixture('ping');
+  f.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-other-owner' },
+    message: { conversation: '.ping' }
+  }, f.client);
+  f.client.newsletterMetadata = async () => ({
+    id: '120363000000000000@newsletter',
+    owner: '6289999999999@s.whatsapp.net'
+  });
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isOwner, false);
+});
+
+test('newsletter owner LID is resolved to configured owner phone identity', async () => {
+  const f = fixture('ping');
+  f.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-lid-owner' },
+    message: { conversation: '.ping' }
+  }, f.client);
+  f.client.newsletterMetadata = async () => ({
+    id: '120363000000000000@newsletter',
+    owner: '987654321@lid'
+  });
+  f.client.signalRepository = {
+    lidMapping: {
+      async getPNForLID(lid) {
+        assert.equal(lid, '987654321@lid');
+        return '6281234567890@s.whatsapp.net';
+      }
+    }
+  };
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.channelOwner, '6281234567890@s.whatsapp.net');
+  assert.equal(context.isOwner, true);
+});
