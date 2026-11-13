@@ -4,7 +4,7 @@ BASEBOT adalah framework bot WhatsApp CommonJS yang menempatkan command di `plug
 
 ## Memulai
 
-Gunakan Node.js 20 atau lebih baru. Jalankan `npm ci`, salin `.env.example` menjadi `.env`, lalu atur setidaknya `OWNER_NUMBERS` dan `PAIRING_PHONE` menggunakan angka dengan kode negara. Setelah itu jalankan `npm start`. Pairing code yang dihasilkan Baileys hanya dicetak ke terminal saat sesi belum terdaftar; jangan mengatur kode tetap melalui `PAIRING_CODE`. Jangan membagikan `.env`, `session/`, log yang berisi identitas chat, atau data autentikasi.
+Gunakan Node.js 22.13.0 atau lebih baru. Versi ini diperlukan agar jalur auth Baileys tidak membutuhkan peer dependency native `better-sqlite3`. Jalankan `npm ci`, salin `.env.example` menjadi `.env`, lalu atur setidaknya `OWNER_NUMBERS` dan `PAIRING_PHONE` menggunakan angka dengan kode negara. Setelah itu jalankan `npm start`. Pairing code yang dihasilkan Baileys hanya dicetak ke terminal saat sesi belum terdaftar; jangan mengatur kode tetap melalui `PAIRING_CODE`. Jangan membagikan `.env`, `session/`, log yang berisi identitas chat, atau data autentikasi.
 
 Jalankan `npm test` untuk unit test tanpa menghubungkan WhatsApp dan `npm run check` untuk pemeriksaan sintaks. Dependency Baileys dikunci pada `@itsliaaa/baileys@0.4.4`; dependency tree dikunci di `package-lock.json`.
 
