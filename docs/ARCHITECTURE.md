@@ -8,7 +8,7 @@ Plugin event seperti `group-participants.update` ditangani event dispatcher terp
 
 ## Batas tanggung jawab
 
-`src/core/client` membuat socket Baileys dan menyediakan transport/media dasar. `src/core/connection` mengelola pairing, reconnect dengan exponential backoff terbatas, dan shutdown. `src/core/events` memasang listener terpisah. `src/core/messaging` menangani normalisasi, parsing, context, dan dispatch. `src/core/plugins` menangani validasi, registry, serta loading. `src/core/security` menangani permission dan URL. `src/core/services` menampung logger, message/media, dan storage.
+`src/integrations/whatsapp/client.js` mengimplementasikan adapter provider Baileys, termasuk pembuatan socket dan transport/media dasar. `src/core/client/create-client.js` hanya mempertahankan compatibility facade untuk import lama. `src/core/connection` menerima fungsi `createClient` dari bootstrap dan mengelola pairing, reconnect dengan exponential backoff terbatas, serta shutdown tanpa mengimpor Baileys secara langsung. Adapter menormalkan kode lifecycle menjadi `client.lifecycleReasons`. `src/core/events` memasang listener terpisah. `src/core/messaging` menangani normalisasi, parsing, context, dan dispatch. `src/core/plugins` menangani validasi, registry, serta loading. `src/core/security` menangani permission dan URL. `src/core/services` menampung logger, message/media, dan storage.
 
 Fitur command tinggal di `plugins/`; core tidak mengetahui business logic fitur. Konfigurasi dimuat sekali dari environment dan `.env`, sementara session, log, dan file sementara terpisah dari source.
 
