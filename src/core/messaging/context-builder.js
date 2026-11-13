@@ -8,6 +8,38 @@ const { createDownloaderService } = require('../services/downloader.service');
 const { downloadBuffer } = require('../services/media.service');
 const { fetchPublic, postPublicJson } = require('../security/safe-url');
 
+function isPhoneIdentity(value) {
+  return typeof value === 'string' && /@(s\.whatsapp\.net|c\.us)$/i.test(value);
+}
+
+async function resolveIdentity(value, client, decode) {
+  const identity = normalizeIdentity(value, decode);
+  if (!identity || !identity.endsWith('@lid')) return identity;
+
+  const lidMapping = client.signalRepository?.lidMapping;
+  if (typeof lidMapping?.getPNForLID !== 'function') return identity;
+
+  try {
+    const phoneJid = await lidMapping.getPNForLID(identity);
+    const mappedIdentity = normalizeIdentity(phoneJid, decode);
+    return mappedIdentity || identity;
+  } catch {
+    // Permission checks remain fail-closed when Baileys has no LID mapping.
+    return identity;
+  }
+}
+
+async function resolveBestIdentity(values, client, decode) {
+  let fallback = '';
+  for (const value of values) {
+    const identity = await resolveIdentity(value, client, decode);
+    if (!identity) continue;
+    if (!fallback) fallback = identity;
+    if (isPhoneIdentity(identity)) return identity;
+  }
+  return fallback;
+}
+
 async function buildContext({ client, m, chatUpdate, store, config, registry, logger }) {
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
@@ -19,10 +51,17 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   }
   const decode = client.decodeJid || (jid => jid);
   const ownerSet = new Set(config.owners.map(owner => normalizeIdentity(`${owner.replace(/\D/g, '')}@s.whatsapp.net`, decode)));
-  const sender = normalizeIdentity(m.sender, decode);
-  const bot = normalizeIdentity(client.user?.id || '', decode);
+  const senderCandidates = Array.isArray(m.senderCandidates) && m.senderCandidates.length
+    ? m.senderCandidates
+    : [m.sender];
+  const sender = await resolveBestIdentity(senderCandidates, client, decode);
+  const bot = await resolveBestIdentity([client.user?.id], client, decode);
   const participantList = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
-  const adminIds = new Set(participantList.filter(item => item.admin === 'admin' || item.admin === 'superadmin').map(item => normalizeIdentity(item.id, decode)));
+  const adminIds = new Set(await Promise.all(
+    participantList
+      .filter(item => item.admin === 'admin' || item.admin === 'superadmin')
+      .map(item => resolveBestIdentity([item.id, item.phoneNumber], client, decode))
+  ));
   const quoteInfo = m.msg?.contextInfo || {};
   let quoted = null;
   if (m.quoted && typeof m.quoted === 'object') {
@@ -58,4 +97,4 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   };
 }
 
-module.exports = { buildContext };
+module.exports = { buildContext, resolveIdentity, resolveBestIdentity };
