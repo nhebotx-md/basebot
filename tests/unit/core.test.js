@@ -46,6 +46,12 @@ test('normalizer prefers PN alternate JIDs over LID for private and group sender
   }, {});
   assert.equal(groupMessage.sender, '6281234567890@s.whatsapp.net');
   assert.deepEqual(groupMessage.senderCandidates, ['6281234567890@s.whatsapp.net', '987654321@lid']);
+
+  const senderPnMessage = normalizeMessage({
+    key: { remoteJid: '120363000000000000@g.us', participant: '987654321@lid', senderPn: '6281234567890@s.whatsapp.net', id: 'sender-pn' },
+    message: { conversation: '.get' }
+  }, {});
+  assert.equal(senderPnMessage.sender, '6281234567890@s.whatsapp.net');
 });
 
 test('identities normalize device suffix and permissions deny unavailable admin metadata', () => {
