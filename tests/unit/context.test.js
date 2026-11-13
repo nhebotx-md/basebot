@@ -64,3 +64,31 @@ test('unmapped LID never matches a configured phone-number owner', async () => {
   const context = await buildContext({ ...f, config: config(), logger, store: {} });
   assert.equal(context.isOwner, false);
 });
+
+test('newsletter publisher is recognized as owner without treating the channel JID as sender', async () => {
+  const f = fixture('ping');
+  const raw = {
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-owner-post' },
+    newsletterMeta: { adminProfile: { id: '6281234567890@s.whatsapp.net', name: 'Channel Owner' } },
+    message: { conversation: '.ping' }
+  };
+  f.m = normalizeMessage(raw, f.client);
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isNewsletter, true);
+  assert.equal(context.isChannel, true);
+  assert.equal(context.isPrivate, false);
+  assert.equal(context.sender, '6281234567890@s.whatsapp.net');
+  assert.equal(context.isOwner, true);
+});
+
+test('newsletter post without publisher identity is not granted owner permissions', async () => {
+  const f = fixture('ping');
+  f.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@newsletter', id: 'newsletter-unknown-post' },
+    message: { conversation: '.ping' }
+  }, f.client);
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(context.isNewsletter, true);
+  assert.equal(context.sender, '');
+  assert.equal(context.isOwner, false);
+});
