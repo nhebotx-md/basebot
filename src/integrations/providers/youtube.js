@@ -15,7 +15,7 @@ async function ytmp3(input) {
     throw new Error('URL bukan video YouTube yang didukung.');
   }
   const id = url.hostname.endsWith('youtu.be') ? url.pathname.slice(1) : url.searchParams.get('v');
-  if (!id || !/^[\\w-]{6,20}$/.test(id)) throw new Error('ID YouTube tidak valid.');
+  if (!id || !/^[\w-]{6,20}$/.test(id)) throw new Error('ID YouTube tidak valid.');
   const headers = { accept: '*/*', 'user-agent': 'Mozilla/5.0', referer: 'https://id.ytmp3.mobi/' };
   const init = await json(`https://d8.ymcdn.org/api/v1/init?p=y&23=1llum1n471&_=${Date.now()}`, { headers });
   if (typeof init.convertURL !== 'string') throw new Error('Layanan converter tidak tersedia.');
