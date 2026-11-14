@@ -10,6 +10,9 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
   assert.equal(app.registry.list().length, 26);
+  assert.equal(app.config.paths.database, './data/database');
+  assert.equal(app.users.expPerMessage, 5);
+  assert.equal(app.users.expCooldownMs, 60000);
   assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 61);
   assert.ok(app.registry.list().some(plugin => plugin.name === 'profile'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'voicechanger'));
@@ -22,6 +25,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(summary[1].loaded, 26);
   assert.equal(summary[1].skipped, 0);
   assert.equal(summary[1].commands, 61);
+  await app.stop();
 });
 
 test('Baileys fork exports required APIs through dynamic import', async () => {
