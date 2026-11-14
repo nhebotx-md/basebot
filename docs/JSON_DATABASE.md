@@ -33,6 +33,10 @@ Nilai EXP 0 menonaktifkan pemberian EXP otomatis. Level dihitung dari total EXP 
 
 Command \`.profile\` atau \`.me\` menampilkan profil pengguna. Statistik pesan, command, dan aktivitas pesan grup diperbarui otomatis.
 
+## Pemeriksaan rilis
+
+Sebelum PR digabung, jalankan `npm test` dan `npm run check` pada Node.js 22 atau 24, lalu lakukan smoke test dengan akun WhatsApp uji.
+
 ## Batas penggunaan
 
 JSON cocok untuk satu proses bot dan data awal hingga menengah. Karena satu collection ditulis ulang sebagai satu file, instalasi dengan trafik sangat tinggi atau beberapa proses bot yang berbagi direktori harus beralih ke database transaksional. Jangan menjalankan dua instance BASEBOT pada direktori database yang sama.
