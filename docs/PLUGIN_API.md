@@ -28,3 +28,8 @@ module.exports = {
 Context dibangun oleh core dan berisi `client`/`sock`, `m` (pesan normalisasi), `chatUpdate`, `store`, `registry`, `config`, `logger`, `command`, `prefix`, `args`, `text`, `sender`, `chat`, `pushname`, `isGroup`, `isPrivate`, `isOwner`, `isGroupAdmin`, `isBotAdmin`, `groupMetadata`, `reply`, `react`, `sendMessage`, `quoted`, `mime`, dan `services`. Metadata grup gagal dimuat berarti pemeriksaan admin gagal secara tertutup. `services` berisi service pesan, media unduhan berbatas, storage, logger, `sleep`, serta `fetchJson` dengan timeout.
 
 Plugin boleh mendengarkan event tanpa mendaftarkan command palsu sebagai jalur khusus: gunakan `events: ['group-participants.update']` dan `async onEvent(ctx, event)`. Event non-command tidak dipaksa melewati command parser. Error plugin diisolasi dan dicatat; error satu plugin tidak menghentikan listener lain.
+
+
+## Plugin Manager
+
+Command owner untuk mengelola plugin runtime didokumentasikan di [PLUGIN_MANAGEMENT.md](./PLUGIN_MANAGEMENT.md). Plugin manager tersedia melalui `ctx.services.pluginManager`; API ini hanya diberikan setelah bootstrap membuat registry dan manager. Status enable/disable bersifat runtime dan reload seluruh plugin dilakukan secara staged.

@@ -147,9 +147,9 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
   }
 
   return Object.freeze({
-    canHandle(command) { return command === 'menu' || command === 'catmenu'; },
+    canHandle(command) { return command === 'menu' || command === 'help' || command === 'catmenu'; },
     async execute(ctx) {
-      const output = ctx.command === 'menu' ? renderMenu(ctx) : renderCategory(ctx);
+      const output = ctx.command === 'catmenu' ? renderCategory(ctx) : renderMenu(ctx);
       await ctx.reply(output);
       return { handled: true, command: ctx.command };
     },

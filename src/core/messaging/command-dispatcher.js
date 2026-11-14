@@ -3,7 +3,7 @@
 const { validatePermission } = require('../security/permission-manager');
 
 class CommandDispatcher {
-  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, maxConcurrentCommands = 20 }) {
+  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, rateWarningTtlMs = rateWindowMs, maxRateWarningEntries = 1000, maxConcurrentCommands = 20 }) {
     this.registry = registry;
     this.logger = logger;
     this.menuService = menuService;
@@ -11,6 +11,8 @@ class CommandDispatcher {
     this.maxDedupeEntries = maxDedupeEntries;
     this.rateLimit = rateLimit;
     this.rateWindowMs = rateWindowMs;
+    this.rateWarningTtlMs = rateWarningTtlMs;
+    this.maxRateWarningEntries = maxRateWarningEntries;
     this.maxConcurrentCommands = maxConcurrentCommands;
     this.activeCommands = 0;
     this.seen = new Map();
@@ -28,6 +30,11 @@ class CommandDispatcher {
       if (recent.length) this.rateEvents.set(sender, recent);
       else this.rateEvents.delete(sender);
     }
+    while (this.rateEvents.size > this.maxDedupeEntries) this.rateEvents.delete(this.rateEvents.keys().next().value);
+    for (const [sender, timestamp] of this.rateWarnings) {
+      if (now - timestamp >= this.rateWarningTtlMs) this.rateWarnings.delete(sender);
+    }
+    while (this.rateWarnings.size > this.maxRateWarningEntries) this.rateWarnings.delete(this.rateWarnings.keys().next().value);
   }
 
   allowRate(ctx, now = Date.now()) {
@@ -44,9 +51,9 @@ class CommandDispatcher {
   }
 
   async dispatch(ctx) {
+    this.prune();
     const id = ctx.m?.id;
     if (id) {
-      this.prune();
       if (this.seen.has(id)) return { handled: false, reason: 'duplicate' };
       this.seen.set(id, Date.now());
     }

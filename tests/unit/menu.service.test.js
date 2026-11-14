@@ -90,3 +90,13 @@ test('dispatcher handles built-in menu commands before plugin lookup', async () 
   assert.equal(executed, true);
   assert.equal(result.builtin, true);
 });
+
+
+test('.help uses the same core menu renderer as .menu', async () => {
+  const { ctx, replies } = createContext({ command: 'help' });
+  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
+  assert.equal(service.canHandle('help'), true);
+  await service.execute(ctx);
+  assert.match(replies[0], /DAFTAR MENU/);
+  assert.match(replies[0], /ShoNhe/);
+});

@@ -45,3 +45,25 @@ test('unauthorized commands are rate-limited before denial replies and warning s
   assert.equal((await dispatcher.dispatch(context('d3'))).reason, 'rate-limit');
   assert.equal(replies.length, 2);
 });
+
+
+test('dispatcher expires and bounds rate-limit warning identities', () => {
+  const dispatcher = new CommandDispatcher({
+    registry: new PluginRegistry(),
+    logger: { info() {}, warn() {}, error() {}, debug() {} },
+    rateWarningTtlMs: 50,
+    maxRateWarningEntries: 2
+  });
+  dispatcher.rateWarnings.set('expired', 0);
+  dispatcher.rateWarnings.set('fresh', 90);
+  dispatcher.prune(100);
+  assert.equal(dispatcher.rateWarnings.has('expired'), false);
+  assert.equal(dispatcher.rateWarnings.has('fresh'), true);
+
+  dispatcher.rateWarnings.set('second', 95);
+  dispatcher.rateWarnings.set('third', 99);
+  dispatcher.prune(100);
+  assert.equal(dispatcher.rateWarnings.size, 2);
+  assert.equal(dispatcher.rateWarnings.has('fresh'), false);
+  assert.equal(dispatcher.rateWarnings.has('third'), true);
+});

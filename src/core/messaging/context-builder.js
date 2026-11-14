@@ -80,7 +80,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
   const targetPlugin = parsed ? registry.getByCommand(parsed.command) : null;
-  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || parsed?.command === 'menu' || parsed?.command === 'catmenu'));
+  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
   if (needsGroupMetadata) {
     try { groupMetadata = await client.groupMetadata(m.chat); }
     catch (error) { logger.warn('Metadata grup tidak tersedia; izin admin ditolak.', { error: error.message }); }
@@ -112,6 +112,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const messageService = createMessageService(client);
   const services = {
     ...messageService, config, logger, store,
+    pluginManager: registry.pluginManager || null,
     storage: createStorageService(config.paths.temp),
     media: { downloadBuffer },
     downloaders: createDownloaderService(),

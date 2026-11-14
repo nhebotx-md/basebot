@@ -7,6 +7,7 @@ const { loadConfig } = require('../config/config-loader');
 const { createLogger } = require('../core/services/logger.service');
 const { PluginRegistry } = require('../core/plugins/plugin-registry');
 const { findPluginFiles, loadPlugins } = require('../core/plugins/plugin-loader');
+const { PluginManager } = require('../core/plugins/plugin-manager');
 const { CommandDispatcher } = require('../core/messaging/command-dispatcher');
 const { createMenuService } = require('../core/messaging/menu.service');
 const { createConnectionManager } = require('../core/connection/connection-manager');
@@ -33,6 +34,8 @@ async function createApp(options = {}) {
   const pluginFiles = findPluginFiles(pluginDirectory);
   const registry = new PluginRegistry({ logger });
   const loaded = loadPlugins({ directory: pluginDirectory, registry, logger, reload: config.plugins.reload });
+  const pluginManager = new PluginManager({ registry, directory: pluginDirectory, logger });
+  registry.pluginManager = pluginManager;
   const activePlugins = registry.list({ includeDisabled: false });
   const commandCount = activePlugins.reduce((total, plugin) => total + plugin.commands.length, 0);
   const skippedFiles = Math.max(0, pluginFiles.length - loaded.length);
@@ -65,6 +68,7 @@ async function createApp(options = {}) {
     config,
     logger,
     registry,
+    pluginManager,
     dispatcher,
     connection,
     async start() {
