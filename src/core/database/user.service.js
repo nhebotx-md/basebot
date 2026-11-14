@@ -40,7 +40,7 @@ class UserService {
       const user = ensureUser(users, id, name, new Date(now).toISOString());
       user.stats.messages += 1;
       if (isGroup) user.stats.groups += 1;
-      if (this.expPerMessage && now - (Number(user.lastExpAt) || 0) >= this.expCooldownMs) {
+      if (this.expPerMessage && (!user.lastExpAt || now - Number(user.lastExpAt) >= this.expCooldownMs)) {
         user.exp += this.expPerMessage;
         user.lastExpAt = now;
         user.level = levelForExp(user.exp);

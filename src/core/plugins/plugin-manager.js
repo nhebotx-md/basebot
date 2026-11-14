@@ -50,7 +50,7 @@ class PluginManager {
     const changed = !this.registry.isEnabled(plugin.name);
     this.registry.enable(plugin.name);
     try { await this.stateRepository?.setEnabled(plugin.name, true); }
-    catch (error) { this.registry.disable(plugin.name); this.logger.error?.('Status plugin gagal disimpan.', { plugin: plugin.name, error }); return { success: false, reason: 'persistence-failed' }; }
+    catch (error) { if (changed) this.registry.disable(plugin.name); this.logger.error?.('Status plugin gagal disimpan.', { plugin: plugin.name, error }); return { success: false, reason: 'persistence-failed' }; }
     this.logger.info?.('Plugin diaktifkan oleh owner.', { plugin: plugin.name, changed });
     return { success: true, changed, plugin: plugin.name };
   }
@@ -63,7 +63,7 @@ class PluginManager {
     const changed = this.registry.isEnabled(plugin.name);
     this.registry.disable(plugin.name);
     try { await this.stateRepository?.setEnabled(plugin.name, false); }
-    catch (error) { this.registry.enable(plugin.name); this.logger.error?.('Status plugin gagal disimpan.', { plugin: plugin.name, error }); return { success: false, reason: 'persistence-failed' }; }
+    catch (error) { if (changed) this.registry.enable(plugin.name); this.logger.error?.('Status plugin gagal disimpan.', { plugin: plugin.name, error }); return { success: false, reason: 'persistence-failed' }; }
     this.logger.info?.('Plugin dinonaktifkan oleh owner.', { plugin: plugin.name, changed });
     return { success: true, changed, plugin: plugin.name };
   }
