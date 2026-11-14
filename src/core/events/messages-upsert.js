@@ -3,7 +3,7 @@
 const { normalizeMessage } = require('../messaging/normalize-message');
 const { buildContext } = require('../messaging/context-builder');
 
-function createMessagesUpsertHandler({ dispatcher, config, registry, logger }) {
+function createMessagesUpsertHandler({ dispatcher, config, registry, logger, userService = registry.userService, groupService = registry.groupService }) {
   return async function onMessagesUpsert(client, chatUpdate, store) {
     for (const raw of chatUpdate?.messages || []) {
       if (!raw?.message || !raw.key?.remoteJid || raw.key.remoteJid === 'status@broadcast') continue;
@@ -20,6 +20,14 @@ function createMessagesUpsertHandler({ dispatcher, config, registry, logger }) {
       if (client.public === false && !m.fromMe) continue;
       try {
         const ctx = await buildContext({ client, m, chatUpdate, store, config, registry, logger });
+        if (!m.isNewsletter && !m.fromMe && ctx.sender && userService) {
+          try { ctx.profile = await userService.recordMessage(ctx.sender, { name: m.pushName, isGroup: m.isGroup }); }
+          catch (error) { logger.warn('Gagal memperbarui profil pengguna; pemrosesan pesan tetap dilanjutkan.', { error: error.message }); }
+        }
+        if (m.isGroup && groupService) {
+          try { ctx.groupProfile = await groupService.recordMessage(m.chat, { subject: ctx.groupMetadata?.subject }); }
+          catch (error) { logger.warn('Gagal memperbarui statistik grup; pemrosesan pesan tetap dilanjutkan.', { error: error.message }); }
+        }
         if (typeof logger.message === 'function') logger.message({
           chatType: m.isNewsletter ? 'newsletter' : (m.isGroup ? 'group' : 'private'),
           pushName: m.pushName,

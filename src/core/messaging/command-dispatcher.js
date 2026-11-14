@@ -50,6 +50,12 @@ class CommandDispatcher {
     return true;
   }
 
+  async recordCommand(ctx) {
+    if (!ctx.sender || !ctx.services?.users) return;
+    try { await ctx.services.users.recordCommand(ctx.sender, ctx.pushname); }
+    catch (error) { this.logger.warn?.('Statistik command gagal disimpan.', { command: ctx.command, error: error.message }); }
+  }
+
   async dispatch(ctx) {
     this.prune();
     const id = ctx.m?.id;
@@ -65,6 +71,7 @@ class CommandDispatcher {
         return { handled: true, command: ctx.command, reason: 'rate-limit' };
       }
       try {
+        await this.recordCommand(ctx);
         await this.menuService.execute(ctx);
         return { handled: true, command: ctx.command, builtin: true };
       } catch (error) {
@@ -91,6 +98,7 @@ class CommandDispatcher {
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
     this.activeCommands += 1;
+    await this.recordCommand(ctx);
     const startedAt = Date.now();
     try {
       await plugin.execute(ctx);

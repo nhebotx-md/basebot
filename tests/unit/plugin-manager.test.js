@@ -8,6 +8,8 @@ const path = require('node:path');
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 const { loadPlugins } = require('../../src/core/plugins/plugin-loader');
 const { PluginManager } = require('../../src/core/plugins/plugin-manager');
+const { DatabaseService } = require('../../src/core/database/database.service');
+const { PluginStateRepository } = require('../../src/core/database/plugin-state.repository');
 
 const logger = { info() {}, warn() {}, error() {}, debug() {} };
 
@@ -40,18 +42,18 @@ test('plugin manager lists, inspects, enables and disables plugins safely', asyn
   const { registry, manager } = await fixture(t);
   assert.equal(manager.list().length, 2);
   assert.equal(manager.info('alpha').enabled, true);
-  assert.equal(manager.disable('alpha').success, true);
+  assert.equal((await manager.disable('alpha')).success, true);
   assert.equal(registry.getByCommand('alpha'), undefined);
   assert.equal(manager.info('alpha').enabled, false);
-  assert.equal(manager.enable('alpha').success, true);
+  assert.equal((await manager.enable('alpha')).success, true);
   assert.ok(registry.getByCommand('alpha'));
-  assert.deepEqual(manager.disable('missing'), { success: false, reason: 'not-found' });
-  assert.deepEqual(manager.disable('plugin-manager'), { success: false, reason: 'protected' });
+  assert.deepEqual(await manager.disable('missing'), { success: false, reason: 'not-found' });
+  assert.deepEqual(await manager.disable('plugin-manager'), { success: false, reason: 'protected' });
 });
 
 test('reload stages plugins, adds new files and preserves disabled states', async t => {
   const { directory, registry, manager } = await fixture(t);
-  manager.disable('alpha');
+  await manager.disable('alpha');
   await fs.writeFile(path.join(directory, 'beta.js'), source('beta', 'beta'));
   const result = manager.reload();
   assert.equal(result.success, true);
@@ -130,4 +132,28 @@ test('owner plugin command has a second owner check and handles missing runtime 
   assert.match(replies.pop(), /khusus owner/);
   await command.execute({ ...base, isOwner: true, services: {} });
   assert.match(replies.pop(), /belum tersedia/);
+});
+
+
+test('plugin enabled state is restored from JSON database after manager recreation', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-state-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const database = await new DatabaseService({ directory: path.join(directory, 'database'), logger }).init();
+  const stateRepository = new PluginStateRepository({ database });
+  const pluginsDirectory = path.join(directory, 'plugins');
+  await fs.mkdir(pluginsDirectory);
+  await fs.writeFile(path.join(pluginsDirectory, 'alpha.js'), source('alpha', 'alpha'));
+
+  const firstRegistry = new PluginRegistry({ logger });
+  loadPlugins({ directory: pluginsDirectory, registry: firstRegistry, logger });
+  const firstManager = new PluginManager({ registry: firstRegistry, directory: pluginsDirectory, logger, stateRepository });
+  assert.equal((await firstManager.disable('alpha')).success, true);
+
+  const secondRegistry = new PluginRegistry({ logger });
+  loadPlugins({ directory: pluginsDirectory, registry: secondRegistry, logger });
+  const secondManager = new PluginManager({ registry: secondRegistry, directory: pluginsDirectory, logger, stateRepository });
+  await secondManager.restore();
+  assert.equal(secondRegistry.isEnabled('alpha'), false);
+  assert.equal((await secondManager.enable('alpha')).success, true);
+  await database.close();
 });

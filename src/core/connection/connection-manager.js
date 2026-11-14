@@ -17,7 +17,7 @@ function disconnectName(DisconnectReason, statusCode) {
   return entry?.[0] || 'unknown';
 }
 
-function createConnectionManager({ config, registry, dispatcher, logger = console, createClient, timerApi = globalThis }) {
+function createConnectionManager({ config, registry, dispatcher, logger = console, createClient, userService = registry.userService, groupService = registry.groupService, timerApi = globalThis }) {
   if (typeof createClient !== 'function') throw new TypeError('createConnectionManager membutuhkan createClient dari integration adapter.');
   const pairing = createPairingManager({ config, logger });
   let current = null;
@@ -61,7 +61,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       current = client;
       const store = { contacts: Object.create(null) };
       client.public = runtimePublicMode;
-      const onMessages = createMessagesUpsertHandler({ dispatcher, config, registry, logger });
+      const onMessages = createMessagesUpsertHandler({ dispatcher, config, registry, logger, userService, groupService });
       const onContacts = createContactsUpdateHandler({ logger });
       const onGroupParticipants = createGroupParticipantsHandler({ dispatcher, client, config, registry, logger });
       client.ev.on('messages.upsert', update => {

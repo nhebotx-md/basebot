@@ -113,6 +113,9 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const services = {
     ...messageService, config, logger, store,
     pluginManager: registry.pluginManager || null,
+    database: registry.databaseService || null,
+    users: registry.userService || null,
+    groups: registry.groupService || null,
     storage: createStorageService(config.paths.temp),
     media: { downloadBuffer },
     downloaders: createDownloaderService(),

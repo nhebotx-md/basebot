@@ -19,7 +19,7 @@ Plugin Manager menyediakan kontrol runtime untuk owner melalui chat pribadi atau
 - \`plugin-manager\` dilindungi agar tidak dapat menonaktifkan dirinya sendiri.
 - Reload membangun registry kandidat terlebih dahulu. Jika ada file gagal di-import/divalidasi, registry aktif tidak diganti.
 - Direktori kosong tidak boleh menghapus seluruh registry secara tidak sengaja.
-- Status enable/disable berlaku selama proses berjalan dan kembali ke default saat restart. Penyimpanan konfigurasi plugin persisten akan ditambahkan pada tahap terpisah.
+- Status enable/disable disimpan di `data/database/plugins.json` dan dipulihkan saat startup. Jika penyimpanan gagal, perubahan runtime dibatalkan.
 - Reload saat ini berlaku untuk seluruh plugin; reload satu plugin belum didukung agar konflik alias dan dependensi antar-plugin tetap tervalidasi secara global.
 - Plugin adalah kode JavaScript lokal yang memiliki hak proses bot. Jangan menyalin plugin tidak tepercaya ke direktori plugin.
 

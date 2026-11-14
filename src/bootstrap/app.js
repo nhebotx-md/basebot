@@ -12,11 +12,15 @@ const { CommandDispatcher } = require('../core/messaging/command-dispatcher');
 const { createMenuService } = require('../core/messaging/menu.service');
 const { createConnectionManager } = require('../core/connection/connection-manager');
 const { createClientFactory } = require('../integrations/whatsapp/client');
+const { DatabaseService } = require('../core/database/database.service');
+const { UserService } = require('../core/database/user.service');
+const { GroupService } = require('../core/database/group.service');
+const { PluginStateRepository } = require('../core/database/plugin-state.repository');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
   const logger = options.logger || createLogger({ level: config.logging.level, format: config.logging.format, colors: config.logging.color === 'always' ? true : config.logging.color === 'never' ? false : undefined });
-  for (const directory of [config.paths.session, config.paths.temp, config.paths.logs]) fs.mkdirSync(path.resolve(directory), { recursive: true, mode: 0o700 });
+  for (const directory of [config.paths.session, config.paths.temp, config.paths.logs, config.paths.database || './data/database']) fs.mkdirSync(path.resolve(directory), { recursive: true, mode: 0o700 });
 
   const startupDetails = {
     version: packageInfo.version,
@@ -30,11 +34,21 @@ async function createApp(options = {}) {
   else logger.info('BASEBOT memulai runtime.', startupDetails);
   if (typeof logger.startup === 'function') logger.startup({ name: config.botName, ...startupDetails });
 
+  const database = options.database || await new DatabaseService({ directory: config.paths.database || './data/database', logger }).init();
+  const users = options.users || new UserService({ database, expPerMessage: config.profile?.expPerMessage ?? 5, expCooldownMs: config.profile?.expCooldownMs ?? 60000 });
+  const groups = options.groups || new GroupService({ database });
+  const pluginStateRepository = options.pluginStateRepository || new PluginStateRepository({ database });
+
   const pluginDirectory = path.resolve(config.plugins.directory);
   const pluginFiles = findPluginFiles(pluginDirectory);
   const registry = new PluginRegistry({ logger });
   const loaded = loadPlugins({ directory: pluginDirectory, registry, logger, reload: config.plugins.reload });
-  const pluginManager = new PluginManager({ registry, directory: pluginDirectory, logger });
+  const disabledPlugins = await pluginStateRepository.getDisabledPlugins();
+  for (const name of disabledPlugins) registry.disable(name);
+  const pluginManager = new PluginManager({ registry, directory: pluginDirectory, logger, stateRepository: pluginStateRepository });
+  registry.userService = users;
+  registry.groupService = groups;
+  registry.databaseService = database;
   registry.pluginManager = pluginManager;
   const activePlugins = registry.list({ includeDisabled: false });
   const commandCount = activePlugins.reduce((total, plugin) => total + plugin.commands.length, 0);
@@ -63,12 +77,15 @@ async function createApp(options = {}) {
   const menuService = createMenuService({ registry, config, version: packageInfo.version, startedAt: Date.now() });
   const dispatcher = new CommandDispatcher({ registry, logger, menuService });
   const createClient = createClientFactory({ config, logger });
-  const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient });
+  const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
   return {
     config,
     logger,
     registry,
     pluginManager,
+    database,
+    users,
+    groups,
     dispatcher,
     connection,
     async start() {
@@ -78,6 +95,7 @@ async function createApp(options = {}) {
     async stop() {
       logger.info('Shutdown BASEBOT dimulai.');
       await connection.stop();
+      await database.close();
       logger.info('Shutdown BASEBOT selesai.');
     }
   };

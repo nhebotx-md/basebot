@@ -75,11 +75,13 @@ module.exports = {
         await ctx.reply('Nama plugin wajib diisi.\n\n' + usage);
         return;
       }
-      const result = action === 'enable' ? manager.enable(target) : manager.disable(target);
+      const result = action === 'enable' ? await manager.enable(target) : await manager.disable(target);
       if (!result.success) {
         const message = result.reason === 'protected'
           ? 'Plugin Manager tidak boleh dinonaktifkan agar command pengelolaan tetap tersedia.'
-          : 'Plugin "' + clean(target) + '" tidak ditemukan.';
+          : result.reason === 'persistence-failed'
+            ? 'Status plugin gagal disimpan ke database. Perubahan dibatalkan.'
+            : 'Plugin "' + clean(target) + '" tidak ditemukan.';
         await ctx.reply(message);
         return;
       }
