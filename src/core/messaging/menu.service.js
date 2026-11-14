@@ -107,7 +107,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
       const icon = CATEGORY_ICONS[category.slug] || '📁';
       lines.push('- \`⎯\` ' + commandPrefix + 'catmenu ' + category.slug + ' ' + icon);
     }
-    lines.push('', '_Statistik EXP, koin, HP, mana, dan stamina belum tersedia karena BASEBOT belum memiliki sistem profil pengguna._');
+    lines.push('', 'Lihat statistik akunmu dengan *' + commandPrefix + 'profile*.');
     return lines.join('\n');
   }
 
@@ -147,9 +147,9 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
   }
 
   return Object.freeze({
-    canHandle(command) { return command === 'menu' || command === 'catmenu'; },
+    canHandle(command) { return command === 'menu' || command === 'help' || command === 'catmenu'; },
     async execute(ctx) {
-      const output = ctx.command === 'menu' ? renderMenu(ctx) : renderCategory(ctx);
+      const output = ctx.command === 'catmenu' ? renderCategory(ctx) : renderMenu(ctx);
       await ctx.reply(output);
       return { handled: true, command: ctx.command };
     },

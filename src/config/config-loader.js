@@ -38,7 +38,8 @@ function loadConfig(env = readDotEnv()) {
     sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '', apis: { asepharyanaEnabled: parseBoolean(env.STICKER_API_ASEPHARYANA_ENABLED, false) } },
     tts: { apiKey: env.TTS_API_KEY || '', voiceId: env.TTS_VOICE_ID || '' },
     logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
-    paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs' },
+    paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs', database: env.DATABASE_DIR || './data/database' },
+    profile: { expPerMessage: Math.max(0, Number(env.EXP_PER_MESSAGE ?? 5) || 0), expCooldownMs: Math.max(0, Number(env.EXP_COOLDOWN_MS ?? 60000) || 0) },
     plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false) }
   };
   validateConfig(config);

@@ -36,3 +36,11 @@
 - Mengganti generator quote lama dengan `.qc <warna|#RRGGBB> <teks>` dan mode balas pesan, serta menambahkan alias `qcstc`, `stcqc`, `qcstic`, `qcstick`, dan `quotesticker`.
 - Menambahkan layanan POST JSON HTTPS dengan DNS pinning, batas ukuran body/response, timeout, dan tanpa redirect; respons PNG diverifikasi sebelum dikonversi menjadi sticker.
 - Avatar profil diambil melalui downloader DNS-pinned dengan signature-check dan batas 1 MiB, lalu disisipkan sebagai data URL agar API tidak mengambil URL avatar pengguna secara langsung.
+
+
+## Unreleased
+
+- Tambahkan Plugin Manager owner: list, info, enable, disable, reload seluruh plugin, dan statistik runtime.
+- Reload plugin menggunakan registry kandidat; kegagalan validasi atau direktori kosong tidak menghapus registry aktif.
+- Satukan `.menu` dan `.help` pada menu service core.
+- Bersihkan dan batasi cache warning rate-limit agar identitas pengirim tidak menumpuk tanpa batas.

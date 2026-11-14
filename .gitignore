@@ -25,3 +25,6 @@ auth.json
 *.tmp
 *.swp
 .DS_Store
+
+# Runtime JSON database contains user and group data.
+/data/database/

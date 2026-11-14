@@ -6,9 +6,7 @@ on:
       - main
       - refactor/architecture-foundation
   pull_request:
-    branches:
-      - main
-      - refactor/architecture-foundation
+  workflow_dispatch:
 
 permissions:
   contents: read
