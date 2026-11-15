@@ -204,7 +204,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
       return lines.join('\n');
     }
 
-    lines.push('╭━━━〔 ◆ *' + botName.toUpperCase() + ' COMMAND MENU* 〕━━━');
+    lines.push('╭━━━〔 ◆ *' + botName + ' COMMAND MENU* 〕━━━');
     lines.push('┃ Halo, *' + userName + '*!', '┃ Bot WhatsApp modular untuk kebutuhanmu.', '┣━━━━━━━━━━━━━━━━━━━━━━');
     lines.push('┃ 👤 Role      : *' + role + '*', '┃ ⚙️ Mode      : *' + mode + '*', '┃ 🔑 Versi     : *v' + cleanLabel(version) + '*');
     lines.push('┃ 🧶 Prefix    : *' + prefixLabel + '*', '┃ ⏱️ Uptime    : *' + formatUptime((now.getTime() - startedAt) / 1000) + '*');
