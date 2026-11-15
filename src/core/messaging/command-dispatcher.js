@@ -6,11 +6,14 @@ const { validatePermission } = require('../security/permission-manager');
 function safeErrorDetail(error) {
   const raw = String(error?.message || error || 'Tidak ada detail tambahan.');
   return raw
-    .replace(/https?:\/\/\S+/gi, '[URL disamarkan]')
-    .replace(/(?:[A-Z]:\\|\/)(?:[^\s:]+\/)*[^\s:]*/gi, '[path disamarkan]')
-    .replace(/\b(token|api[_-]?key|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1=[disamarkan]')
-    .replace(/[\r\n\t]+/g, ' ')
-    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/\\x1b\\[[0-?]*[ -/]*[@-~]/g, '')
+    .replace(/\\b(Bearer|Basic)\\s+[A-Za-z0-9._~+/-]+=*/gi, '$1 [disamarkan]')
+    .replace(/\\b(authorization|cookie|set-cookie|x-api-key|api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|token|password|passwd|secret)\\b(["']?\\s*[:=]\\s*["']?)(?:"[^"]*"|'[^']*'|[^\\s,;&]+)/gi, '$1$2[disamarkan]')
+    .replace(/\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\b/g, '[JWT disamarkan]')
+    .replace(/https?:\\/\\/\\S+/gi, '[URL disamarkan]')
+    .replace(/(?:[A-Z]:\\\\|\\/)(?:[^\\s:]+\\/)*[^\\s:]*/gi, '[path disamarkan]')
+    .replace(/[\\r\\n\\t]+/g, ' ')
+    .replace(/[\\u0000-\\u001f\\u007f-\\u009f]/g, '')
     .trim()
     .slice(0, 180) || 'Tidak ada detail tambahan.';
 }
@@ -195,7 +198,14 @@ class CommandDispatcher {
       if (this.activeCommands >= this.maxConcurrentCommands) { results.push({ plugin: plugin.name, ok: false, reason: 'busy' }); continue; }
       this.activeCommands += 1;
       try { await plugin.onEvent(ctx, event); results.push({ plugin: plugin.name, ok: true }); }
-      catch (error) { this.logger.error('Plugin event gagal.', { plugin: plugin.name, eventName, error }); results.push({ plugin: plugin.name, ok: false }); }
+      catch (error) {
+        const reference = randomBytes(4).toString('hex').toUpperCase();
+        this.logger.error('Plugin event gagal.', {
+          plugin: plugin.name, eventName, stage: 'event', reference, error,
+          diagnosis: diagnosePluginError(error)
+        });
+        results.push({ plugin: plugin.name, ok: false, reference });
+      }
       finally { this.activeCommands -= 1; }
     }
     return results;
