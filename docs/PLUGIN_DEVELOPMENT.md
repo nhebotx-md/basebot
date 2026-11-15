@@ -6,6 +6,14 @@ Jangan memindai folder dari handler pesan. Registry sudah menyediakan `getByComm
 
 Gunakan `ctx.reply`, `ctx.sendMessage`, `ctx.react`, dan `ctx.services` daripada implementasi transport sendiri. Validasi input dan ukuran media, pasang timeout untuk jaringan, batasi concurrency untuk operasi berat, serta gunakan `try/finally` untuk cleanup. Jangan log credential, token, pairing code, isi media, atau konten pribadi.
 
+## Registrasi, role, dan akses pengguna
+
+Pengguna biasa yang menjalankan command di grup wajib mendaftar dengan `.daftar nama`. Profil yang otomatis dibuat dari aktivitas pesan belum dianggap terdaftar. Registrasi mengubah status akun menjadi aktif dan memberi role awal `user`; status ini disimpan di `users.json`. Command registrasi adalah pengecualian agar pengguna yang belum terdaftar tetap dapat mendaftar. Owner bot dan command owner-only tetap mengikuti identitas `OWNER_NUMBERS`.
+
+Role aplikasi yang tersedia adalah `user`, `premium`, dan `moderator`. Role `owner` tidak dapat diberikan lewat database karena hak owner hanya berasal dari konfigurasi identitas. Owner dapat mengelola akun dengan `.setrole 628xxxx premium`, memberi akses khusus dengan `.grantakses 628xxxx command:namacommand` atau `.grantakses 628xxxx kategori:slug`, dan mencabutnya dengan `.cabutakses` menggunakan format target yang sama. Target harus sudah terdaftar.
+
+Untuk membatasi plugin berdasarkan role, gunakan `permissions: { roles: ['premium', 'moderator'] }` atau `permissions: { minRole: 'premium' }`. Untuk akses yang harus diberikan secara eksplisit oleh owner, gunakan `permissions: { accessRequired: true }`; grant command/kategori pada profil pengguna akan membuka fitur tersebut. Grant tidak pernah melewati pembatas owner-only, group-only, admin grup, atau bot-admin. Menu dan eksekusi command menggunakan pemeriksaan yang sama.
+
 ## Hak akses dan identitas
 
 `isOwner` hanya diberikan jika identitas pengirim yang sudah dinormalisasi cocok dengan salah satu nomor pada `OWNER_NUMBERS` di `.env` (termasuk identitas PN yang berhasil dipetakan dari LID). Status admin grup, pesan `fromMe`, nama profil, dan jabatan grup tidak pernah menjadi pengganti identitas owner. Pastikan `OWNER_NUMBERS` berisi nomor WhatsApp pemilik bot dalam format kode negara + nomor, tanpa `+` atau spasi, dipisahkan koma jika lebih dari satu.
