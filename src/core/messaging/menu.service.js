@@ -62,13 +62,16 @@ function frameLines(title, theme = 'showcase', subtitle = '') {
   lines.push(frame.mid);
   return lines;
 }
+function titleCase(value) {
+  return String(value || '').toLocaleUpperCase('id-ID');
+}
 function categoryTitle(category) {
   const layout = CATEGORY_LAYOUTS[category.slug] || 'directory';
   const labels = {
-    control: 'CONTROL CENTER', media: 'MEDIA STUDIO', assistant: 'AI DESK',
-    community: 'COMMUNITY HUB', editorial: 'EDITORIAL', directory: 'COMMAND DIRECTORY'
+    control: 'CONTROL CENTER', media: 'STUDIO', assistant: 'DESK',
+    community: 'HUB', editorial: 'EDITORIAL', directory: 'DIRECTORY'
   };
-  return (labels[layout] || labels.directory);
+  return titleCase(category.label) + ' ' + (labels[layout] || labels.directory);
 }
 function pluginLines(plugin, prefix, index, theme = 'showcase') {
   const bullet = (FRAME[theme] || FRAME.showcase).bullet;
