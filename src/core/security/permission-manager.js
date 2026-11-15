@@ -25,6 +25,21 @@ function validatePermission(plugin, context) {
   if (adminOnly && !context.isGroup) return { allowed: false, reason: 'group' };
   if (adminOnly && !context.isGroupAdmin && !(context.isOwner && (category === 'group' || permission.ownerAdminBypass !== false))) return { allowed: false, reason: 'admin' };
   if (permission.botAdminOnly && !context.isBotAdmin) return { allowed: false, reason: 'bot-admin' };
+  if (!context.isOwner && context.isGroup && context.isRegistered === false) return { allowed: false, reason: 'registration' };
+  if (!context.isOwner && permission.accessRequired) {
+    const access = context.userAccess || {};
+    const commandAccess = Array.isArray(access.commands) && access.commands.includes(String(context.command || '').toLowerCase());
+    const categoryAccess = Array.isArray(access.categories) && access.categories.includes(category);
+    const roleAllowed = Array.isArray(permission.roles) && permission.roles.includes(context.userRole);
+    const roleRank = { user: 0, premium: 1, moderator: 2 };
+    const minimumAllowed = permission.minRole && roleRank[context.userRole] >= roleRank[permission.minRole];
+    if (!commandAccess && !categoryAccess && !roleAllowed && !minimumAllowed) return { allowed: false, reason: 'role' };
+  } else if (!context.isOwner && (Array.isArray(permission.roles) || permission.minRole)) {
+    const roleRank = { user: 0, premium: 1, moderator: 2 };
+    const roleAllowed = Array.isArray(permission.roles) && permission.roles.includes(context.userRole);
+    const minimumAllowed = permission.minRole && roleRank[context.userRole] >= roleRank[permission.minRole];
+    if (!roleAllowed && !minimumAllowed) return { allowed: false, reason: 'role' };
+  }
   if ((permission.restricted || context.publicMode === false) && !context.isOwner) return { allowed: false, reason: 'restricted' };
   return { allowed: true };
 }
