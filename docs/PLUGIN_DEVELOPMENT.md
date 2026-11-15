@@ -29,3 +29,12 @@ Gunakan permission berdasarkan ruang dan peran secara terpisah:
 `adminOnly` juga mensyaratkan konteks grup. Untuk command yang benar-benar khusus owner, gunakan `ownerOnly`, jangan mengandalkan `adminOnly`. Jika metadata grup gagal diambil, status admin dan bot-admin dianggap tidak valid (fail-closed). Menu memakai aturan permission yang sama, sehingga plugin owner-only hanya muncul untuk owner terverifikasi dan plugin group-only hanya muncul di konteks grup. Jangan menggunakan `eval`, `exec`, atau interpolasi input ke shell. Operasi file harus memakai service storage atau membatasi `path.resolve` ke root yang diizinkan.
 
 Reload tersedia melalui `reloadPlugins()` untuk tooling development; production memakai plugin yang sudah dimuat saat startup. Jangan reload plugin saat pesan sedang dieksekusi tanpa mekanisme drain pada aplikasi produksi.
+
+
+## Penanganan error plugin
+
+Dispatcher membungkus pemanggilan `plugin.execute(ctx)`. Jika plugin melempar exception, bot membuat ID referensi unik, mencatat detail exception ke logger, lalu mengirim laporan terformat melalui `ctx.reply()`. Laporan mencakup nama plugin, command, tahap, tipe error, detail singkat yang telah disamarkan, dugaan penyebab, dan langkah pemeriksaan. Stack trace lengkap tetap berada di log server, bukan di chat.
+
+Diagnostik mengenali error koneksi/timeout, HTTP 401/403, 404, 429, 5xx, file/permission, dependency FFmpeg yang hilang, serta error JavaScript umum. Jangan menambahkan token, cookie, pairing code, atau data pengguna ke pesan error secara manual. ID referensi dari chat digunakan untuk menemukan record terkait di log.
+
+Plugin event yang gagal tidak memiliki jaminan konteks balasan chat. Kegagalannya dicatat dengan nama plugin, event, tahap, ID referensi, exception, dan hasil diagnosis di log; dispatcher melanjutkan pemrosesan plugin event lain.
