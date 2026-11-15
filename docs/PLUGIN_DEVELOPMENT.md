@@ -13,7 +13,7 @@ Gunakan `ctx.reply`, `ctx.sendMessage`, `ctx.react`, dan `ctx.services` daripada
 Gunakan permission berdasarkan ruang dan peran secara terpisah:
 
 - `ownerOnly: true`: hanya nomor owner bot yang terdaftar. Admin grup tetap ditolak, baik di grup maupun chat pribadi. Kategori plugin bernama `owner` otomatis diperlakukan sebagai owner-only meskipun flag terlupa.
-- `groupOnly: true`: command hanya dapat dijalankan di grup. Anggota grup dapat menggunakannya kecuali ditambah pembatas peran. Kategori plugin bernama `group` otomatis dibatasi ke grup dan hanya dapat dipakai admin grup atau owner bot, kecuali plugin tersebut secara eksplisit memakai `ownerOnly: true` (dalam hal itu hanya owner bot yang boleh menggunakannya, termasuk dari chat pribadi).
+- `groupOnly: true`: command hanya dapat dijalankan di grup. Anggota grup dapat menggunakannya kecuali ditambah pembatas peran. Kategori plugin bernama `group` otomatis dibatasi ke grup dan hanya dapat dipakai admin grup atau owner bot. Owner bot selalu dapat melewati syarat admin untuk kategori ini; `ownerAdminBypass: false` tidak menurunkan hak owner pada kategori `group`. Pengecualian: plugin yang secara eksplisit memakai `ownerOnly: true` hanya dapat dipakai owner bot, termasuk dari chat pribadi.
 - `groupOnly: true, adminOnly: true`: hanya admin grup dan owner bot yang dapat menjalankannya di grup. Owner dapat melewati syarat admin grup secara default.
 - `privateOnly: true`: hanya dapat dijalankan di chat pribadi.
 - `botAdminOnly: true`: bot harus terdeteksi sebagai admin grup.
