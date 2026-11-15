@@ -8,7 +8,7 @@ function safeErrorDetail(error) {
   return raw
     .replace(/https?:\/\/\S+/gi, '[URL disamarkan]')
     .replace(/(?:[A-Z]:\\|\/)(?:[^\s:]+\/)*[^\s:]*/gi, '[path disamarkan]')
-    .replace(/\b(?:token|api[_-]?key|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1[disamarkan]')
+    .replace(/\b(token|api[_-]?key|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1=[disamarkan]')
     .replace(/[\r\n\t]+/g, ' ')
     .replace(/[\u0000-\u001f\u007f]/g, '')
     .trim()
