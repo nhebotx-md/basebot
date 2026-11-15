@@ -14,8 +14,9 @@ function validatePermission(plugin, context) {
   const category = String(plugin.category || '').trim().toLowerCase();
   // Sensitive categories fail closed even if a plugin forgot its explicit flag.
   const ownerOnly = permission.ownerOnly === true || category === 'owner';
-  const groupOnly = permission.groupOnly === true || category === 'group';
-  const adminOnly = permission.adminOnly === true || category === 'group';
+  const inferredGroupAdmin = category === 'group' && !ownerOnly;
+  const groupOnly = permission.groupOnly === true || inferredGroupAdmin;
+  const adminOnly = permission.adminOnly === true || inferredGroupAdmin;
   // Owner-only is an identity boundary, never an admin-group privilege.
   if (ownerOnly && !context.isOwner) return { allowed: false, reason: 'owner' };
   // Group/private flags define where a command can run, not who owns the bot.
