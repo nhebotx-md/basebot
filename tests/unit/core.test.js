@@ -149,6 +149,7 @@ test('limited response reader rejects a body that exceeds its byte cap', async (
 test('role permissions separate owner identity from group scope and group admin', () => {
   const ownerCommand = plugin({ permissions: { ownerOnly: true } });
   const ownerCategoryCommand = plugin({ category: 'owner', permissions: {} });
+  const ownerInGroupCategory = plugin({ category: 'group', permissions: { ownerOnly: true } });
   const groupCommand = plugin({ permissions: { groupOnly: true } });
   const groupCategoryCommand = plugin({ category: 'group', permissions: {} });
   const adminCommand = plugin({ permissions: { groupOnly: true, adminOnly: true } });
@@ -157,6 +158,15 @@ test('role permissions separate owner identity from group scope and group admin'
     validatePermission(ownerCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
     { allowed: false, reason: 'owner' },
     'owner category is protected even if a plugin omitted ownerOnly'
+  );
+  assert.deepEqual(
+    validatePermission(ownerInGroupCategory, { isOwner: true, isGroup: false, isPrivate: true }),
+    { allowed: true },
+    'explicit owner-only commands in group category remain owner-only, not group-admin commands'
+  );
+  assert.deepEqual(
+    validatePermission(ownerInGroupCategory, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: false, reason: 'owner' }
   );
   assert.deepEqual(
     validatePermission(groupCategoryCommand, { isOwner: true, isGroup: false, isPrivate: true }),
