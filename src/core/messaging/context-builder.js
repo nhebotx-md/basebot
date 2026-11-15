@@ -80,7 +80,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
   const targetPlugin = parsed ? registry.getByCommand(parsed.command) : null;
-  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
+  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || targetPlugin?.category?.toLowerCase() === 'group' || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
   if (needsGroupMetadata) {
     try { groupMetadata = await client.groupMetadata(m.chat); }
     catch (error) { logger.warn('Metadata grup tidak tersedia; izin admin ditolak.', { error: error.message }); }
@@ -91,7 +91,6 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     ? [client.user?.id, ...(Array.isArray(m.senderCandidates) ? m.senderCandidates : [])]
     : (Array.isArray(m.senderCandidates) && m.senderCandidates.length ? m.senderCandidates : [m.sender]);
   const sender = await resolveBestIdentity(senderCandidates, client, decode);
-  const bot = await resolveBestIdentity([client.user?.id], client, decode);
   const newsletterOwnership = m.isNewsletter
     ? await resolveNewsletterOwner({ client, newsletterJid: m.chat, ownerSet, decode })
     : { isOwner: false, metadata: null, channelOwner: '' };
@@ -135,7 +134,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     channelPublisher: m.channelPublisher || null,
     channelMetadata: newsletterOwnership.metadata,
     channelOwner: newsletterOwnership.channelOwner || '',
-    isOwner: ownerSet.has(sender) || newsletterOwnership.isOwner || (m.fromMe && Boolean(bot) && sender === bot), isGroupAdmin: Boolean(m.isGroup && adminIds.has(sender)),
+    isOwner: ownerSet.has(sender) || newsletterOwnership.isOwner, isGroupAdmin: Boolean(m.isGroup && adminIds.has(sender)),
     isBotAdmin: Boolean(m.isGroup && adminIds.has(bot)), groupMetadata, publicMode: client.public !== false,
     reply: (text, options) => messageService.reply(m, text, options),
     react: emoji => messageService.react(m, emoji),
