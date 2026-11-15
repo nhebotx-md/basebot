@@ -144,3 +144,88 @@ test('limited response reader rejects a body that exceeds its byte cap', async (
   const response = { headers: { get() { return null; } }, body: Readable.from([Buffer.from('oversized')]) };
   await assert.rejects(() => readResponseLimited(response, 3), /batas ukuran/);
 });
+
+
+test('role permissions separate owner identity from group scope and group admin', () => {
+  const ownerCommand = plugin({ permissions: { ownerOnly: true } });
+  const ownerCategoryCommand = plugin({ category: 'owner', permissions: {} });
+  const groupCommand = plugin({ permissions: { groupOnly: true } });
+  const groupCategoryCommand = plugin({ category: 'group', permissions: {} });
+  const adminCommand = plugin({ permissions: { groupOnly: true, adminOnly: true } });
+
+  assert.deepEqual(
+    validatePermission(ownerCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: false, reason: 'owner' },
+    'owner category is protected even if a plugin omitted ownerOnly'
+  );
+  assert.deepEqual(
+    validatePermission(groupCategoryCommand, { isOwner: true, isGroup: false, isPrivate: true }),
+    { allowed: false, reason: 'group' },
+    'group category is never executable in private chat'
+  );
+  assert.deepEqual(
+    validatePermission(groupCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: false }),
+    { allowed: false, reason: 'admin' },
+    'group category is restricted to group admins and bot owner by default'
+  );
+  assert.deepEqual(
+    validatePermission(groupCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: true }
+  );
+  assert.deepEqual(
+    validatePermission(ownerCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: false, reason: 'owner' },
+    'group admin must never inherit bot-owner privileges'
+  );
+  assert.deepEqual(
+    validatePermission(ownerCommand, { isOwner: true, isGroup: false, isGroupAdmin: false }),
+    { allowed: true },
+    'bot owner may run owner-only commands in private chat'
+  );
+  assert.deepEqual(
+    validatePermission(groupCommand, { isOwner: false, isGroup: false, isPrivate: true }),
+    { allowed: false, reason: 'group' }
+  );
+  assert.deepEqual(
+    validatePermission(groupCommand, { isOwner: false, isGroup: true, isGroupAdmin: false }),
+    { allowed: true },
+    'group-scoped commands may be used by group participants unless adminOnly is also set'
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: true }
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: true, isGroup: true, isGroupAdmin: false }),
+    { allowed: true },
+    'owner may administer group-scoped admin commands by default'
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: false, isGroup: true, isGroupAdmin: false }),
+    { allowed: false, reason: 'admin' }
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: true, isGroup: false, isGroupAdmin: false }),
+    { allowed: false, reason: 'group' },
+    'admin-only commands still require a group context'
+  );
+});
+
+test('dispatcher blocks owner-only commands from group admins and group-only commands in private chat', async () => {
+  const registry = new PluginRegistry();
+  const executions = [];
+  registry.register(plugin({ name: 'owner-command', commands: ['ownerop'], category: 'owner', permissions: {}, execute: async () => executions.push('owner') }));
+  registry.register(plugin({ name: 'group-command', commands: ['groupop'], category: 'group', permissions: {}, execute: async () => executions.push('group') }));
+  const dispatcher = new CommandDispatcher({ registry, logger: { info() {}, warn() {}, error() {} }, rateLimit: 0 });
+  const replies = [];
+  const base = { isPrivate: false, publicMode: true, reply: async message => replies.push(message) };
+
+  const adminAttempt = await dispatcher.dispatch({ ...base, m: { id: 'owner-admin-attempt' }, command: 'ownerop', isGroup: true, isOwner: false, isGroupAdmin: true });
+  assert.equal(adminAttempt.reason, 'owner');
+  assert.match(replies.at(-1), /khusus owner/i);
+
+  const privateAttempt = await dispatcher.dispatch({ ...base, m: { id: 'group-private-attempt' }, command: 'groupop', isGroup: false, isPrivate: true, isOwner: true, isGroupAdmin: false });
+  assert.equal(privateAttempt.reason, 'group');
+  assert.match(replies.at(-1), /hanya dapat digunakan di grup/i);
+  assert.deepEqual(executions, []);
+});
