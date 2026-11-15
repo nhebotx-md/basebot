@@ -23,7 +23,7 @@ function diagnosePluginError(error) {
   const message = String(error?.message || '').toLowerCase();
   const status = Number(error?.statusCode || error?.status || 0);
   if (['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ECONNABORTED', 'ERR_NETWORK', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET', 'ABORT_ERR'].includes(code) || /network|fetch failed|timed? ?out|socket hang up|aborted/.test(message)) {
-    return { cause: 'Koneksi ke layanan eksternal terputus, gagal ditemukan, atau melewati batas waktu.', action: 'Periksa koneksi server, DNS, timeout request, dan status provider. Ulangi setelah layanan kembali normal.' };
+    return { cause: 'Koneksi ke Layanan eksternal terputus, gagal ditemukan, atau melewati batas waktu.', action: 'Periksa koneksi server, DNS, timeout request, dan status provider. Ulangi setelah layanan kembali normal.' };
   }
   if (status === 401 || status === 403) {
     return { cause: 'Layanan tujuan menolak autentikasi atau akses API.', action: 'Periksa API key, izin akun provider, dan konfigurasi environment. Perbarui kredensial di .env tanpa membagikannya ke chat.' };
