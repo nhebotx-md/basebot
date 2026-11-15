@@ -60,7 +60,7 @@ test('startup dashboard renders one consolidated runtime panel', () => {
   assert.match(output, /PLATFORM/);
   assert.match(output, /Asia\\/Jakarta/);
   assert.match(output, /INITIALIZING/);
-  assert.equal(lines.filter(line => line.includes('╭')).length, 2);
+  assert.equal(lines.filter(line => line.includes('╭')).length, 1);
 });
 
 test('plugin dashboard lists every active module across wrapped lines', () => {
