@@ -9,7 +9,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   const messages = [];
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
-  assert.equal(app.registry.list().length, 26);
+  assert.equal(app.registry.list().length, 28);
   assert.equal(app.config.paths.database, './data/database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
