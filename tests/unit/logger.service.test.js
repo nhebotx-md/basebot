@@ -71,8 +71,8 @@ test('plugin dashboard lists every active module across wrapped lines', () => {
   const plugins = Array.from({ length: 18 }, (_, index) => 'plugin-' + String(index + 1).padStart(2, '0'));
   logger.plugins({ loaded: 18, discovered: 18, skipped: 0, commands: 42, plugins });
   const output = lines.join('\\n');
-  assert.match(output, /plugin-01/);
-  assert.match(output, /plugin-18/);
-  assert.match(output, /42 registered/);
-  assert.match(output, /ALL READY/);
+  assert.ok(output.includes('plugin-01'));
+  assert.ok(output.includes('plugin-18'));
+  assert.ok(output.includes('42 registered'));
+  assert.ok(output.includes('ALL READY'));
 });
