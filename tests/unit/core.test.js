@@ -265,3 +265,10 @@ test('dispatcher requires group registration before built-in menus and normal pl
   assert.equal(executed, 0);
   assert.match(replies[0], /\.daftar nama/);
 });
+
+
+test('explicit owner grants override role requirements without overriding owner-only checks', () => {
+  const premiumFeature = plugin({ permissions: { roles: ['premium'] } });
+  assert.deepEqual(validatePermission(premiumFeature, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: ['ping'], categories: [] }, command: 'ping' }), { allowed: true });
+  assert.deepEqual(validatePermission(plugin({ category: 'owner', permissions: { accessRequired: true } }), { isOwner: false, isGroup: true, isRegistered: true, userRole: 'moderator', userAccess: { commands: ['ping'], categories: ['owner'] }, command: 'ping' }), { allowed: false, reason: 'owner' });
+});
