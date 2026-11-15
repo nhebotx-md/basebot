@@ -7,10 +7,10 @@ const { CommandDispatcher } = require('../../src/core/messaging/command-dispatch
 
 const plugins = [
   { name: 'yt-download', category: 'download', commands: ['ytmp4', 'ytv'], description: 'Unduh video dari YouTube.', usage: '.ytmp4 <url>', permissions: {} },
-  { name: 'owner-tools', category: 'owner', commands: ['setmode'], description: 'Mengubah mode bot.', usage: '.setmode public', permissions: { ownerOnly: true } },
+  { name: 'owner-tools', category: 'owner', commands: ['setmode'], description: 'Mengubah mode bot.', usage: '.setmode public', permissions: {} },
   { name: 'ping', category: 'utility', commands: ['ping'], description: 'Memeriksa respons bot.', usage: '.ping', permissions: {} },
   { name: 'assistant', category: 'ai', commands: ['ask'], description: 'Asisten AI.', usage: '.ask pertanyaan', permissions: {} },
-  { name: 'group-tools', category: 'group', commands: ['tagall'], description: 'Mengelola anggota grup.', usage: '.tagall', permissions: { groupOnly: true } }
+  { name: 'group-tools', category: 'group', commands: ['tagall'], description: 'Mengelola anggota grup.', usage: '.tagall', permissions: {} }
 ];
 
 function createContext(overrides = {}) {
@@ -66,7 +66,19 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   assert.match(replies[0], /\.catmenu utility/);
   assert.match(replies[0], /\.catmenu ai/);
   assert.doesNotMatch(replies[0], /\.catmenu owner/);
+  assert.doesNotMatch(replies[0], /\.catmenu group/);
   assert.match(replies[0], /Pengguna Uji/);
+
+  const groupMember = createContext({ isGroup: true, isPrivate: false, isGroupAdmin: false });
+  const memberMenu = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
+  const memberOutput = memberMenu.renderMenu(groupMember.ctx, 'showcase');
+  assert.doesNotMatch(memberOutput, /\.catmenu group/);
+
+  const groupAdmin = createContext({ isGroup: true, isPrivate: false, isGroupAdmin: true });
+  const adminMenu = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
+  const adminOutput = adminMenu.renderMenu(groupAdmin.ctx, 'showcase');
+  assert.match(adminOutput, /\.catmenu group/);
+  assert.doesNotMatch(adminOutput, /\.catmenu owner/);
 });
 
 test('.catmenu renders a category-specific media layout with commands, aliases, and usage', async () => {
