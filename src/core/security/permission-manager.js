@@ -23,7 +23,7 @@ function validatePermission(plugin, context) {
   if (groupOnly && !context.isGroup) return { allowed: false, reason: 'group' };
   if (permission.privateOnly && !context.isPrivate) return { allowed: false, reason: 'private' };
   if (adminOnly && !context.isGroup) return { allowed: false, reason: 'group' };
-  if (adminOnly && !context.isGroupAdmin && !(context.isOwner && permission.ownerAdminBypass !== false)) return { allowed: false, reason: 'admin' };
+  if (adminOnly && !context.isGroupAdmin && !(context.isOwner && (category === 'group' || permission.ownerAdminBypass !== false))) return { allowed: false, reason: 'admin' };
   if (permission.botAdminOnly && !context.isBotAdmin) return { allowed: false, reason: 'bot-admin' };
   if ((permission.restricted || context.publicMode === false) && !context.isOwner) return { allowed: false, reason: 'restricted' };
   return { allowed: true };
