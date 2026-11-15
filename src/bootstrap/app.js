@@ -30,9 +30,13 @@ async function createApp(options = {}) {
     timezone: config.timezone,
     baileysLogLevel: config.logging.baileysLevel || 'warn'
   };
-  if (typeof logger.banner === 'function') logger.banner({ name: config.botName, ...startupDetails });
-  else logger.info('BASEBOT memulai runtime.', startupDetails);
-  if (typeof logger.startup === 'function') logger.startup({ name: config.botName, ...startupDetails });
+  if (typeof logger.startup === 'function') {
+    logger.startup({ name: config.botName, ...startupDetails });
+  } else if (typeof logger.banner === 'function') {
+    logger.banner({ name: config.botName, ...startupDetails });
+  } else {
+    logger.info('BASEBOT memulai runtime.', startupDetails);
+  }
 
   const database = options.database || await new DatabaseService({ directory: config.paths.database || './data/database', logger }).init();
   const users = options.users || new UserService({ database, expPerMessage: config.profile?.expPerMessage ?? 5, expCooldownMs: config.profile?.expCooldownMs ?? 60000 });
