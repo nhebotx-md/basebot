@@ -22,14 +22,29 @@ function diagnosePluginError(error) {
   const code = String(error?.code || '').toUpperCase();
   const message = String(error?.message || '').toLowerCase();
   const status = Number(error?.statusCode || error?.status || 0);
-  if (['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED'].includes(code) || /network|fetch failed|timed? ?out|socket hang up/.test(message)) {
-    return { cause: 'Layanan eksternal atau koneksi internet tidak merespons.', action: 'Periksa koneksi internet dan status API penyedia, lalu ulangi beberapa saat lagi.' };
+  if (['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ECONNABORTED', 'ERR_NETWORK', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET', 'ABORT_ERR'].includes(code) || /network|fetch failed|timed? ?out|socket hang up|aborted/.test(message)) {
+    return { cause: 'Koneksi ke layanan eksternal terputus, gagal ditemukan, atau melewati batas waktu.', action: 'Periksa koneksi server, DNS, timeout request, dan status provider. Ulangi setelah layanan kembali normal.' };
   }
-  if (status >= 400 || /http \d{3}/.test(message)) {
-    return { cause: 'Server/API tujuan menolak permintaan atau sedang mengalami gangguan.', action: 'Periksa endpoint, API key dan kuota layanan pada konfigurasi bot. Jangan kirim kredensial ke chat.' };
+  if (status === 401 || status === 403) {
+    return { cause: 'Layanan tujuan menolak autentikasi atau akses API.', action: 'Periksa API key, izin akun provider, dan konfigurasi environment. Perbarui kredensial di .env tanpa membagikannya ke chat.' };
+  }
+  if (status === 404) {
+    return { cause: 'Endpoint atau resource yang diminta tidak ditemukan.', action: 'Periksa URL endpoint, parameter request, dan perubahan API dari provider.' };
+  }
+  if (status === 429) {
+    return { cause: 'Batas request atau kuota layanan eksternal sedang tercapai.', action: 'Kurangi frekuensi request, periksa kuota provider, lalu coba lagi setelah periode limit berakhir.' };
+  }
+  if (status >= 500) {
+    return { cause: 'Server provider mengalami gangguan internal.', action: 'Periksa status layanan provider dan coba ulangi beberapa saat lagi. Jika berulang, siapkan fallback provider.' };
+  }
+  if (status >= 400 || /http \\d{3}/.test(message)) {
+    return { cause: 'Layanan tujuan menolak request karena parameter atau kebijakan akses.', action: 'Periksa format input, endpoint, parameter, dan izin akses API.' };
+  }
+  if (code === 'FFMPEG_BINARY_MISSING') {
+    return { cause: 'Executable FFmpeg tidak tersedia pada instalasi BASEBOT.', action: 'Jalankan npm ci dari direktori project, pastikan dependency platform cocok, lalu restart bot.' };
   }
   if (['ENOENT', 'EACCES', 'EPERM', 'ENOSPC'].includes(code)) {
-    return { cause: 'File atau direktori yang dibutuhkan tidak tersedia atau tidak dapat diakses.', action: 'Periksa lokasi file, izin akses direktori, dan ruang penyimpanan server.' };
+    return { cause: 'File atau direktori yang dibutuhkan tidak tersedia atau tidak dapat diakses.', action: 'Periksa lokasi file, izin akses direktori, ruang penyimpanan, dan dependency yang dibutuhkan.' };
   }
   if (error instanceof SyntaxError || error instanceof TypeError || error instanceof ReferenceError || /is not a function|is not defined|unexpected token/.test(message)) {
     return { cause: 'Ada kemungkinan bug pada kode plugin, data yang diterima tidak sesuai, atau dependensi tidak cocok.', action: 'Periksa stack trace pada log server dan validasi input serta dependensi plugin.' };
