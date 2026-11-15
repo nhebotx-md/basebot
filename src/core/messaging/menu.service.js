@@ -161,7 +161,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     const commandCount = plugins.reduce((total, plugin) => total + plugin.commands.length, 0);
     const now = clock();
     const parts = dateParts(config.timezone, now);
-    const role = ctx.isOwner ? '👑 Owner' : ctx.isGroupAdmin ? '🛡️ Admin' : 'Member';
+    const role = ctx.isOwner ? '👑 Owner' : ctx.isGroupAdmin ? '🛡️ Admin Grup' : ({ user: 'User', premium: 'Premium', moderator: 'Moderator', guest: 'Belum terdaftar' }[ctx.userRole] || 'Member');
     const userName = cleanLabel(ctx.pushname, 'Pengguna');
     const botName = cleanLabel(config.botName, 'BASEBOT');
     const ownerName = cleanLabel(config.ownerName, 'Owner');
