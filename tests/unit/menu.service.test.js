@@ -95,7 +95,7 @@ test('.catmenu renders a category-specific media layout with commands, aliases, 
 test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   const assistant = service.renderCategory(createContext({ command: 'catmenu', args: ['ai'] }).ctx);
-  const community = service.renderCategory(createContext({ command: 'catmenu', args: ['group'], isGroup: true }).ctx);
+  const community = service.renderCategory(createContext({ command: 'catmenu', args: ['group'], isGroup: true, isPrivate: false, isGroupAdmin: true }).ctx);
   const utility = service.renderCategory(createContext({ command: 'catmenu', args: ['utility'] }).ctx);
   assert.match(assistant, /AI DESK/);
   assert.match(community, /GROUP HUB/);
