@@ -44,7 +44,7 @@ function formatPluginFailure({ plugin, command, error, stage = 'execute', refere
     '│ TAHAP    : *' + stage + '*',
     '│ REF      : *' + reference + '*',
     '┣━━━━━━━━━━━━━━━━━━━━━━━━',
-    '│ STATUS   : Proses tidak berhasil diselesaikan.',
+    '│ STATUS   : Terjadi kesalahan; proses tidak berhasil diselesaikan.',
     '│ ERROR    : *' + errorName + '*',
     '│ DETAIL   : ' + safeErrorDetail(error),
     '┣━━━━━━━━━━━━━━━━━━━━━━━━',
