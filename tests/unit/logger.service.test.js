@@ -54,12 +54,12 @@ test('startup dashboard renders one consolidated runtime panel', () => {
   const sink = { log(line) { lines.push(String(line)); }, info(line) { lines.push(String(line)); }, warn(line) { lines.push(String(line)); }, error(line) { lines.push(String(line)); } };
   const logger = createLogger({ format: 'pretty', colors: false, sink });
   logger.startup({ name: 'BASEBOT', version: '2.0.0', mode: 'public', node: 'v22.23.4', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
-  const output = lines.join('\\n');
-  assert.match(output, /BASEBOT/);
-  assert.match(output, /Node\\.js v22\\.23\\.4/);
-  assert.match(output, /PLATFORM/);
-  assert.match(output, /Asia\\/Jakarta/);
-  assert.match(output, /INITIALIZING/);
+  const output = lines.join(' ');
+  assert.ok(output.includes('BASEBOT'));
+  assert.ok(output.includes('Node.js v22.23.4'));
+  assert.ok(output.includes('PLATFORM'));
+  assert.ok(output.includes('Asia/Jakarta'));
+  assert.ok(output.includes('INITIALIZING'));
   assert.equal(lines.filter(line => line.includes('╭')).length, 1);
 });
 
@@ -70,7 +70,7 @@ test('plugin dashboard lists every active module across wrapped lines', () => {
   const logger = createLogger({ format: 'pretty', colors: false, sink });
   const plugins = Array.from({ length: 18 }, (_, index) => 'plugin-' + String(index + 1).padStart(2, '0'));
   logger.plugins({ loaded: 18, discovered: 18, skipped: 0, commands: 42, plugins });
-  const output = lines.join('\\n');
+  const output = lines.join(' ');
   assert.ok(output.includes('plugin-01'));
   assert.ok(output.includes('plugin-18'));
   assert.ok(output.includes('42 registered'));
