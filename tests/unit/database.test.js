@@ -110,3 +110,25 @@ test('level calculation is deterministic and non-negative', () => {
   assert.equal(levelForExp(100), 2);
   assert.equal(levelForExp(400), 3);
 });
+
+test('user registration, role upgrades and explicit access grants persist in JSON database', async t => {
+  const { database } = await fixture(t);
+  const users = new UserService({ database, clock: () => 2000 });
+  await users.recordMessage('628111@s.whatsapp.net', { name: 'Calon User' });
+  assert.equal((await users.getProfile('628111@s.whatsapp.net')).registered, false);
+  const registered = await users.register('628111@s.whatsapp.net', 'Nama User');
+  assert.equal(registered.created, true);
+  assert.equal(registered.profile.registered, true);
+  assert.equal(registered.profile.role, 'user');
+  assert.equal((await users.register('628111@s.whatsapp.net', 'Nama User')).created, false);
+  const upgraded = await users.setRole('628111@s.whatsapp.net', 'premium');
+  assert.equal(upgraded.role, 'premium');
+  const granted = await users.grantAccess('628111@s.whatsapp.net', 'command', 'special');
+  assert.deepEqual(granted.access.commands, ['special']);
+  const categoryGrant = await users.grantAccess('628111@s.whatsapp.net', 'category', 'media');
+  assert.deepEqual(categoryGrant.access.categories, ['media']);
+  const revoked = await users.revokeAccess('628111@s.whatsapp.net', 'command', 'special');
+  assert.deepEqual(revoked.access.commands, []);
+  assert.equal((await users.getProfile('628111@s.whatsapp.net')).role, 'premium');
+  await assert.rejects(() => users.setRole('missing@s.whatsapp.net', 'owner'), /Role harus/);
+});
