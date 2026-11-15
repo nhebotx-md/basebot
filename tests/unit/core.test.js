@@ -239,3 +239,29 @@ test('dispatcher blocks owner-only commands from group admins and group-only com
   assert.match(replies.at(-1), /hanya dapat digunakan di grup/i);
   assert.deepEqual(executions, []);
 });
+
+
+test('role and explicit access grants control access to protected plugins', () => {
+  const protectedPlugin = plugin({ permissions: { accessRequired: true } });
+  const rolePlugin = plugin({ permissions: { minRole: 'premium' } });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: [], categories: [] }, command: 'ping' }), { allowed: false, reason: 'role' });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: ['ping'], categories: [] }, command: 'ping' }), { allowed: true });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: [], categories: ['system'] }, command: 'ping' }), { allowed: true });
+  assert.deepEqual(validatePermission(rolePlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user' }), { allowed: false, reason: 'role' });
+  assert.deepEqual(validatePermission(rolePlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'premium' }), { allowed: true });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: false, userRole: 'user', userAccess: { commands: ['ping'], categories: [] }, command: 'ping' }), { allowed: false, reason: 'registration' });
+  assert.deepEqual(validatePermission(plugin({ permissions: { registrationExempt: true } }), { isOwner: false, isGroup: true, isRegistered: false }), { allowed: true });
+});
+
+test('dispatcher requires group registration before built-in menus and normal plugins', async () => {
+  const registry = new PluginRegistry();
+  let executed = 0;
+  registry.register(plugin({ execute: async () => { executed += 1; } }));
+  const dispatcher = new CommandDispatcher({ registry, logger: { info() {}, warn() {}, error() {} }, rateLimit: 0 });
+  const replies = [];
+  const ctx = { m: { id: 'unregistered-group' }, command: 'ping', isGroup: true, isOwner: false, profile: { registered: false }, prefix: '.', reply: async message => replies.push(message) };
+  const result = await dispatcher.dispatch(ctx);
+  assert.equal(result.reason, 'registration');
+  assert.equal(executed, 0);
+  assert.match(replies[0], /\.daftar nama/);
+});
