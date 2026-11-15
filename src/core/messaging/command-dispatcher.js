@@ -1,6 +1,64 @@
 'use strict';
 
+const { randomBytes } = require('node:crypto');
 const { validatePermission } = require('../security/permission-manager');
+
+function safeErrorDetail(error) {
+  const raw = String(error?.message || error || 'Tidak ada detail tambahan.');
+  return raw
+    .replace(/https?:\/\/\S+/gi, '[URL disamarkan]')
+    .replace(/(?:[A-Z]:\\|\/)(?:[^\s:]+\/)*[^\s:]*/gi, '[path disamarkan]')
+    .replace(/\b(?:token|api[_-]?key|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1[disamarkan]')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, 180) || 'Tidak ada detail tambahan.';
+}
+
+function diagnosePluginError(error) {
+  const code = String(error?.code || '').toUpperCase();
+  const message = String(error?.message || '').toLowerCase();
+  const status = Number(error?.statusCode || error?.status || 0);
+  if (['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED'].includes(code) || /network|fetch failed|timed? ?out|socket hang up/.test(message)) {
+    return { cause: 'Layanan eksternal atau koneksi internet tidak merespons.', action: 'Periksa koneksi internet dan status API penyedia, lalu ulangi beberapa saat lagi.' };
+  }
+  if (status >= 400 || /http \d{3}/.test(message)) {
+    return { cause: 'Server/API tujuan menolak permintaan atau sedang mengalami gangguan.', action: 'Periksa endpoint, API key dan kuota layanan pada konfigurasi bot. Jangan kirim kredensial ke chat.' };
+  }
+  if (['ENOENT', 'EACCES', 'EPERM', 'ENOSPC'].includes(code)) {
+    return { cause: 'File atau direktori yang dibutuhkan tidak tersedia atau tidak dapat diakses.', action: 'Periksa lokasi file, izin akses direktori, dan ruang penyimpanan server.' };
+  }
+  if (error instanceof SyntaxError || error instanceof TypeError || error instanceof ReferenceError || /is not a function|is not defined|unexpected token/.test(message)) {
+    return { cause: 'Ada kemungkinan bug pada kode plugin, data yang diterima tidak sesuai, atau dependensi tidak cocok.', action: 'Periksa stack trace pada log server dan validasi input serta dependensi plugin.' };
+  }
+  return { cause: 'Proses plugin berhenti karena exception yang tidak tertangani.', action: 'Periksa log server menggunakan ID referensi di bawah, lalu perbaiki bagian plugin yang disebutkan.' };
+}
+
+function formatPluginFailure({ plugin, command, error, stage = 'execute', reference }) {
+  const diagnosis = diagnosePluginError(error);
+  const errorName = String(error?.name || 'Error').replace(/[^a-z0-9_.-]/gi, '').slice(0, 32) || 'Error';
+  return [
+    '╭━━━━━━━━〔 ⚠ FITUR GAGAL DIPROSES 〕',
+    '│ PLUGIN   : *' + String(plugin || 'unknown').slice(0, 64) + '*',
+    '│ COMMAND  : *' + String(command || '-').slice(0, 40) + '*',
+    '│ TAHAP    : *' + stage + '*',
+    '│ REF      : *' + reference + '*',
+    '┣━━━━━━━━━━━━━━━━━━━━━━━━',
+    '│ STATUS   : Proses tidak berhasil diselesaikan.',
+    '│ ERROR    : *' + errorName + '*',
+    '│ DETAIL   : ' + safeErrorDetail(error),
+    '┣━━━━━━━━━━━━━━━━━━━━━━━━',
+    '│ KEMUNGKINAN PENYEBAB',
+    '│ ' + diagnosis.cause,
+    '│',
+    '│ LANGKAH PERBAIKAN',
+    '│ ' + diagnosis.action,
+    '│',
+    '│ Jika masalah berulang, kirim REF kepada owner agar',
+    '│ log teknis yang sesuai dapat diperiksa.',
+    '╰━━━━━━━━━━━━━━━━━━━━━━━━'
+  ].join('\n');
+}
 
 class CommandDispatcher {
   constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, rateWarningTtlMs = rateWindowMs, maxRateWarningEntries = 1000, maxConcurrentCommands = 20 }) {
@@ -111,10 +169,20 @@ class CommandDispatcher {
       else this.logger.info('Plugin berhasil dijalankan.', { plugin: plugin.name, command: ctx.command });
       return { handled: true, plugin: plugin.name };
     } catch (error) {
-      this.logger.error('Plugin gagal saat dieksekusi.', { plugin: plugin.name, command: ctx.command, error });
-      try { await ctx.reply('Terjadi kesalahan saat menjalankan fitur. Silakan coba lagi.'); }
-      catch (replyError) { this.logger.warn('Gagal mengirim pesan error plugin.', { plugin: plugin.name, error: replyError.message }); }
-      return { handled: true, plugin: plugin.name, error };
+      const reference = randomBytes(4).toString('hex').toUpperCase();
+      this.logger.error('Plugin gagal saat dieksekusi.', {
+        plugin: plugin.name, command: ctx.command, stage: 'execute', reference, error
+      });
+      try {
+        await ctx.reply(formatPluginFailure({
+          plugin: plugin.name, command: ctx.command, error, stage: 'execute', reference
+        }));
+      } catch (replyError) {
+        this.logger.warn('Gagal mengirim pesan error plugin.', {
+          plugin: plugin.name, command: ctx.command, reference, error: replyError.message
+        });
+      }
+      return { handled: true, plugin: plugin.name, error, reference };
     } finally {
       this.activeCommands -= 1;
     }
@@ -134,4 +202,4 @@ class CommandDispatcher {
   }
 }
 
-module.exports = { CommandDispatcher };
+module.exports = { CommandDispatcher, formatPluginFailure, diagnosePluginError };
