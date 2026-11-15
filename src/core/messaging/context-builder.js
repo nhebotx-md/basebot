@@ -91,6 +91,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     ? [client.user?.id, ...(Array.isArray(m.senderCandidates) ? m.senderCandidates : [])]
     : (Array.isArray(m.senderCandidates) && m.senderCandidates.length ? m.senderCandidates : [m.sender]);
   const sender = await resolveBestIdentity(senderCandidates, client, decode);
+  const bot = await resolveBestIdentity([client.user?.id], client, decode);
   const newsletterOwnership = m.isNewsletter
     ? await resolveNewsletterOwner({ client, newsletterJid: m.chat, ownerSet, decode })
     : { isOwner: false, metadata: null, channelOwner: '' };
