@@ -132,6 +132,8 @@ test('dispatcher returns an informative, actionable and privacy-safe plugin fail
   assert.match(replies[0], new RegExp(result.reference));
   assert.equal(errors[0][1].reference, result.reference);
   assert.match(diagnosePluginError(new Error('fetch failed')).cause, /Layanan eksternal/);
+  assert.match(diagnosePluginError(Object.assign(new Error('HTTP 429'), { status: 429 })).action, /kuota provider/);
+  assert.match(diagnosePluginError(Object.assign(new Error('FFmpeg missing'), { code: 'FFMPEG_BINARY_MISSING' })).action, /npm ci/);
   const safe = formatPluginFailure({ plugin: 'test', command: 'ping', error: new Error('request failed https://private.example/path?token=secret'), reference: 'ABC123' });
   assert.doesNotMatch(safe, /private\.example|token=secret/);
 });
