@@ -230,7 +230,7 @@ test('dispatcher blocks owner-only commands from group admins and group-only com
   const replies = [];
   const base = { isPrivate: false, publicMode: true, reply: async message => replies.push(message) };
 
-  const adminAttempt = await dispatcher.dispatch({ ...base, m: { id: 'owner-admin-attempt' }, command: 'ownerop', isGroup: true, isOwner: false, isGroupAdmin: true });
+  const adminAttempt = await dispatcher.dispatch({ ...base, m: { id: 'owner-admin-attempt' }, command: 'ownerop', isGroup: true, isOwner: false, isGroupAdmin: true, profile: { registered: true } });
   assert.equal(adminAttempt.reason, 'owner');
   assert.match(replies.at(-1), /khusus owner/i);
 
