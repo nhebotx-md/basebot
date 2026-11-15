@@ -137,7 +137,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     const uptime = formatUptime((now.getTime() - startedAt) / 1000);
     const themeLabel = ({ showcase: 'COMMAND MENU', terminal: 'COMMAND CENTER', minimal: 'direktori fitur', premium: 'FEATURE COLLECTION' })[theme];
 
-    const lines = frameLines('✦ ' + botName.toUpperCase() + ' / ' + themeLabel, theme,
+    const lines = frameLines('✦ ' + botName + ' / ' + themeLabel, theme,
       'WHATSAPP AUTOMATION  •  MODULAR PLUGIN SYSTEM');
     lines.push('│ USER INFO');
     lines.push('│   NAME       : *' + userName + '*');
@@ -183,7 +183,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
       return [
         '╭━━━━━━━━〔 ✕ CATEGORY NOT FOUND 〕━━━━━━━━',
-        '│ Kategori *' + requested + '* tidak tersedia untuk akun ini.',
+        '│ Kategori *' + requested + '* tidak ditemukan atau tidak tersedia untuk akun ini.',
         '│ Kategori yang dapat diakses: ' + available,
         '╰━━━━━━━━━━━━━━━━━━━━━━━━',
         ' Ketik *' + commandPrefix + 'menu* untuk melihat direktori utama.'
