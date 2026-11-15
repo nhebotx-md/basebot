@@ -1,39 +1,176 @@
 # BASEBOT
 
-BASEBOT adalah framework bot WhatsApp CommonJS yang menempatkan command di `plugins/` dan fondasi transport, permission, serta eksekusi di `src/`. Sistem plugin memuat metadata tervalidasi sekali saat startup dan menjalankan tiap plugin melalui dispatcher terpusat.
+BASEBOT adalah framework bot WhatsApp berbasis **Node.js, CommonJS, dan Baileys**. Command dipisahkan ke direktori `plugins/`, sedangkan koneksi WhatsApp, lifecycle, permission, database, logging, dan eksekusi command dikelola oleh core di `src/`.
 
-## Memulai
+Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat startup, command dan alias didaftarkan ke registry, lalu dieksekusi melalui dispatcher terpusat. Menu dibangun dari registry aktif, bukan daftar command statis.
 
-Gunakan Node.js 22.13.0 atau lebih baru. Versi ini diperlukan agar jalur auth Baileys tidak membutuhkan peer dependency native `better-sqlite3`. Jalankan `npm ci`, salin `.env.example` menjadi `.env`, lalu atur setidaknya `OWNER_NUMBERS` dan `PAIRING_PHONE` menggunakan angka dengan kode negara. Setelah itu jalankan `npm start`. Pairing code yang dihasilkan Baileys hanya dicetak ke terminal saat sesi belum terdaftar; jangan mengatur kode tetap melalui `PAIRING_CODE`. Jangan membagikan `.env`, `session/`, log yang berisi identitas chat, atau data autentikasi.
+## Fitur utama
 
-Jalankan `npm test` untuk unit test tanpa menghubungkan WhatsApp dan `npm run check` untuk pemeriksaan sintaks. Dependency Baileys dikunci pada `@itsliaaa/baileys@0.4.4`; dependency tree dikunci di `package-lock.json`.
+- **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event pesan, event peserta grup, dan shutdown terkontrol.
+- **Plugin registry:** pemindaian direktori plugin secara rekursif dan deterministik, validasi metadata, deteksi nama/command duplikat, isolasi file plugin yang gagal dimuat, serta status plugin aktif/nonaktif.
+- **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan empat tema bergilir (showcase, terminal, minimal, premium). `.catmenu` menampilkan indeks dan detail kategori. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
+- **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, dan melakukan reload melalui plugin manager. Status nonaktif disimpan agar dipulihkan saat startup.
+- **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
+- **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
+- **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
+- **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command, tema warna, serta format JSON terstruktur. Ringkasan aktivitas tidak menampilkan identitas pengirim atau isi pesan.
+- **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
+- **Keamanan:** normalisasi identitas owner, permission fail-closed saat metadata grup tidak tersedia, validasi URL publik untuk mengurangi SSRF, serta pembatasan path dan permission file storage.
 
-Logger terminal memakai tema warna BASEBOT dengan banner startup, ringkasan plugin, panel status koneksi, dan aktivitas command. `LOG_FORMAT=pretty` adalah format terminal standar; gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY dan `NO_COLOR`, atau pilih `always`/`never`. Kartu aktivitas hanya memuat nama command/plugin, jenis chat, dan durasi; identitas dan isi pesan tidak ditampilkan.
+## Katalog plugin
 
-## Struktur
+Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi ini. Plugin yang gagal validasi atau dinonaktifkan tidak akan dianggap aktif di runtime.
 
-- `src/core/client` dan `src/core/connection`: socket, pairing, reconnect, dan lifecycle.
-- `src/core/events`: handler event terpisah.
-- `src/core/messaging`: normalisasi pesan, parser, context, dan dispatcher.
-- `src/core/plugins`: validasi, registry, serta loader.
-- `src/core/security`: permission dan validasi URL.
-- `src/core/services`: pesan, media, storage, dan logger.
-- `plugins/<kategori>/*.js`: implementasi command dan plugin event.
-- `docs/`: inventaris, rancangan, API, migrasi, dan kompatibilitas.
+| Kategori | Plugin dan fungsi |
+|---|---|
+| AI | `bocchi` (alias `.bocci`/`.bocchi`) untuk percakapan dengan asisten Bocchi; `jeslyn` untuk asisten AI. |
+| Downloader | `igdl` untuk media Instagram publik; `tiktok` untuk video/gambar TikTok; `play` untuk pencarian dan pengiriman audio YouTube. |
+| Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar. |
+| Media | `brat`/`sbrat`, `bratvid`/`bratvideo`, image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), quote sticker (`qc` dan alias), REST sticker API (`stickerapi`/`stapi`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
+| Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, serta pengelolaan file sementara dan sesi. |
+| User | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik. |
 
-Lihat [Panduan pengembangan plugin](docs/PLUGIN_DEVELOPMENT.md) sebelum menambahkan fitur. Evaluasi kode dan eksekusi shell melalui pesan WhatsApp sengaja dihapus.
+Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape`, `fast`, `fat`, `nightcore`, `reverse`, `robot`, `slow`, `smooth`, dan `tupai`. Gunakan sesuai command yang terdaftar pada menu.
+
+### Menu
+
+- `.menu` atau `.help`: direktori utama.
+- `.catmenu`: indeks kategori yang dapat diakses.
+- `.catmenu <kategori>`: daftar plugin, command utama, alias, deskripsi, dan contoh penggunaan pada kategori tersebut.
+
+Daftar menu mengikuti registry dan permission pengguna. Plugin owner-only tidak ditampilkan kepada pengguna biasa; plugin group-only mengikuti konteks grup dan izin admin yang berlaku.
+
+## Persyaratan
+
+- Node.js **22.13.0 atau lebih baru**.
+- npm yang kompatibel dengan lockfile.
+- Koneksi internet untuk WhatsApp dan provider eksternal yang dipakai plugin.
+- FFmpeg disediakan oleh dependency `@ffmpeg-installer/ffmpeg` untuk fitur pemrosesan audio/media tertentu.
+
+Dependency Baileys dikunci pada `@itsliaaa/baileys@0.4.4`; gunakan lockfile project dan jangan mengganti versi dependency secara manual tanpa menjalankan test.
+
+## Instalasi dan menjalankan
+
+```bash
+git clone https://github.com/nhebotx-md/basebot.git
+cd basebot
+npm ci
+cp .env.example .env
+```
+
+Edit `.env`. Minimal atur:
+
+```dotenv
+OWNER_NUMBERS=628xxxxxxxxxx
+PAIRING_PHONE=628xxxxxxxxxx
+BOT_PREFIX=.
+PUBLIC_MODE=true
+TIMEZONE=Asia/Jakarta
+```
+
+Gunakan nomor WhatsApp dengan kode negara, tanpa tanda `+` atau spasi. Setelah konfigurasi:
+
+```bash
+npm start
+```
+
+Pairing code dibuat oleh Baileys dan dicetak ke terminal hanya ketika sesi belum terdaftar. Jangan mengisi `PAIRING_CODE` dengan kode tetap. Setelah pairing berhasil, kredensial disimpan pada direktori sesi.
+
+## Pengujian
+
+```bash
+npm test
+npm run check
+```
+
+- `npm test`: menjalankan unit test Node.js tanpa perlu menghubungkan akun WhatsApp.
+- `npm run check`: memeriksa sintaks entry point dan file JavaScript pada direktori source/plugin yang dikonfigurasi dalam script.
+
+CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas sebelum mengirim perubahan.
+
+## Konfigurasi penting
+
+| Variabel | Kegunaan |
+|---|---|
+| `BOT_NAME`, `OWNER_NAME` | Nama bot dan owner pada tampilan. |
+| `OWNER_NUMBERS` | Identitas owner bot yang menjadi sumber hak owner. |
+| `BOT_PREFIX` | Prefix command. |
+| `PUBLIC_MODE` | Mode publik atau self. |
+| `PAIRING_PHONE` | Nomor untuk meminta pairing code saat sesi belum terdaftar. |
+| `TIMEZONE` | Zona waktu tampilan tanggal/jam. |
+| `LOG_LEVEL` | Level log minimum. |
+| `LOG_FORMAT` | `pretty` untuk terminal atau `json` untuk log terstruktur. |
+| `LOG_COLOR` | `auto`, `always`, atau `never`. |
+| `SESSION_DIR`, `TEMP_DIR`, `LOG_DIR` | Lokasi data sesi, file sementara, dan log. |
+| `PLUGINS_DIR`, `PLUGIN_RELOAD` | Direktori plugin dan opsi reload saat proses pemuatan. |
+| `STICKER_API_ASEPHARYANA_ENABLED` | Mengaktifkan fallback host alternate sticker API; default nonaktif. |
+| `TTS_API_KEY`, `TTS_VOICE_ID` | Kredensial/provider TTS bila fitur tersebut dikonfigurasi. |
+
+Lihat `.env.example` untuk daftar konfigurasi lengkap. Jangan commit `.env`, session, database produksi, atau log yang berisi data pribadi.
+
+## Permission dan identitas
+
+Hak owner hanya diberikan jika identitas pengirim yang telah dinormalisasi cocok dengan salah satu nomor pada `OWNER_NUMBERS`. Status admin grup, `fromMe`, nama profil, atau jabatan grup tidak menggantikan identitas owner.
+
+Permission plugin dapat memakai:
+
+- `ownerOnly: true`: hanya owner bot terverifikasi.
+- `groupOnly: true`: hanya konteks grup.
+- `privateOnly: true`: hanya chat pribadi.
+- `adminOnly: true`: memerlukan admin grup.
+- `botAdminOnly: true`: bot harus menjadi admin grup.
+- `roles: ['premium', 'moderator']` atau `minRole: 'premium'`: pembatas role.
+- `accessRequired: true`: perlu grant akses command/kategori dari owner.
+
+Kategori `owner` otomatis diperlakukan sebagai owner-only dan kategori `group` memiliki pembatasan grup/admin sesuai permission manager. Jika metadata grup tidak dapat diambil, status admin dianggap tidak valid (fail-closed).
+
+Pengguna biasa di grup harus registrasi dengan `.daftar nama`. Role aplikasi yang dapat diberikan adalah `user`, `premium`, dan `moderator`; role owner tidak dapat diberikan melalui database. Owner dapat menggunakan `.setrole`, `.grantakses`, dan `.cabutakses` untuk pengelolaan akses.
+
+## Laporan error plugin
+
+Jika `plugin.execute(ctx)` melempar error, dispatcher akan:
+
+1. Membuat ID referensi unik.
+2. Mencatat plugin, command, tahap, ID referensi, dan exception ke log server.
+3. Mengirim balasan WhatsApp yang berisi status, jenis error, detail yang sudah disamarkan, dugaan penyebab, dan langkah pemeriksaan.
+4. Mengembalikan hasil dispatcher yang menyertakan ID referensi untuk observabilitas internal.
+
+Diagnostik mengenali gangguan jaringan/timeout, respons HTTP (termasuk autentikasi, endpoint, dan rate limit), masalah file/permission, dependency FFmpeg yang hilang, serta error pemrograman umum. Pesan pengguna tidak menampilkan stack trace, URL, path lokal, atau kredensial. Kegagalan plugin event dicatat di log dengan ID referensi; event tidak selalu memiliki konteks balasan chat.
+
+ID referensi pada pesan pengguna dapat dicocokkan dengan record error di log server. Simpan log secara privat dan jangan mengirim file log mentah ke ruang publik.
+
+## Logger
+
+`LOG_FORMAT=pretty` adalah format terminal standar. Gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY dan variabel `NO_COLOR`; nilai `always` dan `never` dapat dipakai untuk memaksa perilaku warna. Dashboard startup menampilkan ringkasan runtime/plugin, sedangkan aktivitas command hanya memuat nama command/plugin, jenis chat, dan durasi tanpa identitas pengirim maupun isi pesan.
+
+## Struktur project
+
+- `index.js`, `src/app.js`: entry point dan bootstrap.
+- `src/core/client`, `src/core/connection`: client WhatsApp, pairing, reconnect, dan lifecycle.
+- `src/core/events`: handler pesan, koneksi, kontak, dan peserta grup.
+- `src/core/messaging`: normalisasi pesan, parser, context, dispatcher, dan menu.
+- `src/core/plugins`: validator, registry, loader, dan plugin manager.
+- `src/core/security`: permission manager dan validasi URL publik.
+- `src/core/database`: database JSON dan service pengguna/grup.
+- `src/core/services`: logger, pesan, media, downloader, storage.
+- `plugins/<kategori>/*.js`: fitur bot.
+- `tests/unit/*.test.js`: unit test.
+- `docs/`: dokumentasi API dan pengembangan.
+
+Lihat [Panduan Pengembangan Plugin](docs/PLUGIN_DEVELOPMENT.md) dan [Plugin API](docs/PLUGIN_API.md) sebelum menambah fitur. Eksekusi kode atau shell arbitrer melalui pesan WhatsApp sengaja tidak disediakan.
 
 ## Troubleshooting
 
-- Jika pairing code tidak muncul, pastikan `PAIRING_PHONE` berisi angka dengan kode negara; code hanya diminta untuk sesi yang belum terdaftar. Hapus nilai lama `PAIRING_CODE` dari `.env` bila ada; kode kustom diabaikan dan kode valid dihasilkan Baileys. Jangan menghapus `SESSION_DIR` sebagai langkah pertama karena session adalah kredensial login.
-- Status `515 / restartRequired` setelah pairing dapat merupakan langkah normal: BASEBOT menunggu kredensial tersimpan, membuka socket baru, lalu harus menerima status `open`. Jangan hentikan proses setelah log reconnect dijadwalkan. Jika berulang, cek log terstruktur untuk `credentialsRegistered`, `isNewLogin`, dan alasan/status disconnect.
-- Jika log menyatakan ada plugin yang dilewati, periksa `file`, `stage`, dan stack error di record JSON. Setelah deployment jalankan `npm ci` dari direktori BASEBOT agar dependency sesuai lockfile; perbaiki error spesifik plugin, bukan hanya mengabaikan jumlah plugin yang berkurang.
-- Jika command media gagal, verifikasi konektivitas endpoint pihak ketiga serta limit ukuran/timeout. Sticker dan voice changer memakai binary FFmpeg dari dependency; bila binari voice changer hilang, plugin tetap dimuat dan command memberi instruksi install.
-- Pastikan proses dapat membuat `SESSION_DIR` dan `TEMP_DIR`; session harus direktori privat dan symlink tidak diizinkan.
+- **Pairing code tidak muncul:** pastikan `PAIRING_PHONE` berisi nomor dengan kode negara. Pairing code hanya diminta saat sesi belum terdaftar. Jangan hapus direktori session sebagai langkah pertama karena berisi kredensial login.
+- **Status `515 / restartRequired`:** setelah pairing, reconnect dapat menjadi langkah normal ketika kredensial disimpan. Tunggu socket baru sampai status `open`; jika berulang, periksa log koneksi.
+- **Plugin dilewati saat startup:** periksa record log untuk `file`, `stage`, dan error. Jalankan `npm ci`, lalu perbaiki file/dependency yang bermasalah.
+- **Command media gagal:** periksa konektivitas dan kuota provider, ukuran file, timeout, serta dependency FFmpeg.
+- **Error command plugin:** catat ID `REF` dari balasan bot, lalu cocokkan dengan log server.
+- **Storage/session gagal ditulis:** pastikan direktori dapat dibuat dan diakses oleh user proses. Jangan jadikan session publik.
 
 ## Sticker REST API
 
-Plugin `sticker-rest-api` menambahkan `.stickerapi brat <teks>` untuk Brat statis dan `.stickerapi animated <teks>` untuk animasi. Output API bukan sticker WhatsApp siap pakai; BASEBOT memvalidasi signature PNG/GIF, membatasi respons hingga 8 MiB dan timeout 15 detik, lalu mengonversi media memakai FFmpeg/WebP serta metadata pack. Input dibatasi 300 karakter dan dikirim ke penyedia pihak ketiga, jadi jangan gunakan teks rahasia/pribadi.
+Plugin `sticker-rest-api` menyediakan `.stickerapi brat <teks>` untuk Brat statis dan `.stickerapi animated <teks>` untuk animasi. Output API bukan sticker WhatsApp siap pakai; BASEBOT memvalidasi signature PNG/GIF, membatasi respons hingga 8 MiB dan timeout 15 detik, lalu mengonversi media memakai FFmpeg/WebP serta metadata pack. Input dibatasi 300 karakter dan dikirim ke provider pihak ketiga, jadi jangan gunakan teks rahasia/pribadi.
 
 Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana (`scraper.asepharyana.my.id`) berbeda dari URL dokumentasi `asepharyana.cloud` yang diberikan pengguna, sehingga fallback itu **nonaktif secara default**; aktifkan hanya bila Anda menerima host alternate dengan `STICKER_API_ASEPHARYANA_ENABLED=true`. Temuan, sumber, dan batas verifikasi ada di [audit REST API sticker](docs/STICKER_API_AUDIT.md).
 
