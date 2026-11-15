@@ -6,14 +6,14 @@ const { validatePermission } = require('../security/permission-manager');
 function safeErrorDetail(error) {
   const raw = String(error?.message || error || 'Tidak ada detail tambahan.');
   return raw
-    .replace(/\\x1b\\[[0-?]*[ -/]*[@-~]/g, '')
-    .replace(/\\b(Bearer|Basic)\\s+[A-Za-z0-9._~+/-]+=*/gi, '$1 [disamarkan]')
-    .replace(/\\b(authorization|cookie|set-cookie|x-api-key|api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|token|password|passwd|secret)\\b(["']?\\s*[:=]\\s*["']?)(?:"[^"]*"|'[^']*'|[^\\s,;&]+)/gi, '$1$2[disamarkan]')
-    .replace(/\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\b/g, '[JWT disamarkan]')
-    .replace(/https?:\\/\\/\\S+/gi, '[URL disamarkan]')
-    .replace(/(?:[A-Z]:\\\\|\\/)(?:[^\\s:]+\\/)*[^\\s:]*/gi, '[path disamarkan]')
-    .replace(/[\\r\\n\\t]+/g, ' ')
-    .replace(/[\\u0000-\\u001f\\u007f-\\u009f]/g, '')
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '')
+    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/gi, '$1 [disamarkan]')
+    .replace(/\b(authorization|cookie|set-cookie|x-api-key|api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|token|password|passwd|secret)\b(["']?\s*[:=]\s*["']?)(?:"[^"]*"|'[^']*'|[^\s,;&]+)/gi, '$1$2[disamarkan]')
+    .replace(/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, '[JWT disamarkan]')
+    .replace(/https?:\/\/\S+/gi, '[URL disamarkan]')
+    .replace(/(?:[A-Z]:\\|\/)(?:[^\s:]+\/)*[^\s:]*/gi, '[path disamarkan]')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
     .trim()
     .slice(0, 180) || 'Tidak ada detail tambahan.';
 }
