@@ -88,7 +88,7 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
   const title = category.label.toLocaleUpperCase('id-ID');
   const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
   const commands = plugins.reduce((total, plugin) => total + plugin.commands.length, 0);
-  const lines = frameLines(icon + ' ' + title + ' / ' + categoryTitle(category), theme,
+  const lines = frameLines(icon + ' ' + categoryTitle(category), theme,
     'KATALOG FITUR  •  ' + plugins.length + ' MODUL  •  ' + commands + ' COMMAND');
   plugins.forEach((plugin, index) => lines.push(...pluginLines(plugin, prefix, index, theme), '│'));
   if (!plugins.length) lines.push('│ Tidak ada fitur aktif pada kategori ini.');
