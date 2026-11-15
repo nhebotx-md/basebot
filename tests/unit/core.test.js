@@ -144,3 +144,131 @@ test('limited response reader rejects a body that exceeds its byte cap', async (
   const response = { headers: { get() { return null; } }, body: Readable.from([Buffer.from('oversized')]) };
   await assert.rejects(() => readResponseLimited(response, 3), /batas ukuran/);
 });
+
+
+test('role permissions separate owner identity from group scope and group admin', () => {
+  const ownerCommand = plugin({ permissions: { ownerOnly: true } });
+  const ownerCategoryCommand = plugin({ category: 'owner', permissions: {} });
+  const ownerInGroupCategory = plugin({ category: 'group', permissions: { ownerOnly: true } });
+  const groupCommand = plugin({ permissions: { groupOnly: true } });
+  const groupCategoryCommand = plugin({ category: 'group', permissions: {} });
+  const adminCommand = plugin({ permissions: { groupOnly: true, adminOnly: true } });
+
+  assert.deepEqual(
+    validatePermission(ownerCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: false, reason: 'owner' },
+    'owner category is protected even if a plugin omitted ownerOnly'
+  );
+  assert.deepEqual(
+    validatePermission(ownerInGroupCategory, { isOwner: true, isGroup: false, isPrivate: true }),
+    { allowed: true },
+    'explicit owner-only commands in group category remain owner-only, not group-admin commands'
+  );
+  assert.deepEqual(
+    validatePermission(ownerInGroupCategory, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: false, reason: 'owner' }
+  );
+  assert.deepEqual(
+    validatePermission(groupCategoryCommand, { isOwner: true, isGroup: false, isPrivate: true }),
+    { allowed: false, reason: 'group' },
+    'group category is never executable in private chat'
+  );
+  assert.deepEqual(
+    validatePermission(groupCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: false }),
+    { allowed: false, reason: 'admin' },
+    'group category is restricted to group admins and bot owner by default'
+  );
+  assert.deepEqual(
+    validatePermission(groupCategoryCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: true }
+  );
+  assert.deepEqual(
+    validatePermission(ownerCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: false, reason: 'owner' },
+    'group admin must never inherit bot-owner privileges'
+  );
+  assert.deepEqual(
+    validatePermission(ownerCommand, { isOwner: true, isGroup: false, isGroupAdmin: false }),
+    { allowed: true },
+    'bot owner may run owner-only commands in private chat'
+  );
+  assert.deepEqual(
+    validatePermission(groupCommand, { isOwner: false, isGroup: false, isPrivate: true }),
+    { allowed: false, reason: 'group' }
+  );
+  assert.deepEqual(
+    validatePermission(groupCommand, { isOwner: false, isGroup: true, isGroupAdmin: false }),
+    { allowed: true },
+    'group-scoped commands may be used by group participants unless adminOnly is also set'
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: false, isGroup: true, isGroupAdmin: true }),
+    { allowed: true }
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: true, isGroup: true, isGroupAdmin: false }),
+    { allowed: true },
+    'owner may administer group-scoped admin commands by default'
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: false, isGroup: true, isGroupAdmin: false }),
+    { allowed: false, reason: 'admin' }
+  );
+  assert.deepEqual(
+    validatePermission(adminCommand, { isOwner: true, isGroup: false, isGroupAdmin: false }),
+    { allowed: false, reason: 'group' },
+    'admin-only commands still require a group context'
+  );
+});
+
+test('dispatcher blocks owner-only commands from group admins and group-only commands in private chat', async () => {
+  const registry = new PluginRegistry();
+  const executions = [];
+  registry.register(plugin({ name: 'owner-command', commands: ['ownerop'], category: 'owner', permissions: {}, execute: async () => executions.push('owner') }));
+  registry.register(plugin({ name: 'group-command', commands: ['groupop'], category: 'group', permissions: {}, execute: async () => executions.push('group') }));
+  const dispatcher = new CommandDispatcher({ registry, logger: { info() {}, warn() {}, error() {} }, rateLimit: 0 });
+  const replies = [];
+  const base = { isPrivate: false, publicMode: true, reply: async message => replies.push(message) };
+
+  const adminAttempt = await dispatcher.dispatch({ ...base, m: { id: 'owner-admin-attempt' }, command: 'ownerop', isGroup: true, isOwner: false, isGroupAdmin: true, profile: { registered: true } });
+  assert.equal(adminAttempt.reason, 'owner');
+  assert.match(replies.at(-1), /khusus owner/i);
+
+  const privateAttempt = await dispatcher.dispatch({ ...base, m: { id: 'group-private-attempt' }, command: 'groupop', isGroup: false, isPrivate: true, isOwner: true, isGroupAdmin: false });
+  assert.equal(privateAttempt.reason, 'group');
+  assert.match(replies.at(-1), /hanya dapat digunakan di grup/i);
+  assert.deepEqual(executions, []);
+});
+
+
+test('role and explicit access grants control access to protected plugins', () => {
+  const protectedPlugin = plugin({ permissions: { accessRequired: true } });
+  const rolePlugin = plugin({ permissions: { minRole: 'premium' } });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: [], categories: [] }, command: 'ping' }), { allowed: false, reason: 'role' });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: ['ping'], categories: [] }, command: 'ping' }), { allowed: true });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: [], categories: ['system'] }, command: 'ping' }), { allowed: true });
+  assert.deepEqual(validatePermission(rolePlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user' }), { allowed: false, reason: 'role' });
+  assert.deepEqual(validatePermission(rolePlugin, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'premium' }), { allowed: true });
+  assert.deepEqual(validatePermission(protectedPlugin, { isOwner: false, isGroup: true, isRegistered: false, userRole: 'user', userAccess: { commands: ['ping'], categories: [] }, command: 'ping' }), { allowed: false, reason: 'registration' });
+  assert.deepEqual(validatePermission(plugin({ permissions: { registrationExempt: true } }), { isOwner: false, isGroup: true, isRegistered: false }), { allowed: true });
+});
+
+test('dispatcher requires group registration before built-in menus and normal plugins', async () => {
+  const registry = new PluginRegistry();
+  let executed = 0;
+  registry.register(plugin({ execute: async () => { executed += 1; } }));
+  const dispatcher = new CommandDispatcher({ registry, logger: { info() {}, warn() {}, error() {} }, rateLimit: 0 });
+  const replies = [];
+  const ctx = { m: { id: 'unregistered-group' }, command: 'ping', isGroup: true, isOwner: false, profile: { registered: false }, prefix: '.', reply: async message => replies.push(message) };
+  const result = await dispatcher.dispatch(ctx);
+  assert.equal(result.reason, 'registration');
+  assert.equal(executed, 0);
+  assert.match(replies[0], /\.daftar nama/);
+});
+
+
+test('explicit owner grants override role requirements without overriding owner-only checks', () => {
+  const premiumFeature = plugin({ permissions: { roles: ['premium'] } });
+  assert.deepEqual(validatePermission(premiumFeature, { isOwner: false, isGroup: true, isRegistered: true, userRole: 'user', userAccess: { commands: ['ping'], categories: [] }, command: 'ping' }), { allowed: true });
+  assert.deepEqual(validatePermission(plugin({ category: 'owner', permissions: { accessRequired: true } }), { isOwner: false, isGroup: true, isRegistered: true, userRole: 'moderator', userAccess: { commands: ['ping'], categories: ['owner'] }, command: 'ping' }), { allowed: false, reason: 'owner' });
+});

@@ -64,6 +64,10 @@ class CommandDispatcher {
       this.seen.set(id, Date.now());
     }
     if (!ctx.command) return { handled: false, reason: 'not-command' };
+    if (ctx.isGroup && !ctx.isOwner && !ctx.profile?.registered && ctx.command !== 'daftar') {
+      await ctx.reply('Kamu belum terdaftar. Daftar dulu dengan format: *' + (ctx.prefix || '.') + 'daftar nama*');
+      return { handled: true, reason: 'registration' };
+    }
     if (this.menuService?.canHandle(ctx.command)) {
       if (!this.allowRate(ctx)) {
         const key = ctx.sender || ctx.chat || 'unknown';
@@ -89,7 +93,7 @@ class CommandDispatcher {
     }
     const permission = validatePermission(plugin, ctx);
     if (!permission.allowed) {
-      const messages = { owner: 'Fitur ini khusus owner.', group: 'Command ini hanya dapat digunakan di grup.', private: 'Command ini hanya dapat digunakan di chat pribadi.', admin: 'Hanya admin grup yang dapat menggunakan command ini.', 'bot-admin': 'Bot harus menjadi admin grup untuk menjalankan command ini.', restricted: 'Bot sedang dalam mode self.' };
+      const messages = { registration: 'Kamu belum terdaftar. Gunakan .daftar nama terlebih dahulu.', role: 'Role akunmu belum memiliki akses ke fitur ini. Hubungi owner bot.', owner: 'Fitur ini khusus owner.', group: 'Command ini hanya dapat digunakan di grup.', private: 'Command ini hanya dapat digunakan di chat pribadi.', admin: 'Hanya admin grup yang dapat menggunakan command ini.', 'bot-admin': 'Bot harus menjadi admin grup untuk menjalankan command ini.', restricted: 'Bot sedang dalam mode self.' };
       await ctx.reply(messages[permission.reason] || 'Akses ditolak.');
       return { handled: true, plugin: plugin.name, reason: permission.reason };
     }

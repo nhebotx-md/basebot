@@ -9,11 +9,11 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   const messages = [];
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
-  assert.equal(app.registry.list().length, 26);
+  assert.equal(app.registry.list().length, 28);
   assert.equal(app.config.paths.database, './data/database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
-  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 61);
+  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 65);
   assert.ok(app.registry.list().some(plugin => plugin.name === 'profile'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'voicechanger'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'sticker-rest-api'));
@@ -21,10 +21,10 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(typeof app.stop, 'function');
   const summary = messages.find(([message]) => message === 'Plugin registry siap.');
   assert.ok(summary);
-  assert.equal(summary[1].discovered, 26);
-  assert.equal(summary[1].loaded, 26);
+  assert.equal(summary[1].discovered, 28);
+  assert.equal(summary[1].loaded, 28);
   assert.equal(summary[1].skipped, 0);
-  assert.equal(summary[1].commands, 61);
+  assert.equal(summary[1].commands, 65);
   await app.stop();
 });
 

@@ -22,6 +22,8 @@ module.exports = {
     await ctx.reply([
       '╭─〔 👤 *USER PROFILE* 〕',
       '*│* Nama: *' + String(profile.name || ctx.pushname || 'Pengguna').slice(0, 50) + '*',
+      '*│* Status: *' + (profile.registered ? 'Terdaftar' : 'Belum terdaftar') + '*',
+      '*│* Role: *' + (profile.role || 'user') + '*',
       '*│* Level: *' + profile.level + '*',
       '*│* EXP: *' + profile.exp + '*',
       '*│* Coins: *' + profile.coins + '*',

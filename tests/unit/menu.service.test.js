@@ -2,13 +2,15 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createMenuService, normalizeCategory, formatUptime } = require('../../src/core/messaging/menu.service');
+const { createMenuService, normalizeCategory, formatUptime, MENU_THEMES } = require('../../src/core/messaging/menu.service');
 const { CommandDispatcher } = require('../../src/core/messaging/command-dispatcher');
 
 const plugins = [
   { name: 'yt-download', category: 'download', commands: ['ytmp4', 'ytv'], description: 'Unduh video dari YouTube.', usage: '.ytmp4 <url>', permissions: {} },
-  { name: 'owner-tools', category: 'owner', commands: ['setmode'], description: 'Mengubah mode bot.', usage: '.setmode public', permissions: { ownerOnly: true } },
-  { name: 'ping', category: 'utility', commands: ['ping'], description: 'Memeriksa respons bot.', usage: '.ping', permissions: {} }
+  { name: 'owner-tools', category: 'owner', commands: ['setmode'], description: 'Mengubah mode bot.', usage: '.setmode public', permissions: {} },
+  { name: 'ping', category: 'utility', commands: ['ping'], description: 'Memeriksa respons bot.', usage: '.ping', permissions: {} },
+  { name: 'assistant', category: 'ai', commands: ['ask'], description: 'Asisten AI.', usage: '.ask pertanyaan', permissions: {} },
+  { name: 'group-tools', category: 'group', commands: ['tagall'], description: 'Mengelola anggota grup.', usage: '.tagall', permissions: {} }
 ];
 
 function createContext(overrides = {}) {
@@ -41,6 +43,19 @@ test('formatUptime formats process uptime', () => {
   assert.equal(formatUptime(3661), '1j 1m 1dtk');
 });
 
+test('.menu rotates through all supported visual themes automatically', async () => {
+  const { ctx, replies } = createContext();
+  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
+  for (let index = 0; index < MENU_THEMES.length; index += 1) await service.execute(ctx);
+  assert.equal(replies.length, MENU_THEMES.length);
+  assert.match(replies[0], /COMMAND MENU/);
+  assert.match(replies[1], /COMMAND CENTER/);
+  assert.match(replies[2], /direktori fitur/);
+  assert.match(replies[3], /FEATURE COLLECTION/);
+  assert.notEqual(replies[0], replies[1]);
+  assert.notEqual(replies[1], replies[2]);
+});
+
 test('.menu builds categories from active registry plugins and hides owner-only categories', async () => {
   const { ctx, replies } = createContext();
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
@@ -49,18 +64,42 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   assert.match(replies[0], /ShoNhe/);
   assert.match(replies[0], /\.catmenu download/);
   assert.match(replies[0], /\.catmenu utility/);
+  assert.match(replies[0], /\.catmenu ai/);
   assert.doesNotMatch(replies[0], /\.catmenu owner/);
+  assert.doesNotMatch(replies[0], /\.catmenu group/);
   assert.match(replies[0], /Pengguna Uji/);
+
+  const groupMember = createContext({ isGroup: true, isPrivate: false, isGroupAdmin: false });
+  const memberMenu = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
+  const memberOutput = memberMenu.renderMenu(groupMember.ctx, 'showcase');
+  assert.doesNotMatch(memberOutput, /\.catmenu group/);
+
+  const groupAdmin = createContext({ isGroup: true, isPrivate: false, isGroupAdmin: true });
+  const adminMenu = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
+  const adminOutput = adminMenu.renderMenu(groupAdmin.ctx, 'showcase');
+  assert.match(adminOutput, /\.catmenu group/);
+  assert.doesNotMatch(adminOutput, /\.catmenu owner/);
 });
 
-test('.catmenu renders commands, aliases, and usage for the requested category', async () => {
+test('.catmenu renders a category-specific media layout with commands, aliases, and usage', async () => {
   const { ctx, replies } = createContext({ command: 'catmenu', args: ['download'] });
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   await service.execute(ctx);
+  assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /\.ytmp4/);
   assert.match(replies[0], /\.ytv/);
   assert.match(replies[0], /Unduh video dari YouTube/);
   assert.match(replies[0], /\.ytmp4 <url>/);
+});
+
+test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
+  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
+  const assistant = service.renderCategory(createContext({ command: 'catmenu', args: ['ai'] }).ctx);
+  const community = service.renderCategory(createContext({ command: 'catmenu', args: ['group'], isGroup: true, isPrivate: false, isGroupAdmin: true }).ctx);
+  const utility = service.renderCategory(createContext({ command: 'catmenu', args: ['utility'] }).ctx);
+  assert.match(assistant, /AI DESK/);
+  assert.match(community, /GROUP HUB/);
+  assert.match(utility, /UTILITY DIRECTORY/);
 });
 
 test('.catmenu exposes owner-only plugins to the owner only', async () => {
@@ -72,6 +111,7 @@ test('.catmenu exposes owner-only plugins to the owner only', async () => {
 
   const owner = createContext({ command: 'catmenu', args: ['owner'], isOwner: true });
   await service.execute(owner.ctx);
+  assert.match(owner.replies[0], /OWNER CONTROL CENTER/);
   assert.match(owner.replies[0], /\.setmode/);
 });
 
@@ -91,12 +131,11 @@ test('dispatcher handles built-in menu commands before plugin lookup', async () 
   assert.equal(result.builtin, true);
 });
 
-
 test('.help uses the same core menu renderer as .menu', async () => {
   const { ctx, replies } = createContext({ command: 'help' });
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   assert.equal(service.canHandle('help'), true);
   await service.execute(ctx);
-  assert.match(replies[0], /DAFTAR MENU/);
+  assert.match(replies[0], /COMMAND MENU/);
   assert.match(replies[0], /ShoNhe/);
 });

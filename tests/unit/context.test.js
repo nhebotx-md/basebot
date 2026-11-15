@@ -6,9 +6,9 @@ const { normalizeMessage } = require('../../src/core/messaging/normalize-message
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 const { loadConfig } = require('../../src/config/config-loader');
 const logger = { info() {}, debug() {}, warn() {}, error() {} };
-function fixture(command, permissions = {}) {
+function fixture(command, permissions = {}, category = 'test') {
   const registry = new PluginRegistry();
-  registry.register({ name: command, commands: [command], category: 'test', description: 'test', usage: `.${command}`, permissions, execute: async () => {} });
+  registry.register({ name: command, commands: [command], category, description: 'test', usage: `.${command}`, permissions, execute: async () => {} });
   let lookups = 0;
   const client = { user: { id: '6281234567890:5@s.whatsapp.net' }, public: true, decodeJid: value => value?.replace(/:\d+@/, '@'), sendMessage: async () => {}, groupMetadata: async () => { lookups += 1; return { participants: [{ id: '6281111111111@s.whatsapp.net', admin: 'admin' }, { id: '6281234567890@s.whatsapp.net', admin: 'superadmin' }] }; } };
   const raw = { key: { remoteJid: '120363000000000000@g.us', participant: '6281111111111@s.whatsapp.net', id: 'id1' }, message: { conversation: `.${command}` } };
@@ -29,12 +29,13 @@ test('context fetches metadata only for admin-gated commands and grants normaliz
   assert.equal(b.isOwner, false);
 });
 
-test('self-sent messages from the connected bot account are treated as owner', async () => {
+test('self-sent messages from the connected bot account do not bypass configured owner numbers', async () => {
   const f = fixture('ping');
   f.m.fromMe = true;
   f.m.sender = f.client.user.id;
-  const context = await buildContext({ ...f, config: config(), logger, store: {} });
-  assert.equal(context.isOwner, true);
+  const nonOwnerConfig = loadConfig({ OWNER_NUMBERS: '6289999999999', BOT_PREFIX: '.', TEMP_DIR: '/tmp/basebot-test-temp', SESSION_DIR: '/tmp/basebot-test-session', PLUGINS_DIR: './plugins' });
+  const context = await buildContext({ ...f, config: nonOwnerConfig, logger, store: {} });
+  assert.equal(context.isOwner, false);
 });
 
 test('owner is recognized when the incoming sender LID resolves to the configured phone JID', async () => {
@@ -151,4 +152,12 @@ test('newsletter owner LID is resolved to configured owner phone identity', asyn
   const context = await buildContext({ ...f, config: config(), logger, store: {} });
   assert.equal(context.channelOwner, '6281234567890@s.whatsapp.net');
   assert.equal(context.isOwner, true);
+});
+
+
+test('context resolves group metadata for group-category commands even without explicit permission flags', async () => {
+  const f = fixture('groupcommand', {}, 'group');
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  assert.equal(f.getLookups(), 1);
+  assert.equal(context.isGroupAdmin, true);
 });
