@@ -21,8 +21,8 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(typeof app.stop, 'function');
   const summary = messages.find(([message]) => message === 'Plugin registry siap.');
   assert.ok(summary);
-  assert.equal(summary[1].discovered, 26);
-  assert.equal(summary[1].loaded, 26);
+  assert.equal(summary[1].discovered, 28);
+  assert.equal(summary[1].loaded, 28);
   assert.equal(summary[1].skipped, 0);
   assert.equal(summary[1].commands, 61);
   await app.stop();
