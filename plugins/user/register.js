@@ -6,7 +6,7 @@ module.exports = {
   category: 'user',
   description: 'Mendaftarkan pengguna agar dapat memakai fitur BASEBOT di grup.',
   usage: '.daftar nama',
-  permissions: {},
+  permissions: { registrationExempt: true },
   async execute(ctx) {
     const name = String(ctx.text || '').trim().slice(0, 80);
     if (!name || name.length < 2) {
