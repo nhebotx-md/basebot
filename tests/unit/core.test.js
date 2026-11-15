@@ -145,7 +145,7 @@ test('plugin failure reports redact credentials and event failures receive trace
     error: new Error('Authorization: Bearer abc.def.secret api_key=hidden https://private.example/path'),
     reference: 'SAFE1234'
   });
-  assert.doesNotMatch(unsafe, /abc\\.def\\.secret|hidden|private\\.example/);
+  assert.doesNotMatch(unsafe, /abc\.def\.secret|hidden|private\.example/);
   assert.match(unsafe, /disamarkan/);
 
   const registry = new PluginRegistry();
