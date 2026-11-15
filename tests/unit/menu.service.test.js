@@ -115,6 +115,33 @@ test('.catmenu exposes owner-only plugins to the owner only', async () => {
   assert.match(owner.replies[0], /\.setmode/);
 });
 
+
+test('.menu and .catmenu share a consistent framed information hierarchy', () => {
+  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', clock: () => new Date('2026-11-15T12:00:00Z') });
+  const menu = service.renderMenu(createContext().ctx, 'premium');
+  const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
+  for (const output of [menu, category]) {
+    assert.match(output, /^╭━━━━━━━━〔/);
+    assert.match(output, /┣━━━━━━━━━━━━━━━━━━━━━━━━/);
+    assert.match(output, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
+  }
+  assert.match(menu, /USER INFO/);
+  assert.match(menu, /BOT INFO/);
+  assert.match(menu, /FEATURE DIRECTORY/);
+  assert.match(category, /DOWNLOAD STUDIO/);
+  assert.match(category, /KATALOG FITUR/);
+});
+
+test('.catmenu category index and unknown category use the same premium frame language', () => {
+  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
+  const index = service.renderCategory(createContext({ command: 'catmenu' }).ctx);
+  const missing = service.renderCategory(createContext({ command: 'catmenu', args: ['not-real'] }).ctx);
+  assert.match(index, /CATEGORY INDEX/);
+  assert.match(index, /╭━━━━━━━━〔/);
+  assert.match(missing, /CATEGORY NOT FOUND/);
+  assert.match(missing, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
+});
+
 test('dispatcher handles built-in menu commands before plugin lookup', async () => {
   let executed = false;
   const dispatcher = new CommandDispatcher({
