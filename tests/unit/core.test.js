@@ -6,7 +6,7 @@ const { normalizeMessage, getMessageText } = require('../../src/core/messaging/n
 const { normalizeIdentity, validatePermission } = require('../../src/core/security/permission-manager');
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 const { validatePlugin } = require('../../src/core/plugins/plugin-validator');
-const { CommandDispatcher } = require('../../src/core/messaging/command-dispatcher');
+const { CommandDispatcher, formatPluginFailure, diagnosePluginError } = require('../../src/core/messaging/command-dispatcher');
 const { isPrivateAddress } = require('../../src/core/security/safe-url');
 
 function plugin(overrides = {}) {
@@ -112,6 +112,28 @@ test('dispatcher executes a message once and isolates plugin errors', async () =
   assert.equal(duplicate.reason, 'duplicate');
   assert.equal(errors.length, 1);
   assert.match(replies[0], /kesalahan/);
+});
+
+
+test('dispatcher returns an informative, actionable and privacy-safe plugin failure report', async () => {
+  const registry = new PluginRegistry();
+  registry.register(plugin({ execute: async () => { const error = new TypeError('client.downloadMedia is not a function'); error.code = 'PLUGIN_TYPE_ERROR'; throw error; } }));
+  const errors = [];
+  const logger = { info() {}, warn() {}, error(...args) { errors.push(args); }, debug() {} };
+  const dispatcher = new CommandDispatcher({ registry, logger, rateLimit: 0 });
+  const replies = [];
+  const ctx = { m: { id: 'plugin-error-report' }, command: 'ping', isOwner: false, isGroup: false, isPrivate: true, publicMode: true, reply: async text => replies.push(text) };
+  const result = await dispatcher.dispatch(ctx);
+  assert.ok(result.reference);
+  assert.match(replies[0], /FITUR GAGAL DIPROSES/);
+  assert.match(replies[0], /PLUGIN.*ping/);
+  assert.match(replies[0], /KEMUNGKINAN PENYEBAB/);
+  assert.match(replies[0], /LANGKAH PERBAIKAN/);
+  assert.match(replies[0], new RegExp(result.reference));
+  assert.equal(errors[0][1].reference, result.reference);
+  assert.match(diagnosePluginError(new Error('fetch failed')).cause, /Layanan eksternal/);
+  const safe = formatPluginFailure({ plugin: 'test', command: 'ping', error: new Error('request failed https://private.example/path?token=secret'), reference: 'ABC123' });
+  assert.doesNotMatch(safe, /private\.example|token=secret/);
 });
 
 test('dispatcher sends privacy-safe activity summary after a successful command', async () => {
