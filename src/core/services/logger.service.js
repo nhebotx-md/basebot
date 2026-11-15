@@ -165,17 +165,25 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   };
   logger.startup = info => {
     const width = Math.max(38, Math.min(58, terminalWidth() - 8));
-    const title = clip((info?.name || 'BASEBOT') + ' v' + (info?.version || '0.0.0'), width - 4);
+    const title = clip((info?.name || 'BASEBOT').toUpperCase() + '  /  WHATSAPP AUTOMATION', width - 4);
+    const memoryMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
     const rows = [
-      ['MODE', info?.mode || 'public'], ['NODE', info?.node || process.version],
-      ['PREFIX', info?.prefix || '.'], ['TIMEZONE', timezone]
+      ['VERSION', 'v' + (info?.version || '0.0.0')],
+      ['RUNTIME', (info?.node || process.version) + '  ·  ' + process.platform + '/' + process.arch],
+      ['MODE', String(info?.mode || 'public').toUpperCase()],
+      ['PREFIX', info?.prefix || '.'],
+      ['TIMEZONE', timezone],
+      ['PROCESS', String(process.pid) + '  ·  ' + memoryMb + ' MB RSS'],
+      ['BOOT TIME', shortTime(clock(), timezone)]
     ];
     panelLine('');
     panelLine(border(width, '  ╭', '╮'));
-    panelLine(colorize(colorEnabled, ANSI.teal, '  │', true) + ' ' + colorize(colorEnabled, ANSI.white, title, true) + ' '.repeat(Math.max(0, width - visibleWidth(title) - 1)) + colorize(colorEnabled, ANSI.teal, '│', true));
+    panelLine(colorize(colorEnabled, ANSI.teal, '  │', true) + ' ' + colorize(colorEnabled, ANSI.white, fitVisible(title, width - 2), true) + ' '.repeat(Math.max(0, width - visibleWidth(fitVisible(title, width - 2)) - 1)) + colorize(colorEnabled, ANSI.teal, '│', true));
     panelLine(border(width, '  ├', '┤'));
     for (const [key, value] of rows) {
-      const line = ' ' + colorize(colorEnabled, ANSI.gray, key.padEnd(10)) + ': ' + clip(value, width - 15);
+      const label = colorize(colorEnabled, ANSI.gray, key.padEnd(10));
+      const content = colorize(colorEnabled, key === 'MODE' ? (info?.mode === 'public' ? ANSI.green : ANSI.yellow) : ANSI.white, clip(value, width - 15));
+      const line = ' ' + label + ': ' + content;
       panelLine(colorize(colorEnabled, ANSI.teal, '  │', true) + fitVisible(line, width) + colorize(colorEnabled, ANSI.teal, '│', true));
     }
     panelLine(border(width, '  ╰', '╯'));
