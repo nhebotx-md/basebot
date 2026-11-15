@@ -136,6 +136,35 @@ test('dispatcher returns an informative, actionable and privacy-safe plugin fail
   assert.doesNotMatch(safe, /private\.example|token=secret/);
 });
 
+
+test('plugin failure reports redact credentials and event failures receive trace references', async () => {
+  const unsafe = formatPluginFailure({
+    plugin: 'test', command: 'ping',
+    error: new Error('Authorization: Bearer abc.def.secret api_key=hidden https://private.example/path'),
+    reference: 'SAFE1234'
+  });
+  assert.doesNotMatch(unsafe, /abc\\.def\\.secret|hidden|private\\.example/);
+  assert.match(unsafe, /disamarkan/);
+
+  const registry = new PluginRegistry();
+  registry.register(plugin({
+    name: 'group-events', commands: ['eventtest'], events: ['group-participants.update'],
+    onEvent: async () => { throw Object.assign(new Error('ETIMEDOUT'), { code: 'ETIMEDOUT' }); }
+  }));
+  const logged = [];
+  const dispatcher = new CommandDispatcher({
+    registry,
+    logger: { info() {}, warn() {}, error(...args) { logged.push(args); }, debug() {} }
+  });
+  const results = await dispatcher.dispatchEvent('group-participants.update', {}, {});
+  assert.equal(results.length, 1);
+  assert.equal(results[0].ok, false);
+  assert.ok(results[0].reference);
+  assert.equal(logged[0][1].reference, results[0].reference);
+  assert.equal(logged[0][1].stage, 'event');
+  assert.match(logged[0][1].diagnosis.cause, /Layanan eksternal/);
+});
+
 test('dispatcher sends privacy-safe activity summary after a successful command', async () => {
   const registry = new PluginRegistry();
   registry.register(plugin({ execute: async () => {} }));
