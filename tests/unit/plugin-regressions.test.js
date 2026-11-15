@@ -6,9 +6,12 @@ const hidetag = require('../../plugins/group/hidetag');
 const welcome = require('../../plugins/group/welcome');
 const { createMessagesUpsertHandler } = require('../../src/core/events/messages-upsert');
 
-test('tagall requires group admin even when the caller is an owner', () => {
-  assert.deepEqual(validatePermission({ permissions: { groupOnly: true, adminOnly: true, ownerAdminBypass: false } }, { isGroup: true, isGroupAdmin: false, isOwner: true }), { allowed: false, reason: 'admin' });
-  assert.deepEqual(validatePermission({ permissions: { groupOnly: true, adminOnly: true } }, { isGroup: true, isGroupAdmin: false, isOwner: true }), { allowed: true });
+test('group-category commands allow verified bot owner and group admins, but not regular members', () => {
+  const plugin = { category: 'group', permissions: { groupOnly: true, adminOnly: true, ownerAdminBypass: false } };
+  assert.deepEqual(validatePermission(plugin, { isGroup: true, isGroupAdmin: false, isOwner: true }), { allowed: true });
+  assert.deepEqual(validatePermission(plugin, { isGroup: true, isGroupAdmin: true, isOwner: false }), { allowed: true });
+  assert.deepEqual(validatePermission(plugin, { isGroup: true, isGroupAdmin: false, isOwner: false }), { allowed: false, reason: 'admin' });
+  assert.deepEqual(validatePermission({ permissions: { groupOnly: true, adminOnly: true, ownerAdminBypass: false } }, { isGroup: true, isGroupAdmin: false, isOwner: true }), { allowed: false, reason: 'admin' }, 'non-group admin commands may explicitly disable owner bypass');
 });
 
 test('hidetag forwards quoted content and adds mentions for every group participant', async () => {
