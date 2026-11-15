@@ -1,7 +1,8 @@
 'use strict';
 
 const COMMAND_PATTERN = /^[\p{L}\p{N}_-]{1,40}$/u;
-const PERMISSION_KEYS = ['ownerOnly', 'groupOnly', 'privateOnly', 'adminOnly', 'botAdminOnly', 'restricted', 'ownerAdminBypass'];
+const PERMISSION_KEYS = ['ownerOnly', 'groupOnly', 'privateOnly', 'adminOnly', 'botAdminOnly', 'restricted', 'ownerAdminBypass', 'accessRequired'];
+const ROLE_NAMES = ['user', 'premium', 'moderator'];
 
 function validatePlugin(plugin, filePath = '<unknown>') {
   const errors = [];
@@ -23,7 +24,11 @@ function validatePlugin(plugin, filePath = '<unknown>') {
   const permissions = plugin.permissions === undefined ? {} : plugin.permissions;
   if (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)) errors.push('permissions harus berupa object.');
   else for (const key of Object.keys(permissions)) {
-    if (!PERMISSION_KEYS.includes(key)) errors.push(`permission tidak dikenal: ${key}.`);
+    if (key === 'roles') {
+      if (!Array.isArray(permissions.roles) || permissions.roles.some(role => !ROLE_NAMES.includes(role))) errors.push('permissions.roles harus berisi role yang valid.');
+    } else if (key === 'minRole') {
+      if (!ROLE_NAMES.includes(permissions.minRole)) errors.push('permissions.minRole tidak valid.');
+    } else if (!PERMISSION_KEYS.includes(key)) errors.push(`permission tidak dikenal: ${key}.`);
     else if (typeof permissions[key] !== 'boolean') errors.push(`permissions.${key} harus boolean.`);
   }
   if (plugin.events !== undefined && (!Array.isArray(plugin.events) || plugin.events.some(event => typeof event !== 'string'))) errors.push('events harus berupa array nama event.');
