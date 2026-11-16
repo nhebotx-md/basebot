@@ -46,7 +46,7 @@ class HealthService {
     } catch { pluginStatsError = true; }
 
     const whatsappState = connection.state || (this.connection?.client ? 'connected' : 'disconnected');
-    const databaseReady = databaseStatus.initialized === true && databaseStatus.closed !== true;
+    const databaseReady = databaseStatus.initialized === true && databaseStatus.closed !== true && this.database?.closed !== true;
     const skippedPlugins = Math.max(0, Number(this.startupStats.skipped) || 0);
     const memory = {
       rssMb: bytesToMb(processMemory.rss),

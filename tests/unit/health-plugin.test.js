@@ -34,7 +34,7 @@ test('health command returns a concise status summary to the owner', async () =>
 });
 
 test('health command supports detail, plugins and memory views', async () => {
-  for (const [argument, expected] of [['detail', 'EVENT LOOP'], ['plugins', 'PLUGIN HEALTH'], ['memory', 'MEMORY HEALTH']]) {
+  for (const [argument, expected] of [['detail', 'Event loop'], ['plugins', 'PLUGIN HEALTH'], ['memory', 'MEMORY HEALTH']]) {
     const { ctx, replies } = context({ args: [argument] });
     await healthPlugin.execute(ctx);
     assert.match(replies[0], new RegExp(expected));

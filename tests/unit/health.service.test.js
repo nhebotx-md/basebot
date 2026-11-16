@@ -47,7 +47,7 @@ test('health report degrades when WhatsApp is offline or plugin startup skipped 
 });
 
 test('health report becomes critical when database is not initialized or already closed', () => {
-  const { service } = fixture({ database: { status: () => ({ initialized: true, closed: true, schemaVersion: 1, collections: [] }) } });
+  const { service } = fixture({ database: { closed: true, status: () => ({ initialized: true, schemaVersion: 1, collections: [] }) } });
   assert.equal(service.getReport().status, 'critical');
   service.stop();
 });
