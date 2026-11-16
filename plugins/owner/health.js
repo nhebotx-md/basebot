@@ -17,7 +17,7 @@ function summary(report, prefix) {
     'Plugin: ' + report.plugins.enabled + '/' + report.plugins.total + ' aktif · ' + report.plugins.commands + ' command',
     'Memory RSS: ' + formatMb(report.memory.rssMb) + ' · Heap: ' + report.memory.heapUsagePercent + '%',
     'Event loop p95: ' + report.eventLoopDelay.p95Ms + ' ms',
-    'Auto reload: ' + (report.plugins.autoReload.enabled ? 'ON' : 'OFF'),
+    'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF'),
     '',
     'Detail: ' + prefix + 'health detail'
   ].join('\n');
@@ -50,8 +50,8 @@ function details(report) {
     'Categories: ' + report.plugins.categories,
     'Startup loaded/discovered: ' + report.plugins.loadedAtStartup + '/' + report.plugins.discoveredAtStartup,
     'Startup skipped: ' + report.plugins.skippedAtStartup,
-    'Auto reload: ' + (report.plugins.autoReload.enabled ? 'ON' : 'OFF') + ' · Directories: ' + report.plugins.autoReload.watchingDirectories,
-    'Reload success/fail: ' + report.plugins.autoReload.reloads + '/' + report.plugins.autoReload.failures,
+    'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF') + ' · Directories: ' + (report.plugins.autoReload?.watchingDirectories || 0),
+    'Reload success/fail: ' + (report.plugins.autoReload?.reloads || 0) + '/' + (report.plugins.autoReload?.failures || 0),
     '',
     '*MEMORY*',
     'RSS: ' + formatMb(report.memory.rssMb),
@@ -90,7 +90,7 @@ module.exports = {
     }
     const report = health.getReport();
     if (action === 'plugins') {
-      await ctx.reply(['*PLUGIN HEALTH*', 'Total: ' + report.plugins.total, 'Aktif: ' + report.plugins.enabled, 'Nonaktif: ' + report.plugins.disabled, 'Command: ' + report.plugins.commands, 'Gagal startup: ' + report.plugins.skippedAtStartup, 'Auto reload: ' + (report.plugins.autoReload.enabled ? 'ON' : 'OFF'), 'Reload sukses/gagal: ' + report.plugins.autoReload.reloads + '/' + report.plugins.autoReload.failures].join('\n'));
+      await ctx.reply(['*PLUGIN HEALTH*', 'Total: ' + report.plugins.total, 'Aktif: ' + report.plugins.enabled, 'Nonaktif: ' + report.plugins.disabled, 'Command: ' + report.plugins.commands, 'Gagal startup: ' + report.plugins.skippedAtStartup, 'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF'), 'Reload sukses/gagal: ' + (report.plugins.autoReload?.reloads || 0) + '/' + (report.plugins.autoReload?.failures || 0)].join('\n'));
       return;
     }
     if (action === 'memory') {
