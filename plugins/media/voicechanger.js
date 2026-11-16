@@ -49,6 +49,7 @@ module.exports = {
   description: 'Mengubah karakteristik audio menggunakan FFmpeg.', usage: '.bass (balas audio)', permissions: {},
   async execute(ctx) {
     if (!ctx.mime.startsWith('audio/')) return ctx.reply(`Balas audio dengan ${ctx.prefix}${ctx.command}.`);
+    await ctx.progress.start('Mengunduh audio sumber', { detail: 'Mengambil audio yang kamu balas.' });
     const buffer = await ctx.quoted.download();
     if (!Buffer.isBuffer(buffer) || buffer.length > 20 * 1024 * 1024) return ctx.reply('Ukuran audio maksimal 20 MB.');
     const folder = path.resolve(ctx.config.paths.temp);
@@ -58,9 +59,11 @@ module.exports = {
     const output = path.join(folder, `${nonce}.mp3`);
     try {
       await fs.promises.writeFile(input, buffer, { mode: 0o600, flag: 'wx' });
+      await ctx.progress.update('Memproses audio dengan FFmpeg', { detail: 'Efek audio: ' + ctx.command + '. Proses memiliki batas waktu 30 detik.' });
       await runFfmpeg(input, output, FILTERS[ctx.command]);
       const result = await fs.promises.readFile(output);
       if (result.length > 20 * 1024 * 1024) throw new Error('Audio hasil melebihi batas ukuran.');
+      await ctx.progress.update('Mengirim audio hasil', { detail: 'Audio selesai diproses dan sedang dikirim.' });
       await ctx.sendMessage(ctx.chat, { audio: result, mimetype: 'audio/mpeg', ptt: true }, { quoted: ctx.m.raw });
     } catch (error) {
       if (error.code === 'FFMPEG_BINARY_MISSING') return ctx.reply(error.message);
