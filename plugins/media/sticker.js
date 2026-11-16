@@ -12,7 +12,7 @@ module.exports = {
       await ctx.progress.update('Mengonversi gambar menjadi sticker', { detail: 'Menerapkan metadata pack dan author.' });
       output = await ctx.client.sendImageAsSticker(ctx.chat, media, ctx.m.raw, { packname: ctx.config.sticker.packname, author: ctx.config.sticker.author });
     } else if (ctx.mime.startsWith('video/')) {
-      if ((ctx.quoted.msg?.seconds || 0) > 10) return ctx.reply('Durasi video maksimal 10 detik.');
+      if ((ctx.quoted.msg?.seconds || 0) > 10) { await ctx.progress.fail('Video terlalu panjang', { detail: 'Durasi maksimum sticker animasi adalah 10 detik.' }); return ctx.reply('Durasi video maksimal 10 detik.'); }
       await ctx.progress.update('Mengonversi video menjadi sticker animasi', { detail: 'Durasi maksimum 10 detik.' });
       output = await ctx.client.sendVideoAsSticker(ctx.chat, media, ctx.m.raw, { packname: ctx.config.sticker.packname, author: ctx.config.sticker.author });
     } else return ctx.reply(`Balas gambar atau video dengan ${ctx.prefix}${ctx.command}.`);
