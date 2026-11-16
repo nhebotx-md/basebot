@@ -5,100 +5,87 @@ const { getPluginProgress } = require('../../src/core/services/plugin-progress.s
 const MAX_MEDIA_BYTES = 8 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15000;
 const MAX_TEXT_LENGTH = 300;
-const PROVIDERS = {
-  brat: [
-    {
-      name: 'Siputzx API',
-      url: text => `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(text)}&isAnimated=false`,
-      expected: 'png'
-    }
-  ],
-  animated: [
-    {
-      name: 'Siputzx API',
-      url: text => `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(text)}&isAnimated=true&delay=500`,
-      expected: 'gif'
-    }
-  ]
-};
-const OPTIONAL_PROVIDERS = {
-  brat: { name: 'Asepharyana Brat (alternate host)', url: text => `https://scraper.asepharyana.my.id/image/brat?text=${encodeURIComponent(text)}`, expected: 'png' },
-  animated: { name: 'Asepharyana Brat (alternate host)', url: text => `https://scraper.asepharyana.my.id/image/brat/animated?text=${encodeURIComponent(text)}`, expected: 'gif' }
-};
+const API_URL = 'https://api.siputzx.my.id/api/m/brat';
 
-function detectMedia(buffer, contentType = '') {
+function detectMedia(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) return null;
   if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
-  if (buffer.length >= 6 && (buffer.toString('ascii', 0, 6) === 'GIF87a' || buffer.toString('ascii', 0, 6) === 'GIF89a')) return 'gif';
-  if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
-    return buffer.includes(Buffer.from('ANIM')) || buffer.includes(Buffer.from('ANMF')) ? 'gif' : 'webp';
-  }
-  if (buffer.length >= 12 && buffer.toString('ascii', 4, 8) === 'ftyp') return 'video';
-  if (/image\/(?:png|x-png)/i.test(contentType)) return null;
+  if (buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) return 'gif';
   return null;
 }
 
+function resolveMode(command, args) {
+  const name = String(command || '').toLowerCase();
+  if (name === 'brat') return { mode: 'brat', words: args };
+  if (['bratvid', 'bratvideo'].includes(name)) return { mode: 'animated', words: args };
+  const [input, ...words] = args;
+  const mode = String(input || '').toLowerCase();
+  return { mode, words };
+}
+
 async function fetchGeneratedMedia(ctx, mode, text) {
-  let lastError;
-  const providers = [...PROVIDERS[mode]];
-  if (ctx.config?.sticker?.apis?.asepharyanaEnabled === true) providers.push(OPTIONAL_PROVIDERS[mode]);
-  for (const provider of providers) {
-    try {
-      const result = await ctx.services.media.downloadBuffer(provider.url(text), {
-        maxBytes: MAX_MEDIA_BYTES,
-        timeoutMs: REQUEST_TIMEOUT_MS
-      });
-      const actual = detectMedia(result.buffer, result.contentType);
-      if (actual !== provider.expected) throw new Error('Tipe media tidak cocok.');
-      return { buffer: result.buffer, provider: provider.name };
-    } catch (error) {
-      lastError = error;
-      ctx.logger?.warn?.('Penyedia REST sticker gagal.', { provider: provider.name });
-    }
-  }
-  throw lastError || new Error('Semua penyedia REST sticker tidak tersedia.');
+  const animated = mode === 'animated';
+  const url = API_URL + '?text=' + encodeURIComponent(text) + '&isAnimated=' + String(animated) + (animated ? '&delay=500' : '');
+  const result = await ctx.services.media.downloadBuffer(url, {
+    maxBytes: MAX_MEDIA_BYTES,
+    timeoutMs: REQUEST_TIMEOUT_MS
+  });
+  const expected = animated ? 'gif' : 'png';
+  const actual = detectMedia(result.buffer);
+  if (actual !== expected) throw new Error('Provider mengembalikan format media yang tidak sesuai.');
+  return { buffer: result.buffer, provider: 'Siputzx API' };
 }
 
 module.exports = {
   name: 'sticker-rest-api',
-  commands: ['stickerapi', 'stapi'],
+  commands: ['brat', 'bratvid', 'bratvideo', 'stickerapi', 'stapi'],
   category: 'media',
-  description: 'Membuat sticker Brat dari REST API dengan validasi media dan fallback.',
-  usage: '.stickerapi <brat|animated> <teks>',
+  description: 'Membuat sticker Brat statis dan animasi melalui satu REST API.',
+  usage: '.brat <teks> atau .bratvid <teks>',
   permissions: {},
   async execute(ctx) {
     const progress = getPluginProgress(ctx);
-    const [modeInput, ...words] = ctx.args;
-    const mode = String(modeInput || '').toLowerCase();
+    const { mode, words } = resolveMode(ctx.command, ctx.args || []);
     const text = words.join(' ').trim();
-    if (!mode || mode === 'help' || !text) {
+
+    if (!text || mode === 'help') {
       return ctx.reply([
-        'Sticker REST API',
-        `${ctx.prefix}stickerapi brat <teks> — sticker Brat statis`,
-        `${ctx.prefix}stickerapi animated <teks> — sticker Brat animasi`,
-        'Fallback host alternatif Asepharyana hanya aktif jika STICKER_API_ASEPHARYANA_ENABLED=true.',
-        `Teks maksimal ${MAX_TEXT_LENGTH} karakter. Output divalidasi dan dikonversi ke sticker WhatsApp; fallback Asepharyana bersifat opt-in.`
+        'Sticker Brat',
+        ctx.prefix + 'brat <teks> — sticker statis',
+        ctx.prefix + 'bratvid <teks> — sticker animasi',
+        ctx.prefix + 'stickerapi <brat|animated> <teks> — format alternatif',
+        'Teks maksimal ' + MAX_TEXT_LENGTH + ' karakter.'
       ].join('\n'));
     }
-    if (!Object.hasOwn(PROVIDERS, mode)) return ctx.reply(`Mode tidak dikenal. Gunakan: ${ctx.prefix}stickerapi brat atau animated.`);
-    if (text.length > MAX_TEXT_LENGTH) return ctx.reply(`Teks maksimal ${MAX_TEXT_LENGTH} karakter.`);
+    if (!['brat', 'animated'].includes(mode)) {
+      return ctx.reply('Mode tidak dikenal. Gunakan .brat, .bratvid, atau .stickerapi brat|animated.');
+    }
+    if (text.length > MAX_TEXT_LENGTH) return ctx.reply('Teks maksimal ' + MAX_TEXT_LENGTH + ' karakter.');
 
-    await progress.start('Menyiapkan sticker ' + mode, { detail: 'Memeriksa teks dan memilih penyedia media.' });
+    await progress.start('Menyiapkan sticker ' + (mode === 'animated' ? 'animasi' : 'Brat'), {
+      detail: 'Memvalidasi teks dan menyiapkan permintaan ke Siputzx API.'
+    });
     try {
-      await progress.update('Menghubungi penyedia sticker', { detail: 'Meminta media dari provider utama dan menyiapkan fallback jika diperlukan.' });
+      await progress.update('Mengambil media dari Siputzx API', {
+        detail: 'Meminta hasil ' + (mode === 'animated' ? 'GIF animasi' : 'PNG statis') + '.'
+      });
       const media = await fetchGeneratedMedia(ctx, mode, text);
-      await progress.update('Mengonversi hasil menjadi sticker', { detail: 'Media valid dari ' + media.provider + '. Menyiapkan format WhatsApp.' });
+      await progress.update('Mengonversi media menjadi sticker WhatsApp', {
+        detail: 'Format hasil sudah divalidasi. Menyiapkan metadata sticker.'
+      });
       const options = { packname: ctx.config.sticker.packname, author: ctx.config.sticker.author };
       if (mode === 'animated') await ctx.client.sendVideoAsSticker(ctx.chat, media.buffer, ctx.m.raw, options);
       else await ctx.client.sendImageAsSticker(ctx.chat, media.buffer, ctx.m.raw, options);
-      ctx.logger?.debug?.('Sticker REST berhasil dibuat.', { provider: media.provider, mode, mediaBytes: media.buffer.length });
+      ctx.logger?.debug?.('Sticker berhasil dibuat.', { provider: media.provider, mode, mediaBytes: media.buffer.length });
     } catch {
-      await progress.fail('Sticker gagal dibuat', { detail: 'Provider tidak tersedia atau hasil media tidak lolos validasi.' });
-      await ctx.reply('Layanan sticker sedang tidak tersedia atau mengirim media yang tidak valid. Coba lagi nanti.');
+      await progress.fail('Sticker gagal dibuat', {
+        detail: 'Siputzx API tidak tersedia atau hasil media tidak lolos validasi.'
+      });
+      await ctx.reply('Sticker gagal dibuat. Siputzx API sedang tidak tersedia atau mengirim media yang tidak valid. Coba lagi nanti.');
     }
   }
 };
 
 module.exports.detectMedia = detectMedia;
 module.exports.fetchGeneratedMedia = fetchGeneratedMedia;
-module.exports.providers = PROVIDERS;
+module.exports.resolveMode = resolveMode;

@@ -28,7 +28,7 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 | AI | `bocchi` (alias `.bocci`/`.bocchi`) untuk percakapan dengan asisten Bocchi; `jeslyn` untuk asisten AI. |
 | Downloader | `.play` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram; `.tt`/`.tiktok` untuk video, slideshow, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
 | Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar. |
-| Media | `brat`/`sbrat`, `bratvid`/`bratvideo`, image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), quote sticker (`qc` dan alias), REST sticker API (`stickerapi`/`stapi`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
+| Media | Brat sticker statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui satu REST API (`stickerapi`/`stapi`), image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
 | Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, serta pengelolaan file sementara dan sesi. |
 | User | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik. |
 
@@ -174,40 +174,9 @@ Lihat [Panduan Pengembangan Plugin](docs/PLUGIN_DEVELOPMENT.md) dan [Plugin API]
 - **Error command plugin:** catat ID `REF` dari balasan bot, lalu cocokkan dengan log server.
 - **Storage/session gagal ditulis:** pastikan direktori dapat dibuat dan diakses oleh user proses. Jangan jadikan session publik.
 
-## Sticker REST API
+## Sticker API
 
-Plugin `sticker-rest-api` menyediakan `.stickerapi brat <teks>` untuk Brat statis dan `.stickerapi animated <teks>` untuk animasi. Output API bukan sticker WhatsApp siap pakai; BASEBOT memvalidasi signature PNG/GIF, membatasi respons hingga 8 MiB dan timeout 15 detik, lalu mengonversi media memakai FFmpeg/WebP serta metadata pack. Input dibatasi 300 karakter dan dikirim ke provider pihak ketiga, jadi jangan gunakan teks rahasia/pribadi.
+Satu plugin media menyediakan `.brat <teks>` untuk sticker Brat statis dan `.bratvid <teks>` untuk sticker animasi. Alias `.bratvideo` tetap tersedia. `.stickerapi brat <teks>` dan `.stickerapi animated <teks>` (alias `.stapi`) juga dipertahankan untuk kompatibilitas.
 
-Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana (`scraper.asepharyana.my.id`) berbeda dari URL dokumentasi `asepharyana.cloud` yang diberikan pengguna, sehingga fallback itu **nonaktif secara default**; aktifkan hanya bila Anda menerima host alternate dengan `STICKER_API_ASEPHARYANA_ENABLED=true`. Temuan, sumber, dan batas verifikasi ada di [audit REST API sticker](docs/STICKER_API_AUDIT.md).
+Siputzx menjadi satu-satunya provider. BASEBOT membatasi teks hingga 300 karakter, timeout 15 detik, respons 8 MiB, memvalidasi signature PNG/GIF, lalu mengonversi media ke format sticker WhatsApp dengan metadata pack lokal. Jika API gagal atau format respons tidak valid, bot melaporkan kegagalan tanpa mengirim file yang belum tervalidasi. Jangan kirim teks rahasia karena teks diproses oleh provider pihak ketiga.
 
-## Downloader Suite
-
-Lihat [dokumentasi Downloader Suite](docs/DOWNLOADER_SUITE.md) untuk `.play`, `.igdl`, `.tt`, `.ytmp3`, provider Soclip, fallback provider lama, batas media, dan pengujian manual. Gunakan hanya media yang Anda miliki atau berizin untuk diunduh.
-
-## Advanced Runtime Monitoring
-
-Lihat [dokumentasi monitoring runtime](docs/ADVANCED_RUNTIME_MONITORING.md).
-
-## Plugin Auto Reload
-
-Lihat [dokumentasi Plugin Auto Reload](docs/PLUGIN_AUTO_RELOAD.md).
-
-## Quote Sticker `.qc`
-
-Gunakan `.qc pink Hai semuanya!` untuk membuat quote sticker dengan warna latar, atau balas pesan dengan `.qc pink`. Plugin menerima warna yang tercantum pada bantuan dan kode hex `#RRGGBB`; teks dibatasi 80 karakter. Request POST ke Siputzx memakai HTTPS dengan DNS pinning, tanpa redirect, serta batas timeout dan ukuran. Avatar profil diunduh lewat transport publik yang tervalidasi dan dikirim sebagai data URL; teks quote dan avatar diproses oleh API pihak ketiga, jadi jangan kirim konten rahasia.
-
-
-## Health Monitor
-
-BASEBOT menyediakan command owner-only .health untuk memeriksa kondisi runtime tanpa mengubah konfigurasi atau data.
-
-| Command | Kegunaan |
-|---|---|
-| .health | Ringkasan status runtime, WhatsApp, database, plugin, dan resource proses. |
-| .health detail | Diagnostik lengkap termasuk uptime, load average, penggunaan memori, dan event-loop delay. |
-| .health plugins | Statistik plugin aktif/nonaktif, command, dan kegagalan saat startup. |
-| .health memory | Detail RSS, heap, external memory, dan array buffer. |
-
-Health Monitor membaca status koneksi lokal dari lifecycle Baileys; command ini tidak mengirim ping atau request tambahan ke WhatsApp/provider eksternal. Informasi database hanya menampilkan status dan nama collection, bukan path, isi record, nomor pengguna, kredensial, atau token. Status degraded berarti ada komponen yang belum siap atau plugin gagal dimuat; status critical menandakan database tidak siap. Perintah ini hanya tersedia bagi owner bot terverifikasi dan tidak tersedia dari Channel/Newsletter.
-
-Lihat [dokumentasi Health Monitor](docs/HEALTH_MONITOR.md) untuk arti status, metrik, batasan, dan pengujian.

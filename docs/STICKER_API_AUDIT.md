@@ -41,7 +41,13 @@ Tidak ditemukan endpoint generator/media yang cukup terbukti untuk kandidat beri
 
 ## Implementasi plugin BASEBOT
 
-- Command baru: `.stickerapi brat <teks>` dan `.stickerapi animated <teks>` (alias `.stapi`). Siputzx menjadi penyedia utama; route statis diambil dari `api.siputzx.my.id/api/m/brat`, sedangkan parameter animasi mengikuti source route publik (`isAnimated=true`, `delay=500`). Bukti GET live yang tersedia hanya mencakup PNG statis; jalur animasi tidak dinyatakan sebagai live-verified.
-- Asepharyana `scraper.asepharyana.my.id` tersedia sebagai fallback **opt-in saja** melalui `STICKER_API_ASEPHARYANA_ENABLED=true`. Ini host alternate, berbeda dari `asepharyana.cloud`; default config menonaktifkannya. Mengaktifkannya adalah pilihan operator.
-- Plugin tidak menerima URL dari chat, memakai service unduhan DNS-pinned/no-redirect BASEBOT, membatasi timeout 15 detik dan media 8 MiB, memverifikasi signature PNG/GIF, serta memakai konversi FFmpeg/WebP + metadata lokal. Teks dibatasi 300 karakter dan tidak dicatat ke log.
-- Tidak ada endpoint yang mengirim WhatsApp WebP sticker siap pakai; seluruh media generator dianggap input tidak tepercaya dan dikonversi di sisi bot.
+Implementasi repository saat ini disederhanakan menjadi satu plugin `plugins/media/sticker-rest-api.js`:
+
+- `.brat <teks>` membuat sticker statis PNG.
+- `.bratvid <teks>` dan alias `.bratvideo` membuat sticker animasi GIF.
+- `.stickerapi brat <teks>` dan `.stickerapi animated <teks>` (alias `.stapi`) dipertahankan untuk kompatibilitas.
+- Siputzx `api.siputzx.my.id` menjadi satu-satunya provider aktif. Fallback host alternatif dihapus agar tidak ada jalur yang belum dibutuhkan.
+- Plugin membatasi teks 300 karakter, timeout 15 detik, respons 8 MiB, memverifikasi signature PNG/GIF, lalu mengonversi media di sisi BASEBOT ke sticker WhatsApp.
+- Plugin QC berbasis quote API dan plugin Bratvid lama berbasis CaliphDev dihapus. Command `.qc` tidak lagi tersedia.
+
+Uji unit mencakup kedua format, command langsung, kompatibilitas command `.stickerapi`, batas teks, dan penolakan media yang tidak valid. Hasil unit test perlu dijalankan di lingkungan project sebelum perubahan digabungkan.
