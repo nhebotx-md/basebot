@@ -2,6 +2,7 @@
 
 const { randomBytes } = require('node:crypto');
 const { validatePermission } = require('../security/permission-manager');
+const { createPluginProgress } = require('../services/plugin-progress.service');
 
 function safeErrorDetail(error) {
   const raw = String(error?.message || error || 'Tidak ada detail tambahan.');
@@ -178,10 +179,17 @@ class CommandDispatcher {
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
     this.activeCommands += 1;
+    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, logger: this.logger });
+    ctx.process = ctx.progress;
+    if (ctx.services) ctx.services.progress = ctx.progress;
     await this.recordCommand(ctx);
     const startedAt = Date.now();
     try {
       await plugin.execute(ctx);
+      if (ctx.progress.isStarted() && !ctx.progress.isFinished()) {
+        try { await ctx.progress.complete('Plugin berhasil menyelesaikan seluruh tahap proses'); }
+        catch (progressError) { this.logger.warn?.('Pesan penyelesaian progres gagal diperbarui.', { plugin: plugin.name, error: progressError.message }); }
+      }
       const activity = { plugin: plugin.name, command: ctx.command, category: plugin.category, scope: ctx.isGroup ? 'group' : 'private', durationMs: Date.now() - startedAt };
       if (typeof this.logger.activity === 'function') this.logger.activity(activity);
       else this.logger.info('Plugin berhasil dijalankan.', { plugin: plugin.name, command: ctx.command });
@@ -191,6 +199,10 @@ class CommandDispatcher {
       this.logger.error('Plugin gagal saat dieksekusi.', {
         plugin: plugin.name, command: ctx.command, stage: 'execute', reference, error
       });
+      if (ctx.progress?.isStarted() && !ctx.progress.isFinished()) {
+        try { await ctx.progress.fail('Plugin gagal menyelesaikan proses', { detail: 'Ref: ' + reference }); }
+        catch (progressError) { this.logger.warn?.('Pesan kegagalan progres tidak dapat diperbarui.', { plugin: plugin.name, reference, error: progressError.message }); }
+      }
       try {
         await ctx.reply(formatPluginFailure({
           plugin: plugin.name, command: ctx.command, error, stage: 'execute', reference
