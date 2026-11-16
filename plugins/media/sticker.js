@@ -18,7 +18,10 @@ module.exports = {
       if ((ctx.quoted.msg?.seconds || 0) > 10) { await progress.fail('Video terlalu panjang', { detail: 'Durasi maksimum sticker animasi adalah 10 detik.' }); return ctx.reply('Durasi video maksimal 10 detik.'); }
       await progress.update('Mengonversi video menjadi sticker animasi', { detail: 'Durasi maksimum 10 detik.' });
       output = await ctx.client.sendVideoAsSticker(ctx.chat, media, ctx.m.raw, { packname: ctx.config.sticker.packname, author: ctx.config.sticker.author });
-    } else return ctx.reply(`Balas gambar atau video dengan ${ctx.prefix}${ctx.command}.`);
+    } else {
+      await progress.fail('Format media tidak didukung', { detail: 'Plugin sticker menerima gambar atau video.' });
+      return ctx.reply(`Balas gambar atau video dengan ${ctx.prefix}${ctx.command}.`);
+    }
     if (typeof output === 'string') await fs.unlink(output).catch(() => {});
   }
 };
