@@ -9,10 +9,13 @@ module.exports = {
     if (active.has(ctx.sender)) return ctx.reply('Permintaan sebelumnya masih diproses.');
     active.add(ctx.sender);
     try {
+      await ctx.progress.start('Mengambil gambar sumber', { detail: 'Mengunduh gambar yang kamu balas.' });
       const input = await ctx.quoted.download();
       if (!Buffer.isBuffer(input) || input.length > 10 * 1024 * 1024) return ctx.reply('Ukuran gambar maksimal 10 MB.');
+      await ctx.progress.update('Meningkatkan kualitas gambar', { detail: 'Mengirim gambar ke layanan enhancer dan menunggu hasil.' });
       const output = await ctx.services.downloaders.remini(input, 'enhance');
       if (!Buffer.isBuffer(output) || output.length === 0 || output.length > 20 * 1024 * 1024) throw new Error('Respons media tidak valid.');
+      await ctx.progress.update('Mengirim hasil enhancement', { detail: 'Hasil sudah divalidasi dan sedang dikirim.' });
       await ctx.sendMessage(ctx.chat, { image: output, caption: 'Gambar berhasil ditingkatkan.' }, { quoted: ctx.m.raw });
     } finally { active.delete(ctx.sender); }
   }
