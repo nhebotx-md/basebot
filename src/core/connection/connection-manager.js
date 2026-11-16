@@ -27,11 +27,22 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
   let restartRequiredCount = 0;
   let runtimePublicMode = config.publicMode;
   let stopped = false;
+  let connectionState = 'idle';
+  let lastStateChangeAt = Date.now();
+  let lastConnectedAt = null;
   const closedClients = new WeakSet();
+
+  function setConnectionState(state) {
+    connectionState = state;
+    lastStateChangeAt = Date.now();
+    if (state === 'open') lastConnectedAt = lastStateChangeAt;
+  }
 
   function scheduleReconnect(statusCode, error, { immediate = false, reason = 'transient' } = {}) {
     if (stopped || reconnectTimer) return;
+    setConnectionState('reconnecting');
     if (!immediate && reconnectAttempts >= 8) {
+      setConnectionState('failed');
       logger.error('Reconnect otomatis dihentikan setelah batas percobaan tercapai.', { attempts: reconnectAttempts, statusCode, reason, ...errorContext(error) });
       return;
     }
@@ -54,6 +65,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
     if (stopped || current) return current;
     if (connecting) return connecting;
     connecting = (async () => {
+      setConnectionState('connecting');
       logger.info('Membuat socket WhatsApp.', { attempt: reconnectAttempts + 1 });
       const client = await createClient();
       if (stopped) { client.end?.(new Error('Startup dihentikan.')); return null; }
@@ -82,7 +94,9 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       logger.info('Socket WhatsApp siap; listener event terpasang.', { reconnect: reconnectAttempts > 0 });
       return client;
     })();
-    try { return await connecting; } finally { connecting = null; }
+    try { return await connecting; }
+    catch (error) { setConnectionState('error'); throw error; }
+    finally { connecting = null; }
   }
 
   async function onConnectionUpdate(client, update) {
@@ -95,11 +109,13 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       logger.info('WhatsApp mengonfirmasi login perangkat baru.', { credentialsRegistered: Boolean(client.authState?.creds?.registered) });
     }
     if (update.connection === 'connecting') {
+      setConnectionState('connecting');
       if (typeof logger.connection === 'function') logger.connection('connecting', { step: 'Handshake WhatsApp' });
       else logger.info('Handshake WhatsApp sedang berlangsung.');
       return;
     }
     if (update.connection === 'open') {
+      setConnectionState('open');
       reconnectAttempts = 0;
       restartRequiredCount = 0;
       if (reconnectTimer) timerApi.clearTimeout(reconnectTimer);
@@ -118,6 +134,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
     const reason = disconnectName(lifecycleReasons, statusCode);
     const loggedOut = lifecycleReasons.loggedOut !== undefined && statusCode === lifecycleReasons.loggedOut;
     const restartRequired = lifecycleReasons.restartRequired !== undefined && statusCode === lifecycleReasons.restartRequired;
+    setConnectionState(loggedOut ? 'logged-out' : 'reconnecting');
 
     if (restartRequired) {
       restartRequiredCount += 1;
@@ -146,6 +163,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
     runtimePublicMode = client.public !== false;
     current = null;
     if (loggedOut) {
+      setConnectionState('logged-out');
       logger.error('Sesi WhatsApp logout; reconnect otomatis dihentikan dan diperlukan pairing baru.', { statusCode, reason });
       return;
     }
@@ -161,6 +179,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
   async function stop() {
     if (stopped) return;
     stopped = true;
+    setConnectionState('stopped');
     if (reconnectTimer) timerApi.clearTimeout(reconnectTimer);
     reconnectTimer = null;
     const socket = current;
@@ -175,7 +194,15 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
     catch (error) { logger.warn('Socket shutdown mengembalikan error.', errorContext(error)); }
     logger.info('Socket WhatsApp dihentikan.');
   }
-  return { start, stop, get client() { return current; }, get reconnectAttempts() { return reconnectAttempts; } };
+  return {
+    start,
+    stop,
+    get client() { return current; },
+    get reconnectAttempts() { return reconnectAttempts; },
+    get status() {
+      return { state: connectionState, hasClient: Boolean(current), reconnectAttempts, lastStateChangeAt, lastConnectedAt };
+    }
+  };
 }
 
 module.exports = { createConnectionManager, disconnectName };

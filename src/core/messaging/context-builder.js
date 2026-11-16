@@ -114,6 +114,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const services = {
     ...messageService, config, logger, store,
     pluginManager: registry.pluginManager || null,
+    health: registry.healthService || null,
     database: registry.databaseService || null,
     users: registry.userService || null,
     groups: registry.groupService || null,
