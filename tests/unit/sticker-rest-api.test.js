@@ -10,8 +10,17 @@ function makeContext(args, { downloadBuffer, logger = { warn() {}, debug() {} },
   const sent = [];
   const replies = [];
   const reactions = [];
+  const progressEvents = [];
+  const progress = Object.assign(async (label, options) => { progressEvents.push(['update', label, options]); }, {
+    async start(label, options) { progressEvents.push(['start', label, options]); },
+    async update(label, options) { progressEvents.push(['update', label, options]); },
+    async step(label, options) { progressEvents.push(['update', label, options]); },
+    async complete(label) { progressEvents.push(['complete', label]); },
+    async fail(label, options) { progressEvents.push(['fail', label, options]); },
+    isStarted() { return progressEvents.length > 0; }, isFinished() { return false; }
+  });
   return {
-    ctx: {
+    ctx: { progress,
       args, prefix: '.', command: 'stickerapi', text: args.slice(1).join(' '), chat: 'chat@s.whatsapp.net', m: { raw: { key: { id: 'm1' } } },
       config: { sticker: { packname: 'BASEBOT', author: 'test', apis: { asepharyanaEnabled } } }, logger,
       services: { media: { downloadBuffer } },
@@ -20,7 +29,7 @@ function makeContext(args, { downloadBuffer, logger = { warn() {}, debug() {} },
         async sendVideoAsSticker(...values) { sent.push(['video', ...values]); }
       },
       async reply(message) { replies.push(message); }, async react(value) { reactions.push(value); }
-    }, sent, replies, reactions
+    }, sent, replies, reactions, progressEvents
   };
 }
 
@@ -33,7 +42,7 @@ test('sticker REST help describes the available generated sticker modes', async 
 
 test('static Brat uses bounded public API downloads and converts verified PNG to WhatsApp sticker', async () => {
   const calls = [];
-  const { ctx, sent, reactions } = makeContext(['brat', 'hello', '& world'], {
+  const { ctx, sent, progressEvents } = makeContext(['brat', 'hello', '& world'], {
     downloadBuffer: async (url, options) => { calls.push({ url, options }); return { buffer: PNG, contentType: 'image/png' }; }
   });
   await plugin.execute(ctx);
@@ -45,7 +54,7 @@ test('static Brat uses bounded public API downloads and converts verified PNG to
   assert.equal(sent.length, 1);
   assert.equal(sent[0][0], 'image');
   assert.deepEqual(sent[0][4], { packname: 'BASEBOT', author: 'test' });
-  assert.deepEqual(reactions, ['⚡']);
+  assert.deepEqual(progressEvents.map(event => event[0]), ['start', 'update', 'update']);
 });
 
 test('animated mode validates GIF signature and converts to animated WhatsApp sticker', async () => {
