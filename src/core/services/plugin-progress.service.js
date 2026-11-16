@@ -12,9 +12,25 @@ function clean(value, fallback = '') {
     .slice(0, MAX_LABEL);
 }
 
+function createNoopPluginProgress() {
+  const noop = async () => false;
+  noop.start = noop;
+  noop.update = noop;
+  noop.step = noop;
+  noop.complete = noop;
+  noop.fail = noop;
+  noop.isStarted = () => false;
+  noop.isFinished = () => false;
+  noop.snapshot = () => ({ started: false, finished: false, status: 'idle', steps: [], current: null });
+  return noop;
+}
+
+function getPluginProgress(ctx) {
+  return typeof ctx?.progress === 'function' ? ctx.progress : createNoopPluginProgress();
+}
+
 function createPluginProgress({ client, message, plugin, command, logger = console } = {}) {
-  if (!client || typeof client.sendMessage !== 'function') throw new TypeError('PluginProgress membutuhkan client.sendMessage.');
-  if (!message?.chat || !message?.key) throw new TypeError('PluginProgress membutuhkan konteks pesan WhatsApp.');
+  if (!client || typeof client.sendMessage !== 'function' || !message?.chat || !message?.key) return createNoopPluginProgress();
   const state = { started: false, finished: false, status: 'running', statusMessage: null, steps: [], current: null, startedAt: 0, deliveryUnavailable: false };
 
   function render() {
@@ -117,4 +133,4 @@ function createPluginProgress({ client, message, plugin, command, logger = conso
   return process;
 }
 
-module.exports = { createPluginProgress, cleanProgressLabel: clean };
+module.exports = { createPluginProgress, createNoopPluginProgress, getPluginProgress, cleanProgressLabel: clean };
