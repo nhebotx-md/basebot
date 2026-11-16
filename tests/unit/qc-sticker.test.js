@@ -11,7 +11,16 @@ function makeContext(args, { quotedText = '', response = { ok: true, status: 200
   const reactions = [];
   const posts = [];
   const downloads = [];
-  const ctx = {
+  const progressEvents = [];
+  const progress = Object.assign(async (label, options) => { progressEvents.push(['update', label, options]); }, {
+    async start(label, options) { progressEvents.push(['start', label, options]); },
+    async update(label, options) { progressEvents.push(['update', label, options]); },
+    async step(label, options) { progressEvents.push(['update', label, options]); },
+    async complete(label) { progressEvents.push(['complete', label]); },
+    async fail(label, options) { progressEvents.push(['fail', label, options]); },
+    isStarted() { return progressEvents.length > 0; }, isFinished() { return false; }
+  });
+  const ctx = { progress,
     args, prefix: '.', command: 'qc', pushname: 'Test User', sender: '123@s.whatsapp.net',
     chat: '123@s.whatsapp.net', text: args.join(' '), quoted: quotedText ? { text: quotedText } : null,
     m: { raw: { key: { id: 'quoted-message' } } },
@@ -26,7 +35,7 @@ function makeContext(args, { quotedText = '', response = { ok: true, status: 200
     },
     async reply(value) { replies.push(value); }, async react(value) { reactions.push(value); }
   };
-  return { ctx, sent, replies, reactions, posts, downloads };
+  return { ctx, sent, replies, reactions, posts, downloads, progressEvents };
 }
 
 test('qc sticker includes the requested color names, aliases, and hex colors', () => {
@@ -39,7 +48,7 @@ test('qc sticker includes the requested color names, aliases, and hex colors', (
 });
 
 test('qc sticker sends a quote payload with custom color and validates the PNG response', async () => {
-  const { ctx, sent, replies, reactions, posts, downloads } = makeContext(['pink', 'Hai', 'semuanya!']);
+  const { ctx, sent, replies, posts, downloads, progressEvents } = makeContext(['pink', 'Hai', 'semuanya!']);
   await plugin.execute(ctx);
   assert.equal(replies.length, 0);
   assert.equal(posts.length, 1);
@@ -55,7 +64,7 @@ test('qc sticker sends a quote payload with custom color and validates the PNG r
   assert.equal(sent.length, 1);
   assert.equal(sent[0][1], PNG);
   assert.deepEqual(sent[0][3], { packname: 'BASEBOT', author: 'test' });
-  assert.deepEqual(reactions, ['🕕', '✅']);
+  assert.deepEqual(progressEvents.map(event => event[0]), ['start', 'update', 'update']);
 });
 
 test('qc sticker uses the replied message when only a color is provided', async () => {

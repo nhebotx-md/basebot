@@ -1,5 +1,7 @@
 'use strict';
 
+const { getPluginProgress } = require('../../src/core/services/plugin-progress.service');
+
 const API_URL = 'https://brat.siputzx.my.id/quoted';
 const MAX_TEXT_LENGTH = 80;
 const MAX_AVATAR_BYTES = 1024 * 1024;
@@ -71,6 +73,7 @@ module.exports = {
   usage: '.qc <warna|#hex> <teks> atau balas pesan dengan .qc <warna|#hex>',
   permissions: {},
   async execute(ctx) {
+    const progress = getPluginProgress(ctx);
     const [colorInput, ...words] = ctx.args || [];
     if (!colorInput) return ctx.reply(helpText(ctx.prefix));
     const backgroundColor = resolveColor(colorInput);
@@ -80,10 +83,11 @@ module.exports = {
     if (!message) return ctx.reply(`Masukkan teks atau balas pesan. Contoh: ${ctx.prefix}qc pink Hai semuanya!`);
     if (message.length > MAX_TEXT_LENGTH) return ctx.reply(`Teks quote maksimal ${MAX_TEXT_LENGTH} karakter (saat ini ${message.length}).`);
 
-    await ctx.react('🕕');
+    await progress.start('Menyiapkan quote sticker', { detail: 'Memproses teks, warna, dan avatar pengirim.' });
     try {
       const username = String(ctx.pushname || 'User').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 80) || 'User';
       const avatar = await getAvatarDataUrl(ctx);
+      await progress.update('Menghubungi quote generator', { detail: 'Mengirim payload quote dan mengambil gambar hasil.' });
       const payload = {
         messages: [{
           from: { id: 1, first_name: username, last_name: '', name: '', photo: { url: avatar } },
@@ -111,13 +115,13 @@ module.exports = {
       if (!Buffer.isBuffer(response.buffer) || response.buffer.length < PNG_SIGNATURE.length || response.buffer.length > MAX_IMAGE_BYTES || !response.buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
         throw new Error('Quote API mengembalikan PNG yang tidak valid.');
       }
+      await progress.update('Mengonversi gambar menjadi sticker', { detail: 'PNG sudah divalidasi dan sedang dikirim ke WhatsApp.' });
       await ctx.client.sendImageAsSticker(ctx.chat, response.buffer, ctx.m.raw, {
         packname: ctx.config.sticker.packname,
         author: ctx.config.sticker.author
       });
-      await ctx.react('✅');
     } catch {
-      await ctx.react('❌');
+      await progress.fail('Quote sticker gagal dibuat', { detail: 'API tidak tersedia atau hasil gambar tidak lolos validasi.' });
       await ctx.reply('Quote sticker gagal dibuat. API mungkin sedang tidak tersedia atau mengembalikan gambar yang tidak valid.');
     }
   }

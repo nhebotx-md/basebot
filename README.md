@@ -15,6 +15,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 - **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
 - **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, dan alert heap/event-loop/antrean database melalui `.health history` dan `.health alerts`.
 - **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command, tema warna, serta format JSON terstruktur. Ringkasan aktivitas tidak menampilkan identitas pengirim atau isi pesan.
+- **Plugin process feedback:** plugin dapat menampilkan tahapan kerja yang informatif melalui satu pesan status yang diperbarui, disertai reaksi mulai/selesai/gagal. Dispatcher otomatis menutup status saat plugin selesai atau gagal.
 - **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
 - **Keamanan:** normalisasi identitas owner, permission fail-closed saat metadata grup tidak tersedia, validasi URL publik untuk mengurangi SSRF, serta pembatasan path dan permission file storage.
 
