@@ -37,6 +37,7 @@ module.exports = {
       prefix + 'plugin enable <nama>',
       prefix + 'plugin disable <nama>',
       prefix + 'plugin reload all',
+      prefix + 'plugin watch',
       prefix + 'plugin stats'
     ].join('\n');
 
@@ -104,6 +105,19 @@ module.exports = {
       return;
     }
 
+    if (action === 'watch') {
+      const status = manager.watchStatus();
+      await ctx.reply([
+        '*PLUGIN AUTO RELOAD*',
+        'Status: ' + (status.enabled ? 'AKTIF' : 'NONAKTIF'),
+        'Direktori dipantau: ' + status.watchingDirectories,
+        'Reload sukses/gagal: ' + status.reloads + '/' + status.failures,
+        'Reload tertunda: ' + (status.pending ? 'ya' : 'tidak'),
+        'Terakhir: ' + (status.lastReloadAt || 'belum ada')
+      ].join('\\n'));
+      return;
+    }
+
     if (action === 'stats') {
       const stats = manager.stats();
       await ctx.reply([
@@ -112,7 +126,9 @@ module.exports = {
         'Aktif: ' + stats.enabled,
         'Nonaktif: ' + stats.disabled,
         'Command aktif: ' + stats.commands,
-        'Kategori: ' + stats.categories
+        'Kategori: ' + stats.categories,
+        'Auto reload: ' + (stats.autoReload?.enabled ? 'ON' : 'OFF'),
+        'Reload sukses/gagal: ' + (stats.autoReload?.reloads || 0) + '/' + (stats.autoReload?.failures || 0)
       ].join('\n'));
       return;
     }

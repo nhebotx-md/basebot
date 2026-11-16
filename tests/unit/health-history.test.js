@@ -1,0 +1,4 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const{HealthService}=require('../../src/core/services/health.service');
+test('health monitor keeps bounded history and records threshold alerts',()=>{const hist={enable(){},disable(){},percentile:p=>p===95?5e6:2e6,max:8e6};const h=new HealthService({registry:{list:()=>[],isEnabled:()=>false},connection:{status:{state:'open'},client:{}},database:{status:()=>({initialized:true,collections:[]}),pendingWrites:0},pluginManager:{stats:()=>({total:0,enabled:0,disabled:0,commands:0,categories:0})},processInfo:{version:'v22',platform:'linux',arch:'x64',pid:1,uptime:()=>1,memoryUsage:()=>({rss:100,heapUsed:95,heapTotal:100,external:0,arrayBuffers:0})},osInfo:{loadavg:()=>[0,0,0]},eventLoopMonitor:()=>hist,historyLimit:10});assert.equal(h.getHistory(1).length,1);assert.ok(h.getAlerts(5).some(x=>/Heap usage/.test(x.message)));h.sample();assert.equal(h.getHistory(10).length,2);h.stop();});

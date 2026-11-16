@@ -41,7 +41,7 @@ function loadConfig(env = readDotEnv()) {
     logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
     paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs', database: env.DATABASE_DIR || './data/database' },
     profile: { expPerMessage: Math.max(0, Number(env.EXP_PER_MESSAGE ?? 5) || 0), expCooldownMs: Math.max(0, Number(env.EXP_COOLDOWN_MS ?? 60000) || 0) },
-    plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false) }
+    plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false), autoReload: parseBoolean(env.PLUGIN_AUTO_RELOAD, true), watchDebounceMs: Math.max(150, Math.min(5000, Number(env.PLUGIN_WATCH_DEBOUNCE_MS) || 700)) }
   };
   validateConfig(config);
   return config;

@@ -1,7 +1,11 @@
 'use strict';
 
-function formatMb(value) { return Number.isFinite(value) ? value.toFixed(1) + ' MB' : 'n/a'; }
-function statusLabel(status) { return ({ healthy: 'HEALTHY', degraded: 'DEGRADED', critical: 'CRITICAL' })[status] || 'UNKNOWN'; }
+function formatMb(value) {
+  return Number.isFinite(value) ? value.toFixed(1) + ' MB' : 'n/a';
+}
+function statusLabel(status) {
+  return ({ healthy: 'HEALTHY', degraded: 'DEGRADED', critical: 'CRITICAL' })[status] || 'UNKNOWN';
+}
 
 function summary(report, prefix) {
   return [
@@ -11,7 +15,9 @@ function summary(report, prefix) {
     'WhatsApp: ' + report.whatsapp.state + (report.whatsapp.connected ? ' (connected)' : ' (not connected)'),
     'Database: ' + (report.database.ready ? 'ready' : 'unavailable'),
     'Plugin: ' + report.plugins.enabled + '/' + report.plugins.total + ' aktif · ' + report.plugins.commands + ' command',
-    'Memory RSS: ' + formatMb(report.memory.rssMb),
+    'Memory RSS: ' + formatMb(report.memory.rssMb) + ' · Heap: ' + report.memory.heapUsagePercent + '%',
+    'Event loop p95: ' + report.eventLoopDelay.p95Ms + ' ms',
+    'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF'),
     '',
     'Detail: ' + prefix + 'health detail'
   ].join('\n');
@@ -23,7 +29,7 @@ function details(report) {
     'Node: ' + report.runtime.node + ' · ' + report.runtime.platform + '/' + report.runtime.arch,
     'PID: ' + report.runtime.pid + ' · Process uptime: ' + report.runtime.processUptimeSeconds + ' detik',
     'Load average (1/5/15m): ' + report.runtime.loadAverage.join(' / '),
-    'Event loop p95/max: ' + report.eventLoopDelay.p95Ms + ' / ' + report.eventLoopDelay.maxMs + ' ms',
+    'Event loop p50/p95/max: ' + report.eventLoopDelay.p50Ms + ' / ' + report.eventLoopDelay.p95Ms + ' / ' + report.eventLoopDelay.maxMs + ' ms',
     '',
     '*WHATSAPP*',
     'State: ' + report.whatsapp.state,
@@ -44,6 +50,8 @@ function details(report) {
     'Categories: ' + report.plugins.categories,
     'Startup loaded/discovered: ' + report.plugins.loadedAtStartup + '/' + report.plugins.discoveredAtStartup,
     'Startup skipped: ' + report.plugins.skippedAtStartup,
+    'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF') + ' · Directories: ' + (report.plugins.autoReload?.watchingDirectories || 0),
+    'Reload success/fail: ' + (report.plugins.autoReload?.reloads || 0) + '/' + (report.plugins.autoReload?.failures || 0),
     '',
     '*MEMORY*',
     'RSS: ' + formatMb(report.memory.rssMb),
@@ -61,18 +69,28 @@ module.exports = {
   commands: ['health'],
   category: 'owner',
   description: 'Memeriksa kesehatan runtime, koneksi, database, plugin, dan resource BASEBOT.',
-  usage: '.health [detail|plugins|memory]',
+  usage: '.health [detail|plugins|memory|history|alerts]',
   permissions: { ownerOnly: true },
   async execute(ctx) {
     if (ctx.isNewsletter || ctx.isChannel) { await ctx.reply('Health Monitor hanya dapat dijalankan melalui chat pribadi atau grup oleh owner.'); return; }
     if (!ctx.isOwner) { await ctx.reply('Fitur ini khusus owner.'); return; }
     const health = ctx.services?.health;
     if (!health || typeof health.getReport !== 'function') { await ctx.reply('Health Monitor belum tersedia pada runtime ini.'); return; }
-    const report = health.getReport();
     const action = String(ctx.args?.[0] || '').toLowerCase();
     const prefix = typeof ctx.prefix === 'string' ? ctx.prefix : '.';
+    if (action === 'history') {
+      const rows = health.getHistory(10);
+      await ctx.reply(['*RIWAYAT RUNTIME*', ...rows.map(item => item.at + ' · ' + statusLabel(item.status) + ' · WA ' + item.whatsapp + ' · RSS ' + item.rssMb + ' MB · Heap ' + item.heapUsagePercent + '% · Loop ' + item.eventLoopP95Ms + ' ms')].join('\n'));
+      return;
+    }
+    if (action === 'alerts') {
+      const rows = health.getAlerts(10);
+      await ctx.reply(['*RUNTIME ALERTS*', ...(rows.length ? rows.map(item => item.at + ' · ' + item.severity.toUpperCase() + ' · ' + item.message) : ['Belum ada alert runtime.'])].join('\n'));
+      return;
+    }
+    const report = health.getReport();
     if (action === 'plugins') {
-      await ctx.reply(['*PLUGIN HEALTH*', 'Total: ' + report.plugins.total, 'Aktif: ' + report.plugins.enabled, 'Nonaktif: ' + report.plugins.disabled, 'Command: ' + report.plugins.commands, 'Gagal dimuat saat startup: ' + report.plugins.skippedAtStartup].join('\n'));
+      await ctx.reply(['*PLUGIN HEALTH*', 'Total: ' + report.plugins.total, 'Aktif: ' + report.plugins.enabled, 'Nonaktif: ' + report.plugins.disabled, 'Command: ' + report.plugins.commands, 'Gagal startup: ' + report.plugins.skippedAtStartup, 'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF'), 'Reload sukses/gagal: ' + (report.plugins.autoReload?.reloads || 0) + '/' + (report.plugins.autoReload?.failures || 0)].join('\n'));
       return;
     }
     if (action === 'memory') {

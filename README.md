@@ -9,10 +9,11 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 - **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event pesan, event peserta grup, dan shutdown terkontrol.
 - **Plugin registry:** pemindaian direktori plugin secara rekursif dan deterministik, validasi metadata, deteksi nama/command duplikat, isolasi file plugin yang gagal dimuat, serta status plugin aktif/nonaktif.
 - **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan empat tema bergilir (showcase, terminal, minimal, premium). `.catmenu` menampilkan indeks dan detail kategori. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
-- **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, dan melakukan reload melalui plugin manager. Status nonaktif disimpan agar dipulihkan saat startup.
+- **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, reload manual, dan auto reload saat file plugin JavaScript berubah. Registry kandidat divalidasi dahulu; reload gagal tidak mengganti registry aktif.
 - **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
 - **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
+- **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, dan alert heap/event-loop/antrean database melalui `.health history` dan `.health alerts`.
 - **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command, tema warna, serta format JSON terstruktur. Ringkasan aktivitas tidak menampilkan identitas pengirim atau isi pesan.
 - **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
 - **Keamanan:** normalisasi identitas owner, permission fail-closed saat metadata grup tidak tersedia, validasi URL publik untuk mengurangi SSRF, serta pembatasan path dan permission file storage.
@@ -103,6 +104,7 @@ CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas
 | `LOG_COLOR` | `auto`, `always`, atau `never`. |
 | `SESSION_DIR`, `TEMP_DIR`, `LOG_DIR` | Lokasi data sesi, file sementara, dan log. |
 | `PLUGINS_DIR`, `PLUGIN_RELOAD` | Direktori plugin dan opsi reload saat proses pemuatan. |
+| `PLUGIN_AUTO_RELOAD`, `PLUGIN_WATCH_DEBOUNCE_MS` | Watcher file plugin JavaScript tanpa restart bot; default aktif dengan debounce 700 ms. |
 | `STICKER_API_ASEPHARYANA_ENABLED` | Mengaktifkan fallback host alternate sticker API; default nonaktif. |
 | `TTS_API_KEY`, `TTS_VOICE_ID` | Kredensial/provider TTS bila fitur tersebut dikonfigurasi. |
 | `SOCLIP_API_KEY` | API key Soclip untuk Instagram, TikTok, dan YouTube. Simpan hanya di `.env`. |
@@ -180,6 +182,14 @@ Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana 
 ## Downloader Suite
 
 Lihat [dokumentasi Downloader Suite](docs/DOWNLOADER_SUITE.md) untuk `.play`, `.igdl`, `.tt`, `.ytmp3`, provider Soclip, fallback provider lama, batas media, dan pengujian manual. Gunakan hanya media yang Anda miliki atau berizin untuk diunduh.
+
+## Advanced Runtime Monitoring
+
+Lihat [dokumentasi monitoring runtime](docs/ADVANCED_RUNTIME_MONITORING.md).
+
+## Plugin Auto Reload
+
+Lihat [dokumentasi Plugin Auto Reload](docs/PLUGIN_AUTO_RELOAD.md).
 
 ## Quote Sticker `.qc`
 

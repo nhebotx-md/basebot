@@ -3,13 +3,14 @@
 const { reloadPluginsDetailed } = require('./plugin-loader');
 
 class PluginManager {
-  constructor({ registry, directory, logger = console, stateRepository = null } = {}) {
+  constructor({ registry, directory, logger = console, stateRepository = null, watchService = null } = {}) {
     if (!registry || typeof registry.list !== 'function') throw new TypeError('PluginManager membutuhkan PluginRegistry.');
     if (!directory) throw new TypeError('PluginManager membutuhkan direktori plugin.');
     this.registry = registry;
     this.directory = directory;
     this.logger = logger;
     this.stateRepository = stateRepository;
+    this.watchService = watchService;
   }
 
   async restore() {
@@ -76,6 +77,10 @@ class PluginManager {
     });
   }
 
+  watchStatus() {
+    return this.watchService?.status?.() || { enabled: false, watchingDirectories: 0, pending: false, reloads: 0, failures: 0 };
+  }
+
   stats() {
     const plugins = this.registry.list();
     const enabled = plugins.filter(plugin => this.registry.isEnabled(plugin.name));
@@ -85,7 +90,8 @@ class PluginManager {
       enabled: enabled.length,
       disabled: plugins.length - enabled.length,
       commands,
-      categories: new Set(plugins.map(plugin => plugin.category)).size
+      categories: new Set(plugins.map(plugin => plugin.category)).size,
+      autoReload: this.watchStatus()
     };
   }
 }

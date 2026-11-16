@@ -8,6 +8,7 @@ const { createLogger } = require('../core/services/logger.service');
 const { PluginRegistry } = require('../core/plugins/plugin-registry');
 const { findPluginFiles, loadPlugins } = require('../core/plugins/plugin-loader');
 const { PluginManager } = require('../core/plugins/plugin-manager');
+const { PluginWatchService } = require('../core/plugins/plugin-watch.service');
 const { CommandDispatcher } = require('../core/messaging/command-dispatcher');
 const { createMenuService } = require('../core/messaging/menu.service');
 const { createConnectionManager } = require('../core/connection/connection-manager');
@@ -47,6 +48,8 @@ async function createApp(options = {}) {
   const disabledPlugins = await pluginStateRepository.getDisabledPlugins();
   for (const name of disabledPlugins) registry.disable(name);
   const pluginManager = new PluginManager({ registry, directory: pluginDirectory, logger, stateRepository: pluginStateRepository });
+  const pluginWatchService = new PluginWatchService({ manager: pluginManager, directory: pluginDirectory, logger, debounceMs: config.plugins.watchDebounceMs });
+  pluginManager.watchService = pluginWatchService;
   registry.userService = users;
   registry.groupService = groups;
   registry.databaseService = database;
@@ -79,7 +82,7 @@ async function createApp(options = {}) {
   const dispatcher = new CommandDispatcher({ registry, logger, menuService });
   const createClient = createClientFactory({ config, logger });
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
-  const healthService = new HealthService({ registry, connection, database, pluginManager, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
+  const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
   registry.healthService = healthService;
   return {
     config,
@@ -92,12 +95,15 @@ async function createApp(options = {}) {
     dispatcher,
     connection,
     healthService,
+    pluginWatchService,
     async start() {
+      if (config.plugins.autoReload !== false) pluginWatchService.start();
       await connection.start();
       logger.info('Runtime BASEBOT aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
     },
     async stop() {
       logger.info('Shutdown BASEBOT dimulai.');
+      pluginWatchService.close();
       healthService.stop();
       await connection.stop();
       await database.close();
