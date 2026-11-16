@@ -123,7 +123,7 @@ async function fetchPublic(input, { timeoutMs = 15000, maxBytes = 8 * 1024 * 102
   });
 }
 
-async function postPublicJson(input, payload, { timeoutMs = 30000, maxBytes = 8 * 1024 * 1024, maxRequestBytes = 2 * 1024 * 1024 } = {}) {
+async function postPublicJson(input, payload, { timeoutMs = 30000, maxBytes = 8 * 1024 * 1024, maxRequestBytes = 2 * 1024 * 1024, headers = {} } = {}) {
   const { url, hostname, address, family } = await resolvePublicTarget(input);
   if (url.protocol !== 'https:') throw new Error('POST JSON hanya diizinkan melalui HTTPS.');
   if (!Number.isFinite(maxBytes) || maxBytes < 0 || !Number.isFinite(maxRequestBytes) || maxRequestBytes < 0) throw new Error('Batas ukuran request/response tidak valid.');
@@ -139,7 +139,7 @@ async function postPublicJson(input, payload, { timeoutMs = 30000, maxBytes = 8 
     const request = https.request({
       protocol: url.protocol, hostname, port: url.port || undefined,
       path: `${url.pathname}${url.search}`, method: 'POST',
-      headers: { accept: 'image/png, application/json', 'content-type': 'application/json', 'content-length': body.length },
+      headers: { accept: 'application/json', 'content-type': 'application/json', 'content-length': body.length, ...Object.fromEntries(Object.entries(headers).filter(([name]) => !/^(host|connection|proxy-authorization|transfer-encoding|content-length)$/i.test(name))) },
       servername: net.isIP(hostname) ? undefined : hostname, lookup: pinnedLookup
     }, response => {
       const declared = Number(response.headers['content-length']);
