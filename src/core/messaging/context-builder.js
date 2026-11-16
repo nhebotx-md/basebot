@@ -120,7 +120,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     groups: registry.groupService || null,
     storage: createStorageService(config.paths.temp),
     media: { downloadBuffer },
-    downloaders: createDownloaderService(),
+    downloaders: createDownloaderService(config.downloaders || {}),
     http: { postJsonPublic: postPublicJson },
     fetchJson: async url => {
       const response = await fetchPublic(url, { timeoutMs: 15000, maxBytes: 512 * 1024 });

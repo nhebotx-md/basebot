@@ -24,7 +24,7 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 | Kategori | Plugin dan fungsi |
 |---|---|
 | AI | `bocchi` (alias `.bocci`/`.bocchi`) untuk percakapan dengan asisten Bocchi; `jeslyn` untuk asisten AI. |
-| Downloader | `igdl` untuk media Instagram publik; `tiktok` untuk video/gambar TikTok; `play` untuk pencarian dan pengiriman audio YouTube. |
+| Downloader | `.play` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram; `.tt`/`.tiktok` untuk video, slideshow, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
 | Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar. |
 | Media | `brat`/`sbrat`, `bratvid`/`bratvideo`, image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), quote sticker (`qc` dan alias), REST sticker API (`stickerapi`/`stapi`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
 | Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, serta pengelolaan file sementara dan sesi. |
@@ -105,6 +105,9 @@ CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas
 | `PLUGINS_DIR`, `PLUGIN_RELOAD` | Direktori plugin dan opsi reload saat proses pemuatan. |
 | `STICKER_API_ASEPHARYANA_ENABLED` | Mengaktifkan fallback host alternate sticker API; default nonaktif. |
 | `TTS_API_KEY`, `TTS_VOICE_ID` | Kredensial/provider TTS bila fitur tersebut dikonfigurasi. |
+| `SOCLIP_API_KEY` | API key Soclip untuk Instagram, TikTok, dan YouTube. Simpan hanya di `.env`. |
+| `DOWNLOADER_FALLBACK` | Mengaktifkan provider cadangan jika Soclip gagal; default `true`. |
+| `YTDLP_ENABLED`, `YTDLP_PATH` | Mengaktifkan fallback audio YouTube lokal dan menentukan path executable `yt-dlp`; memerlukan FFmpeg. |
 
 Lihat `.env.example` untuk daftar konfigurasi lengkap. Jangan commit `.env`, session, database produksi, atau log yang berisi data pribadi.
 
@@ -173,6 +176,10 @@ Lihat [Panduan Pengembangan Plugin](docs/PLUGIN_DEVELOPMENT.md) dan [Plugin API]
 Plugin `sticker-rest-api` menyediakan `.stickerapi brat <teks>` untuk Brat statis dan `.stickerapi animated <teks>` untuk animasi. Output API bukan sticker WhatsApp siap pakai; BASEBOT memvalidasi signature PNG/GIF, membatasi respons hingga 8 MiB dan timeout 15 detik, lalu mengonversi media memakai FFmpeg/WebP serta metadata pack. Input dibatasi 300 karakter dan dikirim ke provider pihak ketiga, jadi jangan gunakan teks rahasia/pribadi.
 
 Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana (`scraper.asepharyana.my.id`) berbeda dari URL dokumentasi `asepharyana.cloud` yang diberikan pengguna, sehingga fallback itu **nonaktif secara default**; aktifkan hanya bila Anda menerima host alternate dengan `STICKER_API_ASEPHARYANA_ENABLED=true`. Temuan, sumber, dan batas verifikasi ada di [audit REST API sticker](docs/STICKER_API_AUDIT.md).
+
+## Downloader Suite
+
+Lihat [dokumentasi Downloader Suite](docs/DOWNLOADER_SUITE.md) untuk `.play`, `.igdl`, `.tt`, `.ytmp3`, provider Soclip, fallback provider lama, batas media, dan pengujian manual. Gunakan hanya media yang Anda miliki atau berizin untuk diunduh.
 
 ## Quote Sticker `.qc`
 
