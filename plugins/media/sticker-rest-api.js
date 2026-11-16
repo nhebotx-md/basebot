@@ -1,5 +1,7 @@
 'use strict';
 
+const { getPluginProgress } = require('../../src/core/services/plugin-progress.service');
+
 const MAX_MEDIA_BYTES = 8 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15000;
 const MAX_TEXT_LENGTH = 300;
@@ -65,6 +67,7 @@ module.exports = {
   usage: '.stickerapi <brat|animated> <teks>',
   permissions: {},
   async execute(ctx) {
+    const progress = getPluginProgress(ctx);
     const [modeInput, ...words] = ctx.args;
     const mode = String(modeInput || '').toLowerCase();
     const text = words.join(' ').trim();
@@ -80,17 +83,17 @@ module.exports = {
     if (!Object.hasOwn(PROVIDERS, mode)) return ctx.reply(`Mode tidak dikenal. Gunakan: ${ctx.prefix}stickerapi brat atau animated.`);
     if (text.length > MAX_TEXT_LENGTH) return ctx.reply(`Teks maksimal ${MAX_TEXT_LENGTH} karakter.`);
 
-    await ctx.progress.start('Menyiapkan sticker ' + mode, { detail: 'Memeriksa teks dan memilih penyedia media.' });
+    await progress.start('Menyiapkan sticker ' + mode, { detail: 'Memeriksa teks dan memilih penyedia media.' });
     try {
-      await ctx.progress.update('Menghubungi penyedia sticker', { detail: 'Meminta media dari provider utama dan menyiapkan fallback jika diperlukan.' });
+      await progress.update('Menghubungi penyedia sticker', { detail: 'Meminta media dari provider utama dan menyiapkan fallback jika diperlukan.' });
       const media = await fetchGeneratedMedia(ctx, mode, text);
-      await ctx.progress.update('Mengonversi hasil menjadi sticker', { detail: 'Media valid dari ' + media.provider + '. Menyiapkan format WhatsApp.' });
+      await progress.update('Mengonversi hasil menjadi sticker', { detail: 'Media valid dari ' + media.provider + '. Menyiapkan format WhatsApp.' });
       const options = { packname: ctx.config.sticker.packname, author: ctx.config.sticker.author };
       if (mode === 'animated') await ctx.client.sendVideoAsSticker(ctx.chat, media.buffer, ctx.m.raw, options);
       else await ctx.client.sendImageAsSticker(ctx.chat, media.buffer, ctx.m.raw, options);
       ctx.logger?.debug?.('Sticker REST berhasil dibuat.', { provider: media.provider, mode, mediaBytes: media.buffer.length });
     } catch {
-      await ctx.progress.fail('Sticker gagal dibuat', { detail: 'Provider tidak tersedia atau hasil media tidak lolos validasi.' });
+      await progress.fail('Sticker gagal dibuat', { detail: 'Provider tidak tersedia atau hasil media tidak lolos validasi.' });
       await ctx.reply('Layanan sticker sedang tidak tersedia atau mengirim media yang tidak valid. Coba lagi nanti.');
     }
   }
