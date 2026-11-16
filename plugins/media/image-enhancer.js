@@ -11,7 +11,7 @@ module.exports = {
     try {
       await ctx.progress.start('Mengambil gambar sumber', { detail: 'Mengunduh gambar yang kamu balas.' });
       const input = await ctx.quoted.download();
-      if (!Buffer.isBuffer(input) || input.length > 10 * 1024 * 1024) return ctx.reply('Ukuran gambar maksimal 10 MB.');
+      if (!Buffer.isBuffer(input) || input.length > 10 * 1024 * 1024) { await ctx.progress.fail('Gambar tidak dapat diproses', { detail: 'Ukuran gambar maksimal 10 MB.' }); return ctx.reply('Ukuran gambar maksimal 10 MB.'); }
       await ctx.progress.update('Meningkatkan kualitas gambar', { detail: 'Mengirim gambar ke layanan enhancer dan menunggu hasil.' });
       const output = await ctx.services.downloaders.remini(input, 'enhance');
       if (!Buffer.isBuffer(output) || output.length === 0 || output.length > 20 * 1024 * 1024) throw new Error('Respons media tidak valid.');
