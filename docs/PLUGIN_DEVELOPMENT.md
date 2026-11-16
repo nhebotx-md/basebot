@@ -4,7 +4,7 @@ Buat satu berkas CommonJS untuk satu tanggung jawab di kategori yang sesuai, mis
 
 Jangan memindai folder dari handler pesan. Registry sudah menyediakan `getByCommand`, `list`, `categories`, dan `listByCategory`. Menu bawaan dibentuk langsung dari registry. `.menu` merotasi empat tema secara otomatis (showcase, terminal, minimal, dan premium) pada setiap pemanggilan. `.catmenu <kategori>` memakai layout kontekstual: control center untuk owner/system, studio untuk media/download, desk untuk AI/search, hub untuk group/user, katalog editorial untuk kategori konten, dan directory sebagai fallback. Semua layout menampilkan command, alias, deskripsi, dan usage jika tersedia. Plugin yang gagal dimuat, dinonaktifkan, atau tidak dapat diakses oleh pengguna tidak ditampilkan. Pemilihan tema hanya berada di memori runtime dan tidak menambah dependency atau mengubah database. Command `menu` dan `catmenu` dicadangkan untuk menu bawaan. Untuk pengujian, letakkan unit test di `tests/unit/`; tidak perlu koneksi WhatsApp untuk menguji parser, registry, dispatcher, atau permission.
 
-Gunakan `ctx.reply`, `ctx.sendMessage`, `ctx.react`, dan `ctx.services` daripada implementasi transport sendiri. Validasi input dan ukuran media, pasang timeout untuk jaringan, batasi concurrency untuk operasi berat, serta gunakan `try/finally` untuk cleanup. Jangan log credential, token, pairing code, isi media, atau konten pribadi.
+Gunakan `ctx.reply`, `ctx.sendMessage`, `ctx.react`, `ctx.progress`, dan `ctx.services` daripada implementasi transport sendiri. Untuk operasi yang memerlukan waktu, tampilkan tahapan proses lewat `ctx.progress.start()` dan `ctx.progress.update()`; dispatcher mengedit satu pesan status dan otomatis menandai selesai/gagal. Lihat [Plugin Process Feedback](./PLUGIN_PROCESS_FEEDBACK.md). Validasi input dan ukuran media, pasang timeout untuk jaringan, batasi concurrency untuk operasi berat, serta gunakan `try/finally` untuk cleanup. Jangan log credential, token, pairing code, isi media, atau konten pribadi.
 
 ## Registrasi, role, dan akses pengguna
 
@@ -28,7 +28,7 @@ Gunakan permission berdasarkan ruang dan peran secara terpisah:
 
 `adminOnly` juga mensyaratkan konteks grup. Untuk command yang benar-benar khusus owner, gunakan `ownerOnly`, jangan mengandalkan `adminOnly`. Jika metadata grup gagal diambil, status admin dan bot-admin dianggap tidak valid (fail-closed). Menu memakai aturan permission yang sama, sehingga plugin owner-only hanya muncul untuk owner terverifikasi dan plugin group-only hanya muncul di konteks grup. Jangan menggunakan `eval`, `exec`, atau interpolasi input ke shell. Operasi file harus memakai service storage atau membatasi `path.resolve` ke root yang diizinkan.
 
-Reload tersedia melalui `reloadPlugins()` untuk tooling development; production memakai plugin yang sudah dimuat saat startup. Jangan reload plugin saat pesan sedang dieksekusi tanpa mekanisme drain pada aplikasi produksi.
+Reload plugin runtime tersedia melalui Plugin Manager dan auto reload staged; registry aktif dipertahankan jika kandidat tidak lolos validasi.
 
 
 ## Penanganan error plugin
