@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const plugin = require('../../plugins/media/sticker-rest-api');
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
-const GIF = Buffer.from('GIF89a\\x01\\x00\\x01\\x00', 'binary');
+const GIF = Buffer.from([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 1, 0, 1, 0]);
 
 function makeContext(command, args, { downloadBuffer } = {}) {
   const sent = [];
@@ -46,7 +46,7 @@ test('Brat command creates a verified static PNG sticker', async () => {
   });
   await plugin.execute(ctx);
   assert.equal(calls.length, 1);
-  assert.match(calls[0].url, /^https:\\/\\/api\\.siputzx\\.my\\.id\\/api\\/m\\/brat\\?/);
+  assert.ok(calls[0].url.startsWith('https://api.siputzx.my.id/api/m/brat?'));
   assert.match(calls[0].url, /text=hello%20%26%20world/);
   assert.match(calls[0].url, /isAnimated=false/);
   assert.equal(calls[0].options.maxBytes, 8 * 1024 * 1024);
