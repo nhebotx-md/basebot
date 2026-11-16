@@ -1,6 +1,50 @@
 'use strict';
-const fs=require('node:fs');const{validateConfig}=require('./config-validator');
-function parseBoolean(value,fallback){if(value===undefined||value==='')return fallback;return/^(1|true|yes|on)$/i.test(String(value));}
-function readDotEnv(file='.env',target=process.env){if(!fs.existsSync(file))return target;for(const line of fs.readFileSync(file,'utf8').split(/\r?\n/)){const m=line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);if(!m||Object.hasOwn(target,m[1]))continue;let value=m[2].trim(),q=value[0];if(q==='"'||q==="'"){const end=value.lastIndexOf(q),tail=end>0?value.slice(end+1).trim():'';if(end>0&&(!tail||tail.startsWith('#')))value=value.slice(1,end);else value=value.replace(/\s+#.*$/,'');}else value=value.replace(/\s+#.*$/,'');target[m[1]]=value;}return target;}
-function loadConfig(env=readDotEnv()){const config={botName:env.BOT_NAME||'BASEBOT',ownerName:env.OWNER_NAME||'Owner',owners:String(env.OWNER_NUMBERS||'').split(/[\s,]+/).filter(Boolean),prefix:String(env.BOT_PREFIX||'.'),publicMode:parseBoolean(env.PUBLIC_MODE,true),pairing:{phone:env.PAIRING_PHONE||'',code:env.PAIRING_CODE||''},welcomeEnabled:parseBoolean(env.WELCOME_ENABLED,true),newsletter:{name:env.NEWSLETTER_NAME||'',id:env.NEWSLETTER_ID||'',url:env.NEWSLETTER_URL||''},timezone:env.TIMEZONE||'Asia/Jakarta',sticker:{packname:env.STICKER_PACK_NAME||'BASEBOT',author:env.STICKER_PACK_AUTHOR||'',apis:{asepharyanaEnabled:parseBoolean(env.STICKER_API_ASEPHARYANA_ENABLED,false)}},tts:{apiKey:env.TTS_API_KEY||'',voiceId:env.TTS_VOICE_ID||''},logging:{level:env.LOG_LEVEL||'info',format:env.LOG_FORMAT||'pretty',color:env.LOG_COLOR||'auto',baileysLevel:env.BAILEYS_LOG_LEVEL||'warn'},paths:{session:env.SESSION_DIR||'./session',temp:env.TEMP_DIR||'./storage/temp',logs:env.LOG_DIR||'./logs',database:env.DATABASE_DIR||'./data/database'},profile:{expPerMessage:Math.max(0,Number(env.EXP_PER_MESSAGE??5)||0),expCooldownMs:Math.max(0,Number(env.EXP_COOLDOWN_MS??60000)||0)},plugins:{directory:env.PLUGINS_DIR||'./plugins',reload:parseBoolean(env.PLUGIN_RELOAD,false),autoReload:parseBoolean(env.PLUGIN_AUTO_RELOAD,true),watchDebounceMs:Math.max(150,Math.min(5000,Number(env.PLUGIN_WATCH_DEBOUNCE_MS)||700))}};validateConfig(config);return config;}
-module.exports={loadConfig,readDotEnv};
+
+const fs = require('node:fs');
+const { validateConfig } = require('./config-validator');
+
+function parseBoolean(value, fallback) {
+  if (value === undefined || value === '') return fallback;
+  return /^(1|true|yes|on)$/i.test(String(value));
+}
+
+function readDotEnv(file = '.env', target = process.env) {
+  if (!fs.existsSync(file)) return target;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (!match || Object.hasOwn(target, match[1])) continue;
+    let value = match[2].trim();
+    const quote = value[0];
+    if (quote === '"' || quote === "'") {
+      const closing = value.lastIndexOf(quote);
+      const trailing = closing > 0 ? value.slice(closing + 1).trim() : '';
+      if (closing > 0 && (!trailing || trailing.startsWith('#'))) value = value.slice(1, closing);
+      else value = value.replace(/\s+#.*$/, '');
+    } else value = value.replace(/\s+#.*$/, '');
+    target[match[1]] = value;
+  }
+  return target;
+}
+
+function loadConfig(env = readDotEnv()) {
+  const config = {
+    botName: env.BOT_NAME || 'BASEBOT', ownerName: env.OWNER_NAME || 'Owner',
+    owners: String(env.OWNER_NUMBERS || '').split(/[\s,]+/).filter(Boolean),
+    prefix: String(env.BOT_PREFIX || '.'), publicMode: parseBoolean(env.PUBLIC_MODE, true),
+    pairing: { phone: env.PAIRING_PHONE || '', code: env.PAIRING_CODE || '' },
+    welcomeEnabled: parseBoolean(env.WELCOME_ENABLED, true),
+    newsletter: { name: env.NEWSLETTER_NAME || '', id: env.NEWSLETTER_ID || '', url: env.NEWSLETTER_URL || '' },
+    timezone: env.TIMEZONE || 'Asia/Jakarta',
+    sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '', apis: { asepharyanaEnabled: parseBoolean(env.STICKER_API_ASEPHARYANA_ENABLED, false) } },
+    tts: { apiKey: env.TTS_API_KEY || '', voiceId: env.TTS_VOICE_ID || '' },
+    downloaders: { fallbackEnabled: parseBoolean(env.DOWNLOADER_FALLBACK, true), soclipApiKey: env.SOCLIP_API_KEY || '', ytDlpEnabled: parseBoolean(env.YTDLP_ENABLED, true), ytDlpPath: env.YTDLP_PATH || 'yt-dlp', tempDir: env.TEMP_DIR || './storage/temp' },
+    logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
+    paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs', database: env.DATABASE_DIR || './data/database' },
+    profile: { expPerMessage: Math.max(0, Number(env.EXP_PER_MESSAGE ?? 5) || 0), expCooldownMs: Math.max(0, Number(env.EXP_COOLDOWN_MS ?? 60000) || 0) },
+    plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false), autoReload: parseBoolean(env.PLUGIN_AUTO_RELOAD, true), watchDebounceMs: Math.max(150, Math.min(5000, Number(env.PLUGIN_WATCH_DEBOUNCE_MS) || 700)) }
+  };
+  validateConfig(config);
+  return config;
+}
+
+module.exports = { loadConfig, readDotEnv };
