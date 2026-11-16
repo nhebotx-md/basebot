@@ -16,6 +16,7 @@ const { DatabaseService } = require('../core/database/database.service');
 const { UserService } = require('../core/database/user.service');
 const { GroupService } = require('../core/database/group.service');
 const { PluginStateRepository } = require('../core/database/plugin-state.repository');
+const { HealthService } = require('../core/services/health.service');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
@@ -78,6 +79,8 @@ async function createApp(options = {}) {
   const dispatcher = new CommandDispatcher({ registry, logger, menuService });
   const createClient = createClientFactory({ config, logger });
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
+  const healthService = new HealthService({ registry, connection, database, pluginManager, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
+  registry.healthService = healthService;
   return {
     config,
     logger,
@@ -88,12 +91,14 @@ async function createApp(options = {}) {
     groups,
     dispatcher,
     connection,
+    healthService,
     async start() {
       await connection.start();
       logger.info('Runtime BASEBOT aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
     },
     async stop() {
       logger.info('Shutdown BASEBOT dimulai.');
+      healthService.stop();
       await connection.stop();
       await database.close();
       logger.info('Shutdown BASEBOT selesai.');

@@ -177,3 +177,19 @@ Siputzx (`api.siputzx.my.id`) adalah provider utama. Host alternate Asepharyana 
 ## Quote Sticker `.qc`
 
 Gunakan `.qc pink Hai semuanya!` untuk membuat quote sticker dengan warna latar, atau balas pesan dengan `.qc pink`. Plugin menerima warna yang tercantum pada bantuan dan kode hex `#RRGGBB`; teks dibatasi 80 karakter. Request POST ke Siputzx memakai HTTPS dengan DNS pinning, tanpa redirect, serta batas timeout dan ukuran. Avatar profil diunduh lewat transport publik yang tervalidasi dan dikirim sebagai data URL; teks quote dan avatar diproses oleh API pihak ketiga, jadi jangan kirim konten rahasia.
+
+
+## Health Monitor
+
+BASEBOT menyediakan command owner-only .health untuk memeriksa kondisi runtime tanpa mengubah konfigurasi atau data.
+
+| Command | Kegunaan |
+|---|---|
+| .health | Ringkasan status runtime, WhatsApp, database, plugin, dan resource proses. |
+| .health detail | Diagnostik lengkap termasuk uptime, load average, penggunaan memori, dan event-loop delay. |
+| .health plugins | Statistik plugin aktif/nonaktif, command, dan kegagalan saat startup. |
+| .health memory | Detail RSS, heap, external memory, dan array buffer. |
+
+Health Monitor membaca status koneksi lokal dari lifecycle Baileys; command ini tidak mengirim ping atau request tambahan ke WhatsApp/provider eksternal. Informasi database hanya menampilkan status dan nama collection, bukan path, isi record, nomor pengguna, kredensial, atau token. Status degraded berarti ada komponen yang belum siap atau plugin gagal dimuat; status critical menandakan database tidak siap. Perintah ini hanya tersedia bagi owner bot terverifikasi dan tidak tersedia dari Channel/Newsletter.
+
+Lihat [dokumentasi Health Monitor](docs/HEALTH_MONITOR.md) untuk arti status, metrik, batasan, dan pengujian.
