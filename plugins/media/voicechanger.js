@@ -51,7 +51,7 @@ module.exports = {
     if (!ctx.mime.startsWith('audio/')) return ctx.reply(`Balas audio dengan ${ctx.prefix}${ctx.command}.`);
     await ctx.progress.start('Mengunduh audio sumber', { detail: 'Mengambil audio yang kamu balas.' });
     const buffer = await ctx.quoted.download();
-    if (!Buffer.isBuffer(buffer) || buffer.length > 20 * 1024 * 1024) return ctx.reply('Ukuran audio maksimal 20 MB.');
+    if (!Buffer.isBuffer(buffer) || buffer.length > 20 * 1024 * 1024) { await ctx.progress.fail('Audio tidak dapat diproses', { detail: 'Ukuran audio maksimal 20 MB.' }); return ctx.reply('Ukuran audio maksimal 20 MB.'); }
     const folder = path.resolve(ctx.config.paths.temp);
     await fs.promises.mkdir(folder, { recursive: true, mode: 0o700 });
     const nonce = crypto.randomBytes(12).toString('hex');
@@ -66,7 +66,7 @@ module.exports = {
       await ctx.progress.update('Mengirim audio hasil', { detail: 'Audio selesai diproses dan sedang dikirim.' });
       await ctx.sendMessage(ctx.chat, { audio: result, mimetype: 'audio/mpeg', ptt: true }, { quoted: ctx.m.raw });
     } catch (error) {
-      if (error.code === 'FFMPEG_BINARY_MISSING') return ctx.reply(error.message);
+      if (error.code === 'FFMPEG_BINARY_MISSING') { await ctx.progress.fail('FFmpeg tidak tersedia', { detail: 'Instalasi dependency audio perlu diperbaiki.' }); return ctx.reply(error.message); }
       throw error;
     } finally {
       await Promise.all([fs.promises.unlink(input).catch(() => {}), fs.promises.unlink(output).catch(() => {})]);
