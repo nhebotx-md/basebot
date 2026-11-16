@@ -37,7 +37,7 @@ async function fetchGeneratedMedia(ctx, mode, text) {
 }
 
 module.exports = {
-  name: 'sticker-api',
+  name: 'sticker-rest-api',
   commands: ['brat', 'bratvid', 'bratvideo', 'stickerapi', 'stapi'],
   category: 'media',
   description: 'Membuat sticker Brat statis dan animasi melalui satu REST API.',
@@ -48,7 +48,7 @@ module.exports = {
     const { mode, words } = resolveMode(ctx.command, ctx.args || []);
     const text = words.join(' ').trim();
 
-    if (!text || ['help', 'brat', 'animated'].includes(mode) && !text) {
+    if (!text || mode === 'help') {
       return ctx.reply([
         'Sticker Brat',
         ctx.prefix + 'brat <teks> — sticker statis',
