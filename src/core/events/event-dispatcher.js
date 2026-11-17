@@ -26,7 +26,7 @@ const BAILEYS_PLUGIN_EVENTS = Object.freeze([
 
 function eventChat(event) {
   if (Array.isArray(event)) return event[0]?.key?.remoteJid || event[0]?.id || '';
-  return event?.id || event?.jid || event?.key?.remoteJid || event?.chat || '';
+  return event?.newsletterJid || event?.newsletter_id || event?.remoteJid || event?.id || event?.jid || event?.key?.remoteJid || event?.chat || '';
 }
 
 function createBaileysEventDispatcher({ dispatcher, config, registry, logger = console, events = BAILEYS_PLUGIN_EVENTS } = {}) {
