@@ -33,3 +33,32 @@ test('central event dispatcher rejects arbitrary event names', () => {
     events: ['arbitrary.shell.event']
   }), /tidak diizinkan/);
 });
+
+
+test('plugin registry indexes only allowlisted event subscribers and honors enable state', () => {
+  const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
+  const registry = new PluginRegistry();
+  const plugin = {
+    name: 'reaction-subscriber',
+    commands: ['reaction-subscriber'],
+    category: 'test',
+    description: 'Event test',
+    usage: '.reaction-subscriber',
+    permissions: {},
+    events: ['messages.reaction'],
+    execute: async () => {},
+    onEvent: async () => {}
+  };
+  registry.register(plugin);
+  assert.equal(registry.getByEvent('messages.reaction').length, 1);
+  registry.disable('reaction-subscriber');
+  assert.equal(registry.getByEvent('messages.reaction').length, 0);
+  registry.enable('reaction-subscriber');
+  assert.equal(registry.getByEvent('messages.reaction').length, 1);
+  assert.throws(() => registry.register({
+    ...plugin,
+    name: 'invalid-subscriber',
+    commands: ['invalid-subscriber'],
+    events: ['arbitrary.event']
+  }), /event Baileys tidak didukung/);
+});
