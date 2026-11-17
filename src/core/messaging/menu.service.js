@@ -145,7 +145,6 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
 
   function renderMenu(ctx, selectedTheme = preferences.menuTheme) {
     const theme = MENU_THEMES.includes(selectedTheme) ? selectedTheme : MENU_THEMES[0];
-    const plugins = getVisiblePlugins(ctx);
     const categories = getCategories(ctx);
     const now = clock();
     const parts = dateParts(config.timezone, now);
