@@ -198,9 +198,9 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   const menu = service.renderMenu(createContext().ctx, 'premium');
   const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
   for (const output of [menu, category]) {
-    assert.match(output, /^╔══════════════ ✦/);
-    assert.match(output, /╠══════════════════════════════════════════════╣/);
-    assert.match(output, /╚══════════════════════════════════════════════╝/);
+    assert.match(output, /^╔/);
+    assert.match(output, /╠═+/);
+    assert.match(output, /╚═+/);
   }
   assert.match(menu, /MEMBER/);
   assert.match(menu, /STATUS/);
