@@ -46,12 +46,14 @@ module.exports = {
       const joined = await client.groupAcceptInvite(code);
       return reply('Permintaan bergabung grup diproses.\nID: ' + String(joined || 'tidak tersedia'));
     }
-    if (!groupAdmin()) return reply('Perintah ini harus dijalankan oleh admin grup dari dalam grup.');
     if (action === 'leave') {
       if (!ownerOnly()) return reply('Hanya owner bot yang dapat memerintahkan bot keluar dari grup.');
+      if (!ctx.isGroup || !ctx.chat?.endsWith('@g.us')) return reply('Gunakan .groupadmin leave dari dalam grup.');
+      if (typeof client.groupLeave !== 'function') return reply('API keluar grup tidak tersedia.');
       await client.groupLeave(ctx.chat);
       return;
     }
+    if (!groupAdmin()) return reply('Perintah ini harus dijalankan oleh admin grup dari dalam grup.');
     if (!botAdmin()) return reply('Bot harus menjadi admin grup untuk mengubah pengaturan atau tautan undangan.');
     if (action === 'name') {
       if (!value || value.length > 100) return reply('Format: .groupadmin name Nama Baru');
