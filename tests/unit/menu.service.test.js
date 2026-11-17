@@ -89,7 +89,7 @@ test('menu theme preferences are restored from database on service recreation', 
   assert.equal(service.preferences.menuTheme, 'terminal');
   assert.equal(service.preferences.categoryTheme, 'minimal');
   assert.match(service.renderMenu(createContext().ctx), /COMMAND CENTER/);
-  assert.match(service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx), /DOWNLOAD DIRECTORY/);
+  assert.match(service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx), /DOWNLOAD STUDIO/);
 });
 
 test('.menu builds categories from active registry plugins and hides owner-only categories', async () => {
