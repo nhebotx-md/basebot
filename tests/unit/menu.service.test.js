@@ -276,3 +276,14 @@ test('.menu and .catmenu never leak descriptions, aliases, usage, or module tota
     assert.doesNotMatch(output, /Unduh video dari YouTube|\\.ytv|<url>/);
   }
 });
+
+
+test('.catmenu <category> <command> opens contextual plugin guidance', async () => {
+  const { ctx, replies } = createContext({ command: 'catmenu', args: ['download', 'ytmp4'] });
+  const service = createMenuService({ registry: createRegistry(), config });
+  await service.execute(ctx);
+  assert.match(replies[0], /FEATURE GUIDE/);
+  assert.match(replies[0], /\\.ytmp4/);
+  assert.match(replies[0], /\\.ytv/);
+  assert.match(replies[0], /Unduh video dari YouTube/);
+});
