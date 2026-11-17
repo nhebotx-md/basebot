@@ -89,7 +89,7 @@ function createRichMessageService(sendMessage) {
       }, options);
     },
 
-    sendTable(jid, input, options) {
+    async sendTable(jid, input, options) {
       const rows = input?.rows;
       if (!Array.isArray(rows) || rows.length < 2 || rows.length > 20) throw new TypeError('Tabel harus berisi 2 sampai 20 baris.');
       const width = Array.isArray(rows[0]) ? rows[0].length : 0;
