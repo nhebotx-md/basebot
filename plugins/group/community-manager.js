@@ -14,7 +14,7 @@ module.exports = {
   category: 'owner',
   description: 'Mengelola Community, subgrup, tautan, dan permintaan bergabung.',
   usage: '.community <create|list|info|groups|subgroup|link|unlink|invite|revoke|join|joininfo|leave|approve>',
-  permissions: { ownerOnly: true, registrationExempt: true },
+  permissions: { ownerOnly: true, registrationExempt: true, metadataRequired: true },
   async execute(ctx) {
     const input = String(ctx.text || '').trim();
     const [action, ...args] = input.split(/\s+/);
