@@ -43,17 +43,53 @@ test('formatUptime formats process uptime', () => {
   assert.equal(formatUptime(3661), '1j 1m 1dtk');
 });
 
-test('.menu rotates through all supported visual themes automatically', async () => {
+test('.menu keeps the manually selected theme and never rotates automatically', async () => {
   const { ctx, replies } = createContext();
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
-  for (let index = 0; index < MENU_THEMES.length; index += 1) await service.execute(ctx);
-  assert.equal(replies.length, MENU_THEMES.length);
-  assert.match(replies[0], /COMMAND MENU/);
-  assert.match(replies[1], /COMMAND CENTER/);
-  assert.match(replies[2], /direktori fitur/);
-  assert.match(replies[3], /FEATURE COLLECTION/);
-  assert.notEqual(replies[0], replies[1]);
-  assert.notEqual(replies[1], replies[2]);
+  for (let index = 0; index < 5; index += 1) await service.execute(ctx);
+  assert.equal(replies.length, 5);
+  assert.ok(replies.every(output => output.includes('COMMAND MENU')));
+  assert.equal(new Set(replies).size, 1);
+  assert.equal(service.getNextTheme(), 'showcase');
+});
+
+
+test('.setmenu and .setcatmenu are owner-only independent persistent settings', async () => {
+  const state = { plugins: {} };
+  const database = {
+    read: () => structuredClone(state.plugins),
+    update: async (_collection, updater) => { await updater(state.plugins); }
+  };
+  const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
+  const denied = createContext({ command: 'setmenu', args: ['v2'] });
+  await service.execute(denied.ctx);
+  assert.match(denied.replies[0], /hanya dapat digunakan owner/);
+  assert.equal(service.preferences.menuTheme, 'showcase');
+
+  const ownerMain = createContext({ command: 'setmenu', args: ['v3'], isOwner: true });
+  await service.execute(ownerMain.ctx);
+  assert.match(ownerMain.replies[0], /V3/);
+  assert.equal(service.preferences.menuTheme, 'minimal');
+  assert.equal(state.plugins.menuPreferences.menuTheme, 'minimal');
+
+  const ownerCategory = createContext({ command: 'setcatmenu', args: ['v5'], isOwner: true });
+  await service.execute(ownerCategory.ctx);
+  assert.equal(service.preferences.categoryTheme, 'editorial');
+  assert.equal(state.plugins.menuPreferences.categoryTheme, 'editorial');
+  assert.equal(service.preferences.menuTheme, 'minimal');
+
+  const invalid = createContext({ command: 'setmenu', args: ['v9'], isOwner: true });
+  await service.execute(invalid.ctx);
+  assert.match(invalid.replies[0], /Versi tidak valid/);
+});
+
+test('menu theme preferences are restored from database on service recreation', () => {
+  const database = { read: () => ({ menuPreferences: { menuTheme: 'terminal', categoryTheme: 'minimal' } }) };
+  const service = createMenuService({ registry: createRegistry(), config, database });
+  assert.equal(service.preferences.menuTheme, 'terminal');
+  assert.equal(service.preferences.categoryTheme, 'minimal');
+  assert.match(service.renderMenu(createContext().ctx), /COMMAND CENTER/);
+  assert.match(service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx), /DOWNLOAD STUDIO/);
 });
 
 test('.menu builds categories from active registry plugins and hides owner-only categories', async () => {
