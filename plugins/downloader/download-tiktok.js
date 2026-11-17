@@ -11,7 +11,8 @@ module.exports = {
     await progress.start('Memvalidasi tautan TikTok', { detail: 'Memeriksa alamat dan menyiapkan permintaan ke provider.' });
     const data = await ctx.services.downloaders.tiktok(ctx.text);
     const title = String(data.title || 'Konten TikTok').slice(0, 300);
-    const total = Number(Boolean(data.videoUrl)) + Math.min(8, (data.images || []).length) + Number(Boolean(data.audioUrl));
+    const images = Array.isArray(data.images) ? data.images.slice(0, 8) : [];
+    const total = Number(Boolean(data.videoUrl)) + images.length + Number(Boolean(data.audioUrl));
     if (!total) {
       await progress.fail('Media tidak tersedia', { detail: 'Provider tidak mengembalikan video, foto, atau audio.' });
       return ctx.reply('Provider tidak mengembalikan media yang dapat dikirim.');
@@ -26,13 +27,26 @@ module.exports = {
       await ctx.sendMessage(ctx.chat, { video: buffer, mimetype: contentType, caption: `Video TikTok\n\n${title}` }, { quoted: ctx.m.raw });
       completed += 1;
     }
-    for (const [index, imageUrl] of (data.images || []).slice(0, 8).entries()) {
-      await progress.update('Mengunduh slideshow TikTok', { detail: 'Mengambil foto ' + (index + 1) + ' dari ' + Math.min(8, data.images.length) + '.' });
+    const albumItems = [];
+    let albumBytes = 0;
+    for (const [index, imageUrl] of images.entries()) {
+      await progress.update('Mengunduh slideshow TikTok', { detail: 'Mengambil foto ' + (index + 1) + ' dari ' + images.length + '.' });
       await assertPublicHttpUrl(imageUrl);
       const { buffer, contentType } = await ctx.services.media.downloadBuffer(imageUrl, { maxBytes: 10 * 1024 * 1024, timeoutMs: 20000 });
       if (!contentType.startsWith('image/')) continue;
-      await ctx.sendMessage(ctx.chat, { image: buffer, caption: `Slideshow TikTok ${index + 1}\n${title}` }, { quoted: ctx.m.raw });
-      completed += 1;
+      if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new Error('Foto slideshow TikTok kosong atau tidak valid.');
+      albumBytes += buffer.length;
+      if (albumBytes > 40 * 1024 * 1024) throw new Error('Total slideshow TikTok melebihi batas 40 MB.');
+      albumItems.push({ image: buffer, caption: 'Slideshow TikTok ' + (index + 1) + '\n' + title });
+    }
+    if (albumItems.length) {
+      await progress.update('Mengirim album slideshow TikTok', { detail: albumItems.length + ' foto akan dikirim dalam satu album WhatsApp.' });
+      if (typeof ctx.client?.albumMessage === 'function') {
+        await ctx.client.albumMessage(ctx.chat, albumItems, ctx.m.raw);
+      } else {
+        for (const item of albumItems) await ctx.sendMessage(ctx.chat, item, { quoted: ctx.m.raw });
+      }
+      completed += albumItems.length;
     }
     if (data.audioUrl) {
       await progress.update('Mengunduh audio TikTok', { detail: 'Memeriksa dan mengambil file audio.' });
