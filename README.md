@@ -39,10 +39,10 @@ Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape
 - `.menu` atau `.help`: direktori utama.
 - `.catmenu`: indeks kategori yang dapat diakses.
 - `.catmenu <kategori>`: daftar plugin, command utama, alias, deskripsi, dan contoh penggunaan pada kategori tersebut.
-- `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama (khusus owner).
-- `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema kategori/catmenu secara terpisah (khusus owner).
+- `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama melalui plugin owner mandiri (`plugins/owner/setmenu.js`).
+- `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema category menu melalui plugin owner mandiri (`plugins/owner/setcatmenu.js`), terpisah dari menu utama.
 
-Pilihan tema: `v1` showcase, `v2` terminal, `v3` minimal, `v4` premium, dan `v5` editorial. Pengaturan disimpan pada collection `plugins` dan dipulihkan saat bot dijalankan kembali.
+Pilihan tema:\n- `v1` Showcase: panel informasi berbingkai dan direktori kategori.\n- `v2` Terminal: tampilan console/CLI dengan prompt, status runtime, dan indeks bernomor.\n- `v3` Minimal: daftar ringkas tanpa panel dekoratif.\n- `v4` Premium: kartu koleksi dengan panel bertingkat dan ringkasan modul.\n- `v5` Editorial: layout seperti majalah/jurnal dengan section dan nomor indeks.\n\nKelima layout mengubah struktur konten, bukan hanya karakter border. Tema `.menu` dan `.catmenu` disimpan secara terpisah pada collection `plugins` dan dipulihkan setelah restart. Plugin pengaturan tema hanya dapat dijalankan owner bot yang terverifikasi.
 
 Daftar menu mengikuti registry dan permission pengguna. Plugin owner-only tidak ditampilkan kepada pengguna biasa; plugin group-only mengikuti konteks grup dan izin admin yang berlaku.
 
