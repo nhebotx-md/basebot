@@ -166,9 +166,9 @@ test('.catmenu renders a compact feature list without descriptions, aliases, or 
   await service.execute(ctx);
   assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /\.ytmp4/);
-  assert.match(replies[0], /\.ytv/);
+  assert.doesNotMatch(replies[0], /\.ytv/);
   assert.doesNotMatch(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\.ytmp4 <url>/);
+  assert.doesNotMatch(replies[0], /\.ytmp4 <url>/);
 });
 
 test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
