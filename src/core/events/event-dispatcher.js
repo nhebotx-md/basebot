@@ -1,5 +1,9 @@
 'use strict';
 
+const { getIdentityResolver } = require('../services/identity-resolver.service');
+const { createMessageService } = require('../services/message.service');
+const { createRichMessageService } = require('../services/rich-message.service');
+
 const BAILEYS_PLUGIN_EVENTS = Object.freeze([
   'messages.update',
   'group-participants.update',
@@ -34,13 +38,25 @@ function createBaileysEventDispatcher({ dispatcher, config, registry, logger = c
   let listeners = new Map();
 
   async function dispatch(client, eventName, payload) {
+    if (eventName === 'lid-mapping.update') getIdentityResolver(client).clear();
     const chat = eventChat(payload);
+    const messages = createMessageService(client, { botName: config?.botName || 'ShooNhee-AI', verified: true });
     const context = {
       client, sock: client, config, registry, logger, chat,
       isGroup: typeof chat === 'string' && chat.endsWith('@g.us'),
       isPrivate: typeof chat === 'string' && (chat.endsWith('@s.whatsapp.net') || chat.endsWith('@lid')),
       isNewsletter: typeof chat === 'string' && chat.endsWith('@newsletter'),
-      services: { config, logger, database: registry?.databaseService || null, users: registry?.userService || null, groups: registry?.groupService || null }
+      services: {
+        ...messages, config, logger,
+        identity: getIdentityResolver(client),
+        richMessage: createRichMessageService(messages.sendMessage),
+        database: registry?.databaseService || null,
+        users: registry?.userService || null,
+        groups: registry?.groupService || null
+      },
+      reply: (text, options) => messages.reply({ chat }, text, options),
+      sendMessage: (jid, content, options) => messages.sendMessage(jid, content, options),
+      react: (message, emoji) => messages.react(message, emoji)
     };
     return dispatcher.dispatchEvent(eventName, context, payload);
   }
