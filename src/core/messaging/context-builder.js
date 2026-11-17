@@ -62,7 +62,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
   const targetPlugin = parsed ? registry.getByCommand(parsed.command) : null;
-  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || (targetPlugin?.category?.toLowerCase() === 'group' && !targetPlugin?.permissions?.ownerOnly) || parsed?.command === 'del' || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
+  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.metadataRequired || targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || (targetPlugin?.category?.toLowerCase() === 'group' && !targetPlugin?.permissions?.ownerOnly) || parsed?.command === 'del' || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
   if (needsGroupMetadata) {
     try { groupMetadata = await client.groupMetadata(m.chat); }
     catch (error) { logger.warn('Metadata grup tidak tersedia; izin admin ditolak.', { error: error.message }); }
