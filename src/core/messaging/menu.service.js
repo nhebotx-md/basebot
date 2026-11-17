@@ -77,67 +77,24 @@ function categoryTitle(category) {
 }
 function pluginLines(plugin, prefix, index, theme = 'showcase') {
   const bullet = (FRAME[theme] || FRAME.showcase).bullet;
-  const commands = plugin.commands || [];
-  const primary = commands[0] || plugin.name;
-  const lines = ['│ ' + String(index + 1).padStart(2, '0') + '  ' + bullet + ' *' + prefix + primary + '*'];
-  if (commands.length > 1) lines.push('│      ↳ Alias: ' + commands.slice(1).map(command => prefix + command).join('  ·  '));
-  if (plugin.description) lines.push('│      ' + cleanLabel(plugin.description, ''));
-  if (plugin.usage && plugin.usage !== prefix + primary) lines.push('│      Contoh: ' + cleanLabel(plugin.usage));
-  return lines;
+  const primary = (plugin.commands || [])[0] || plugin.name;
+  return ['│ ' + String(index + 1).padStart(2, '0') + '  ' + bullet + ' *' + prefix + primary + '*'];
 }
+
 function renderCategoryLayout(category, prefix, theme = 'showcase') {
   const icon = CATEGORY_ICONS[category.slug] || '▣';
-  const title = category.label.toLocaleUpperCase('id-ID');
-  const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-  const commands = plugins.reduce((total, plugin) => total + plugin.commands.length, 0);
   const heading = icon + ' ' + categoryTitle(category);
-  const detail = plugins.map((plugin, index) => ({ plugin, index, command: prefix + (plugin.commands[0] || plugin.name) }));
+  const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  const entries = plugins.map((plugin, index) => ({ plugin, index, command: prefix + (plugin.commands[0] || plugin.name) }));
   if (theme === 'terminal') {
-    const lines = ['root@basebot:~$ catalog --category ' + category.slug, ''];
-    lines.push('┌─ ' + heading, '│ ' + plugins.length + ' modules loaded | ' + commands + ' commands', '├─ COMMANDS');
-    for (const { plugin, index, command } of detail) {
-      lines.push('│ [' + String(index + 1).padStart(2, '0') + '] ' + command);
-      if (plugin.commands.length > 1) lines.push('│     alias: ' + plugin.commands.slice(1).map(item => prefix + item).join(', '));
-      if (plugin.description) lines.push('│     ' + cleanLabel(plugin.description, ''));
-    }
-    lines.push('└─ exit 0');
-    return lines;
+    return ['┌─ ' + heading, '├─ FEATURE DIRECTORY', ...entries.map(({ command }, index) => '│ [' + String(index + 1).padStart(2, '0') + '] ' + command), '└─ END'];
   }
-  if (theme === 'minimal') {
-    const lines = [heading, plugins.length + ' modules / ' + commands + ' commands', ''];
-    for (const { plugin, command } of detail) {
-      lines.push(command + (plugin.commands.length > 1 ? '  (' + plugin.commands.slice(1).map(item => prefix + item).join(', ') + ')' : ''));
-      if (plugin.description) lines.push('  ' + cleanLabel(plugin.description, ''));
-    }
-    return lines;
-  }
-  if (theme === 'premium') {
-    const lines = ['╔══════════ ✦ ' + heading + ' ✦ ══════════╗', '║  MODULES  ' + String(plugins.length).padEnd(4) + ' COMMANDS  ' + String(commands).padEnd(4) + '║', '╠══════════════════════════════════════════╣'];
-    for (const { plugin, index, command } of detail) {
-      lines.push('║  ' + String(index + 1).padStart(2, '0') + '  ✧  *' + command + '*');
-      if (plugin.description) lines.push('║      ' + cleanLabel(plugin.description, ''));
-      if (plugin.commands.length > 1) lines.push('║      Alias: ' + plugin.commands.slice(1).map(item => prefix + item).join(' · '));
-      if (plugin.usage && plugin.usage !== command) lines.push('║      Usage: ' + cleanLabel(plugin.usage));
-      lines.push('║');
-    }
-    lines.push('╚══════════════════════════════════════════╝');
-    return lines;
-  }
-  if (theme === 'editorial') {
-    const lines = ['THE BASEBOT FEATURE REVIEW', 'CATEGORY / ' + title, '────────────────────────────────', plugins.length + ' FEATURE STORIES  •  ' + commands + ' COMMANDS', ''];
-    for (const { plugin, index, command } of detail) {
-      lines.push(String(index + 1).padStart(2, '0') + '  /  ' + command);
-      if (plugin.description) lines.push('     ' + cleanLabel(plugin.description, ''));
-      if (plugin.commands.length > 1) lines.push('     ALSO: ' + plugin.commands.slice(1).map(item => prefix + item).join(' / '));
-      if (plugin.usage && plugin.usage !== command) lines.push('     TRY: ' + cleanLabel(plugin.usage));
-      lines.push('');
-    }
-    lines.push('────────────────────────────────', 'END OF CATEGORY / ' + category.slug);
-    return lines;
-  }
-  const lines = frameLines(heading, 'showcase', 'KATALOG FITUR  •  ' + plugins.length + ' MODUL  •  ' + commands + ' COMMAND');
-  for (const { plugin, index } of detail) lines.push(...pluginLines(plugin, prefix, index, 'showcase'), '│');
-  if (!plugins.length) lines.push('│ Tidak ada fitur aktif pada kategori ini.');
+  if (theme === 'minimal') return [heading, '', ...entries.map(({ command }) => command)];
+  if (theme === 'premium') return ['╔══════════ ✦ ' + heading + ' ✦ ══════════╗', '╠════════════════ FEATURE LIST ═══════════════╣', ...entries.map(({ command }, index) => '║  ' + String(index + 1).padStart(2, '0') + '  ✧  *' + command + '*'), '╚══════════════════════════════════════════════╝'];
+  if (theme === 'editorial') return ['THE FEATURE INDEX', 'CATEGORY / ' + category.label.toUpperCase(), '────────────────────────────────', ...entries.map(({ command }, index) => String(index + 1).padStart(2, '0') + '  /  ' + command), '────────────────────────────────'];
+  const lines = frameLines(heading, 'showcase', 'PILIH FITUR');
+  for (const { plugin, index } of entries) lines.push(...pluginLines(plugin, prefix, index, 'showcase'));
+  if (!entries.length) lines.push('│ Tidak ada fitur aktif.');
   lines.push(FRAME.showcase.bottom);
   return lines;
 }
@@ -188,103 +145,105 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
 
   function renderMenu(ctx, selectedTheme = preferences.menuTheme) {
     const theme = MENU_THEMES.includes(selectedTheme) ? selectedTheme : MENU_THEMES[0];
-    const frame = FRAME[theme];
-    const plugins = getVisiblePlugins(ctx);
     const categories = getCategories(ctx);
-    const commandCount = plugins.reduce((total, plugin) => total + plugin.commands.length, 0);
     const now = clock();
     const parts = dateParts(config.timezone, now);
     const role = ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN' : ({ user: 'USER', premium: 'PREMIUM', moderator: 'MODERATOR', guest: 'GUEST' }[ctx.userRole] || 'MEMBER');
     const userName = cleanLabel(ctx.pushname, 'Pengguna');
     const botName = cleanLabel(config.botName, 'BASEBOT');
-    const ownerName = cleanLabel(config.ownerName, 'Owner');
     const mode = config.publicMode ? 'PUBLIC' : 'SELF';
     const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const uptime = formatUptime((now.getTime() - startedAt) / 1000);
-    const themeLabel = ({ showcase: 'COMMAND MENU', terminal: 'COMMAND CENTER', minimal: 'DIREKTORI FITUR', premium: 'FEATURE COLLECTION', editorial: 'THE FEATURE JOURNAL' })[theme];
-
-    const categoryRows = categories.map((category, index) => ({
-      category, index, icon: CATEGORY_ICONS[category.slug] || '▣',
-      count: category.plugins.length,
-      commands: category.plugins.reduce((sum, plugin) => sum + plugin.commands.length, 0)
-    }));
+    const rows = categories.map((category, index) => ({ category, index, icon: CATEGORY_ICONS[category.slug] || '▣' }));
     let lines;
     if (theme === 'terminal') {
-      lines = ['┌─ BASEBOT SYSTEM CONSOLE ──────────────────', '| session: ' + userName + ' [' + role + ']', '| mode: ' + mode + ' | prefix: ' + prefixLabel, '| runtime: v' + cleanLabel(version) + ' / ' + uptime, '| modules: ' + plugins.length + ' / commands: ' + commandCount, '├─ DIRECTORY'];
-      for (const row of categoryRows) lines.push('| [' + String(row.index + 1).padStart(2, '0') + '] ' + commandPrefix + 'catmenu ' + row.category.slug + '  (' + row.count + ' modules)');
-      lines.push('└─ ' + parts.date + ' ' + parts.time + ' ' + timeZoneLabel(config.timezone), 'root@basebot:~$ _');
+      lines = ['┌─ BASEBOT SYSTEM DASHBOARD', '│ SESSION : ' + userName + ' [' + role + ']', '│ MODE    : ' + mode, '│ PREFIX  : ' + prefixLabel, '│ RUNTIME : v' + cleanLabel(version) + ' / ' + uptime, '├─ FEATURE DIRECTORY'];
+      for (const row of rows) lines.push('│ [' + String(row.index + 1).padStart(2, '0') + '] ' + commandPrefix + 'catmenu ' + row.category.slug);
+      lines.push('└─ ' + parts.date + ' ' + parts.time + ' ' + timeZoneLabel(config.timezone));
     } else if (theme === 'minimal') {
-      lines = [botName + ' / ' + themeLabel, userName + ' · ' + role + ' · ' + mode, 'v' + cleanLabel(version) + ' | uptime ' + uptime, '', 'FEATURES'];
-      for (const row of categoryRows) lines.push(row.icon + '  ' + commandPrefix + 'catmenu ' + row.category.slug + '  ·  ' + row.count + ' modules');
-      lines.push('', commandCount + ' commands across ' + plugins.length + ' modules', parts.date + ' · ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = [botName + ' / FEATURE MENU', userName + ' · ' + role, 'v' + cleanLabel(version) + ' · ' + mode + ' · ' + uptime, '', ...rows.map(row => row.icon + '  ' + commandPrefix + 'catmenu ' + row.category.slug), '', parts.date + ' · ' + parts.time + ' ' + timeZoneLabel(config.timezone)];
     } else if (theme === 'premium') {
-      lines = ['╔══════════════ ✦ ' + botName + ' ✦ ══════════════╗', '║  COMMAND COLLECTION  /  v' + cleanLabel(version), '╠══════════════════════════════════════════════╣', '║  MEMBER   ' + userName + ' (' + role + ')', '║  STATUS   ' + mode + '  •  ' + uptime, '║  PREFIX   ' + prefixLabel, '║  OWNER    ' + ownerName, '╠══════════════ FEATURE COLLECTION ════════════╣'];
-      for (const row of categoryRows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*  |  ' + row.count + ' modules / ' + row.commands + ' cmds');
-      lines.push('╠══════════════════════════════════════════════╣', '║  TOTAL  ' + plugins.length + ' MODULES  •  ' + commandCount + ' COMMANDS', '╚══════════════════════════════════════════════╝', parts.date + '  •  ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = ['╔══════════════ ✦ ' + botName + ' ✦ ══════════════╗', '║  FEATURE COLLECTION', '║  MEMBER   ' + userName + ' (' + role + ')', '║  STATUS   ' + mode + '  •  ' + uptime, '║  PREFIX   ' + prefixLabel, '╠══════════════ FEATURE DIRECTORY ════════════╣'];
+      for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
+      lines.push('╚══════════════════════════════════════════════╝', parts.date + '  •  ' + parts.time + ' ' + timeZoneLabel(config.timezone));
     } else if (theme === 'editorial') {
-      lines = ['THE BASEBOT JOURNAL', 'VOL. 05  /  FEATURE DIRECTORY', '────────────────────────────────────────', botName + '  |  v' + cleanLabel(version), 'A modular WhatsApp automation workspace.', '', 'PROFILE', userName + ' / ' + role + ' / ' + mode, 'Runtime ' + uptime + ' · Prefix ' + prefixLabel, '', 'IN THIS EDITION'];
-      for (const row of categoryRows) {
-        lines.push(String(row.index + 1).padStart(2, '0') + '  ' + row.category.label.toUpperCase() + '  /  ' + row.count + ' modules');
-        lines.push('     ' + commandPrefix + 'catmenu ' + row.category.slug + '  ·  ' + row.commands + ' commands');
-      }
-      lines.push('', '────────────────────────────────────────', 'INDEX: ' + plugins.length + ' modules / ' + commandCount + ' commands', 'OWNER: ' + ownerName, parts.date + ' · ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = ['THE BASEBOT JOURNAL', 'FEATURE DIRECTORY', '────────────────────────────────────────', botName + '  |  v' + cleanLabel(version), userName + ' / ' + role + ' / ' + mode, 'Runtime ' + uptime + ' · Prefix ' + prefixLabel, '', 'CONTENTS'];
+      for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + '  /  ' + row.category.label.toUpperCase() + '  ·  ' + commandPrefix + 'catmenu ' + row.category.slug);
+      lines.push('────────────────────────────────────────', parts.date + ' · ' + parts.time + ' ' + timeZoneLabel(config.timezone));
     } else {
-      lines = frameLines('✦ ' + botName + ' / ' + themeLabel, 'showcase', 'WHATSAPP AUTOMATION  •  MODULAR PLUGIN SYSTEM');
-      lines.push('│ USER INFO', '│   NAME       : *' + userName + '*', '│   ROLE       : *' + role + '*', '│   MODE       : *' + mode + '*', '│   PREFIX     : *' + prefixLabel + '*', '│ BOT INFO', '│   VERSION    : *v' + cleanLabel(version) + '*', '│   UPTIME     : *' + uptime + '*', '│   MODULES    : *' + plugins.length + '*', '│   COMMANDS   : *' + commandCount + '*', '│   OWNER      : *' + ownerName + '*', FRAME.showcase.mid, '│ FEATURE DIRECTORY');
-      if (!categoryRows.length) lines.push('│   Belum ada modul aktif yang dapat ditampilkan.');
-      for (const row of categoryRows) lines.push('│   ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*', '│      ' + row.count + ' modul  ·  ' + row.commands + ' command');
-      lines.push(FRAME.showcase.bottom, ' ' + parts.date + '  •  ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = frameLines('✦ ' + botName + ' / FEATURE MENU', 'showcase', 'PILIH KATEGORI FITUR');
+      lines.push('│ USER   : *' + userName + '*', '│ ROLE   : *' + role + '*', '│ MODE   : *' + mode + '*', '│ PREFIX : *' + prefixLabel + '*', '│ VERSION: *v' + cleanLabel(version) + '*', '│ UPTIME : *' + uptime + '*', FRAME.showcase.mid, '│ FEATURE DIRECTORY');
+      for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
+      if (!rows.length) lines.push('│ Tidak ada kategori aktif.');
+      lines.push(FRAME.showcase.bottom, parts.date + '  •  ' + parts.time + ' ' + timeZoneLabel(config.timezone));
     }
-    lines.push('Ketik *' + commandPrefix + 'catmenu <kategori>* untuk membuka katalog fitur.');
+    lines.push('Ketik *' + commandPrefix + 'catmenu <kategori>* untuk membuka pilihan fitur.');
     return lines.join('\n');
+  }
+
+  function renderPluginHelp(ctx, command) {
+    const requested = String(command || '').trim().toLocaleLowerCase('id-ID');
+    const plugin = registry.getByCommand?.(requested);
+    if (!plugin || !validatePermission(plugin, ctx).allowed) return null;
+    const prefix = ctx.prefix || (Array.isArray(config.prefix) ? config.prefix[0] : config.prefix) || '.';
+    const commands = (plugin.commands || []).map(item => prefix + item);
+    return [
+      '╭━━━━━━━━〔 FEATURE GUIDE 〕',
+      '│ FEATURE : *' + cleanLabel(plugin.name) + '*',
+      '│ CATEGORY: *' + cleanLabel(plugin.category) + '*',
+      '│ COMMAND : ' + commands.map(item => '*' + item + '*').join(' · '),
+      '│',
+      '│ ' + cleanLabel(plugin.description, 'Tidak ada deskripsi tambahan.'),
+      '│ USAGE   : ' + cleanLabel(plugin.usage, prefix + requested),
+      '╰━━━━━━━━━━━━━━━━━━━━━━━━'
+    ].join('\n');
   }
 
   function renderCategory(ctx) {
     const commandPrefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
-    const requested = normalizeCategory((ctx.args || []).join(' '));
+    const requested = normalizeCategory((ctx.args || [])[0]);
     const categories = getCategories(ctx);
     const theme = preferences.categoryTheme;
     if (!requested) {
       const rows = categories.map((category, index) => ({ category, index, icon: CATEGORY_ICONS[category.slug] || '▣' }));
       let lines;
       if (theme === 'terminal') {
-        lines = ['root@basebot:~$ catalog --list', '┌─ AVAILABLE CATEGORIES'];
+        lines = ['┌─ CATEGORY DIRECTORY', '├─ SELECT CATEGORY'];
         for (const row of rows) lines.push('│ [' + String(row.index + 1).padStart(2, '0') + '] ' + commandPrefix + 'catmenu ' + row.category.slug);
-        lines.push('└─ ' + rows.length + ' categories found');
+        lines.push('└─ END');
       } else if (theme === 'minimal') {
-        lines = ['CATEGORIES', rows.length + ' directories available', ''];
-        for (const row of rows) lines.push(row.icon + '  ' + commandPrefix + 'catmenu ' + row.category.slug);
+        lines = ['CATEGORIES', '', ...rows.map(row => row.icon + '  ' + commandPrefix + 'catmenu ' + row.category.slug)];
       } else if (theme === 'premium') {
         lines = ['╔════════════ ✦ CATEGORY COLLECTION ✦ ════════════╗', '║  SELECT A FEATURE SPACE                         ║', '╠═════════════════════════════════════════════════╣'];
-        for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*  ·  ' + row.category.plugins.length + ' modules');
+        for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
         lines.push('╚═════════════════════════════════════════════════╝');
       } else if (theme === 'editorial') {
-        lines = ['THE CATEGORY INDEX', 'A FIELD GUIDE TO BASEBOT FEATURES', '────────────────────────────────────', 'CONTENTS'];
+        lines = ['THE CATEGORY INDEX', 'FEATURE DIRECTORY', '────────────────────────────────────', 'CONTENTS'];
         for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + ' / ' + row.category.label.toUpperCase() + '  ·  ' + commandPrefix + 'catmenu ' + row.category.slug);
-        lines.push('────────────────────────────────────', rows.length + ' sections in this edition');
+        lines.push('────────────────────────────────────');
       } else {
-        lines = frameLines('▣ CATEGORY INDEX', 'showcase', 'PILIH DIREKTORI FITUR YANG INGIN DIBUKA');
-        for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*', '│      ' + row.category.plugins.length + ' modul tersedia');
+        lines = frameLines('▣ CATEGORY INDEX', 'showcase', 'PILIH KATEGORI');
+        for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
         if (!rows.length) lines.push('│ Tidak ada kategori aktif.');
         lines.push(FRAME.showcase.bottom);
       }
-      lines.push('Gunakan *' + commandPrefix + 'catmenu <kategori>* untuk membuka kategori.');
+      lines.push('Gunakan *' + commandPrefix + 'catmenu <kategori>* untuk membuka pilihan fitur.');
       return lines.join('\n');
     }
     const category = categories.find(item => item.slug === requested);
     if (!category) {
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
-      return [
-        '╭━━━━━━━━〔 ✕ CATEGORY NOT FOUND 〕━━━━━━━━',
-        '│ Kategori *' + requested + '* tidak ditemukan atau tidak tersedia untuk akun ini.',
-        '│ Kategori yang dapat diakses: ' + available,
-        '╰━━━━━━━━━━━━━━━━━━━━━━━━',
-        ' Ketik *' + commandPrefix + 'menu* untuk melihat direktori utama.'
-      ].join('\n');
+      return ['╭━━━━━━━━〔 ✕ CATEGORY NOT FOUND 〕━━━━━━━━', '│ Kategori *' + requested + '* tidak ditemukan atau tidak tersedia.', '│ Pilihan: ' + available, '╰━━━━━━━━━━━━━━━━━━━━━━━━', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+    }
+    const selectedCommand = String((ctx.args || [])[1] || '').trim().toLowerCase();
+    if (selectedCommand) {
+      const selectedPlugin = category.plugins.find(plugin => plugin.commands.includes(selectedCommand) || plugin.name === selectedCommand);
+      if (!selectedPlugin) return 'Fitur *' + selectedCommand + '* tidak ditemukan di kategori *' + category.slug + '*.';
+      return renderPluginHelp(ctx, selectedPlugin.commands[0]) || 'Panduan fitur tidak tersedia.';
     }
     const lines = renderCategoryLayout(category, commandPrefix, theme);
-    lines.push('Ketik *' + commandPrefix + 'menu* untuk kembali ke direktori utama.');
+    lines.push('Ketik *' + commandPrefix + 'catmenu ' + category.slug + ' <command>* untuk memilih fitur.', 'Ketik *' + commandPrefix + 'menu* untuk kembali.');
     return lines.join('\n').trim();
   }
 
@@ -292,11 +251,11 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     canHandle(command) { return ['menu', 'help', 'catmenu'].includes(command); },
     async execute(ctx) {
       let output;
-      output = ctx.command === 'catmenu' ? renderCategory(ctx) : renderMenu(ctx);
+      output = ctx.command === 'catmenu' ? renderCategory(ctx) : ctx.command === 'help' && (ctx.args || []).length ? (renderPluginHelp(ctx, ctx.args[0]) || 'Fitur tidak ditemukan atau tidak tersedia untuk akun ini.') : renderMenu(ctx);
       await ctx.reply(output);
       return { handled: true, command: ctx.command };
     },
-    renderMenu, renderCategory, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
+    renderMenu, renderCategory, renderPluginHelp, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
   });
 }
 

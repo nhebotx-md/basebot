@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createMenuService, normalizeCategory, formatUptime, MENU_THEMES } = require('../../src/core/messaging/menu.service');
-const { CommandDispatcher } = require('../../src/core/messaging/command-dispatcher');
+const { CommandDispatcher, commandSimilarity, findCommandSuggestions } = require('../../src/core/messaging/command-dispatcher');
 
 const plugins = [
   { name: 'yt-download', category: 'download', commands: ['ytmp4', 'ytv'], description: 'Unduh video dari YouTube.', usage: '.ytmp4 <url>', permissions: {} },
@@ -29,7 +29,8 @@ function createContext(overrides = {}) {
 
 function createRegistry() {
   return {
-    list: ({ includeDisabled } = {}) => includeDisabled ? plugins : plugins
+    list: ({ includeDisabled } = {}) => includeDisabled ? plugins : plugins,
+    getByCommand: command => plugins.find(plugin => plugin.commands.includes(String(command).toLowerCase()))
   };
 }
 
@@ -48,7 +49,7 @@ test('.menu keeps the manually selected theme and never rotates automatically', 
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
   for (let index = 0; index < 5; index += 1) await service.execute(ctx);
   assert.equal(replies.length, 5);
-  assert.ok(replies.every(output => output.includes('COMMAND MENU')));
+  assert.ok(replies.every(output => output.includes('FEATURE MENU')));
   assert.equal(new Set(replies).size, 1);
   assert.equal(service.getNextTheme(), 'showcase');
 });
@@ -129,7 +130,7 @@ test('menu theme preferences are restored from database on service recreation', 
   const service = createMenuService({ registry: createRegistry(), config, database });
   assert.equal(service.preferences.menuTheme, 'terminal');
   assert.equal(service.preferences.categoryTheme, 'minimal');
-  assert.match(service.renderMenu(createContext().ctx), /BASEBOT SYSTEM CONSOLE/);
+  assert.match(service.renderMenu(createContext().ctx), /BASEBOT SYSTEM DASHBOARD/);
   assert.match(service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx), /DOWNLOAD STUDIO/);
 });
 
@@ -139,6 +140,7 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   await service.execute(ctx);
   assert.equal(replies.length, 1);
   assert.match(replies[0], /ShoNhe/);
+  assert.doesNotMatch(replies[0], /modules|modul|commands|command:/i);
   assert.match(replies[0], /\.catmenu download/);
   assert.match(replies[0], /\.catmenu utility/);
   assert.match(replies[0], /\.catmenu ai/);
@@ -158,15 +160,15 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   assert.doesNotMatch(adminOutput, /\.catmenu owner/);
 });
 
-test('.catmenu renders a category-specific media layout with commands, aliases, and usage', async () => {
+test('.catmenu renders a compact feature list without descriptions, aliases, or usage', async () => {
   const { ctx, replies } = createContext({ command: 'catmenu', args: ['download'] });
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   await service.execute(ctx);
   assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /\.ytmp4/);
-  assert.match(replies[0], /\.ytv/);
-  assert.match(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\.ytmp4 <url>/);
+  assert.doesNotMatch(replies[0], /\.ytv/);
+  assert.doesNotMatch(replies[0], /Unduh video dari YouTube/);
+  assert.doesNotMatch(replies[0], /\.ytmp4 <url>/);
 });
 
 test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
@@ -206,7 +208,7 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   assert.match(menu, /STATUS/);
   assert.match(menu, /FEATURE COLLECTION/);
   assert.match(category, /DOWNLOAD STUDIO/);
-  assert.match(category, /MODULES/);
+  assert.doesNotMatch(category, /MODULES|commands|Unduh video dari YouTube|\.ytv/);
 });
 
 test('.catmenu category index and unknown category use the same premium frame language', () => {
@@ -214,6 +216,7 @@ test('.catmenu category index and unknown category use the same premium frame la
   const index = service.renderCategory(createContext({ command: 'catmenu' }).ctx);
   const missing = service.renderCategory(createContext({ command: 'catmenu', args: ['not-real'] }).ctx);
   assert.match(index, /CATEGORY COLLECTION/);
+  assert.doesNotMatch(index, /modules|modul tersedia|commands/i);
   assert.match(index, /╔════════════ ✦ CATEGORY COLLECTION/);
   assert.match(missing, /CATEGORY NOT FOUND/);
   assert.match(missing, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
@@ -240,6 +243,58 @@ test('.help uses the same core menu renderer as .menu', async () => {
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   assert.equal(service.canHandle('help'), true);
   await service.execute(ctx);
-  assert.match(replies[0], /COMMAND MENU/);
+  assert.match(replies[0], /FEATURE MENU/);
   assert.match(replies[0], /ShoNhe/);
+});
+
+
+test('.help <command> shows plugin guidance only when requested', async () => {
+  const { ctx, replies } = createContext({ command: 'help', args: ['ytmp4'] });
+  const service = createMenuService({ registry: createRegistry(), config });
+  await service.execute(ctx);
+  assert.match(replies[0], /FEATURE GUIDE/);
+  assert.match(replies[0], /\.ytmp4/);
+  assert.match(replies[0], /\.ytv/);
+  assert.match(replies[0], /Unduh video dari YouTube/);
+  assert.match(replies[0], /\.ytmp4 <url>/);
+});
+
+test('command similarity ranks typo corrections and respects user permissions', () => {
+  assert.ok(commandSimilarity('stiker', 'sticker') > 0.7);
+  const suggestions = findCommandSuggestions('ytmpp4', createRegistry(), createContext().ctx);
+  assert.ok(suggestions.some(item => item.command === 'ytmp4'));
+  const hidden = findCommandSuggestions('setmod', createRegistry(), createContext().ctx);
+  assert.equal(hidden.some(item => item.command === 'setmode'), false);
+});
+
+test('.menu and .catmenu never leak descriptions, aliases, usage, or module totals', () => {
+  const service = createMenuService({ registry: createRegistry(), config });
+  const menu = service.renderMenu(createContext().ctx, 'terminal');
+  const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
+  for (const output of [menu, category]) {
+    assert.doesNotMatch(output, /root@basebot|catalog --|exit 0|modules loaded|commands/i);
+    assert.doesNotMatch(output, /Unduh video dari YouTube|\.ytv|<url>/);
+  }
+});
+
+
+test('.catmenu <category> <command> opens contextual plugin guidance', async () => {
+  const { ctx, replies } = createContext({ command: 'catmenu', args: ['download', 'ytmp4'] });
+  const service = createMenuService({ registry: createRegistry(), config });
+  await service.execute(ctx);
+  assert.match(replies[0], /FEATURE GUIDE/);
+  assert.match(replies[0], /\.ytmp4/);
+  assert.match(replies[0], /\.ytv/);
+  assert.match(replies[0], /Unduh video dari YouTube/);
+});
+
+
+test('dispatcher replies with a permission-safe typo correction', async () => {
+  const { ctx, replies } = createContext({ command: 'ytmpp4', args: [], m: { id: 'typo-test' } });
+  const dispatcher = new CommandDispatcher({ registry: createRegistry(), rateLimit: 0 });
+  const result = await dispatcher.dispatch(ctx);
+  assert.equal(result.reason, 'unknown-command');
+  assert.ok(result.suggestions.includes('ytmp4'));
+  assert.match(replies[0], /Mungkin maksudmu/);
+  assert.match(replies[0], /\.ytmp4/);
 });

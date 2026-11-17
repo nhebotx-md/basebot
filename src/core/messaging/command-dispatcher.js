@@ -4,6 +4,45 @@ const { randomBytes } = require('node:crypto');
 const { validatePermission } = require('../security/permission-manager');
 const { createPluginProgress } = require('../services/plugin-progress.service');
 
+function editDistance(left, right) {
+  const a = String(left || '').toLowerCase();
+  const b = String(right || '').toLowerCase();
+  const row = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= a.length; i += 1) {
+    let diagonal = row[0];
+    row[0] = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const above = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, diagonal + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diagonal = above;
+    }
+  }
+  return row[b.length];
+}
+
+function commandSimilarity(input, candidate) {
+  const left = String(input || '').toLowerCase();
+  const right = String(candidate || '').toLowerCase();
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  const distance = editDistance(left, right);
+  return 1 - distance / Math.max(left.length, right.length);
+}
+
+function findCommandSuggestions(input, registry, ctx, limit = 3) {
+  const candidates = new Map();
+  for (const plugin of registry.list({ includeDisabled: false })) {
+    if (!validatePermission(plugin, ctx).allowed) continue;
+    for (const command of plugin.commands || []) {
+      const score = commandSimilarity(input, command);
+      if (score >= 0.58) candidates.set(command, { command, score });
+    }
+  }
+  return [...candidates.values()]
+    .sort((a, b) => b.score - a.score || a.command.localeCompare(b.command))
+    .slice(0, limit);
+}
+
 function safeErrorDetail(error) {
   const raw = String(error?.message || error || 'Tidak ada detail tambahan.');
   return raw
@@ -162,7 +201,17 @@ class CommandDispatcher {
       }
     }
     const plugin = this.registry.getByCommand(ctx.command);
-    if (!plugin) return { handled: false, reason: 'unknown-command' };
+    if (!plugin) {
+      const suggestions = findCommandSuggestions(ctx.command, this.registry, ctx);
+      if (suggestions.length) {
+        const lines = ['Command *' + (ctx.prefix || '.') + ctx.command + '* tidak ditemukan.', 'Mungkin maksudmu:'];
+        for (const item of suggestions) lines.push('• *' + (ctx.prefix || '.') + item.command + '*');
+        lines.push('Gunakan *' + (ctx.prefix || '.') + 'menu* untuk melihat daftar fitur.');
+        await ctx.reply(lines.join('\n'));
+        return { handled: true, reason: 'unknown-command', suggestions: suggestions.map(item => item.command) };
+      }
+      return { handled: false, reason: 'unknown-command' };
+    }
     if (!this.allowRate(ctx)) {
       const key = ctx.sender || ctx.chat || 'unknown';
       if (!this.rateWarnings.has(key)) { this.rateWarnings.set(key, Date.now()); await ctx.reply('Terlalu banyak command. Tunggu sebentar lalu coba lagi.'); }
@@ -239,4 +288,4 @@ class CommandDispatcher {
   }
 }
 
-module.exports = { CommandDispatcher, formatPluginFailure, diagnosePluginError };
+module.exports = { CommandDispatcher, formatPluginFailure, diagnosePluginError, commandSimilarity, findCommandSuggestions };
