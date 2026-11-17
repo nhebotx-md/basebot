@@ -80,7 +80,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
   const targetPlugin = parsed ? registry.getByCommand(parsed.command) : null;
-  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || (targetPlugin?.category?.toLowerCase() === 'group' && !targetPlugin?.permissions?.ownerOnly) || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
+  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || (targetPlugin?.category?.toLowerCase() === 'group' && !targetPlugin?.permissions?.ownerOnly) || parsed?.command === 'del' || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
   if (needsGroupMetadata) {
     try { groupMetadata = await client.groupMetadata(m.chat); }
     catch (error) { logger.warn('Metadata grup tidak tersedia; izin admin ditolak.', { error: error.message }); }
@@ -102,11 +102,22 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
       .map(item => resolveBestIdentity([item.id, item.phoneNumber], client, decode))
   ));
   const quoteInfo = m.msg?.contextInfo || {};
+  const quotedRemoteJid = quoteInfo.remoteJid || m.chat;
+  let quotedFromMe = false;
+  if (quoteInfo.stanzaId) {
+    const quotedParticipant = await resolveBestIdentity([quoteInfo.participant, quoteInfo.participantAlt], client, decode);
+    quotedFromMe = Boolean(bot && quotedParticipant === bot);
+    if (!quotedFromMe && typeof client.isOwnMessageKey === 'function') {
+      try { quotedFromMe = Boolean(client.isOwnMessageKey({ remoteJid: quotedRemoteJid, id: quoteInfo.stanzaId })); }
+      catch { quotedFromMe = false; }
+    }
+  }
   let quoted = null;
   if (m.quoted && typeof m.quoted === 'object') {
     const type = Object.keys(m.quoted)[0] || '';
     const content = m.quoted[type] || {};
-    const key = { remoteJid: quoteInfo.remoteJid || m.chat, participant: quoteInfo.participant || m.sender, fromMe: false, id: quoteInfo.stanzaId || '' };
+    const participant = quoteInfo.participant || quoteInfo.participantAlt || (quotedFromMe ? (m.isGroup ? client.user?.id : '') : m.sender);
+    const key = { remoteJid: quotedRemoteJid, ...(participant ? { participant } : {}), fromMe: quotedFromMe, id: quoteInfo.stanzaId || '' };
     quoted = { ...m.quoted, mtype: type, msg: content, key, id: key.id, raw: { key, message: m.quoted, messageTimestamp: quoteInfo.messageTimestamp, pushName: quoteInfo.pushName }, text: content.text || content.caption || content.conversation || content.contentText || '', download: async () => client.downloadMediaMessage({ ...content, mtype: type }) };
   }
   const userProfile = registry.userService && sender ? await registry.userService.getProfile(sender) : null;

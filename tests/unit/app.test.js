@@ -9,25 +9,28 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   const messages = [];
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
-  assert.equal(app.registry.list().length, 29);
+  assert.equal(app.registry.list().length, 37);
   assert.equal(app.config.paths.database, './data/database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
-  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 63);
+  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 81);
   assert.ok(app.registry.list().some(plugin => plugin.name === 'profile'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'health'));
   assert.ok(app.registry.getByCommand('tt'));
   assert.ok(app.registry.getByCommand('ytmp3'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'voicechanger'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'sticker-rest-api'));
+  for (const name of ['group-info', 'group-settings', 'group-members', 'group-requests', 'group-request-action', 'poll', 'message-actions', 'interactive-menu']) {
+    assert.ok(app.registry.list().some(plugin => plugin.name === name), `missing plugin: ${name}`);
+  }
   assert.equal(typeof app.start, 'function');
   assert.equal(typeof app.stop, 'function');
   const summary = messages.find(([message]) => message === 'Plugin registry siap.');
   assert.ok(summary);
-  assert.equal(summary[1].discovered, 29);
-  assert.equal(summary[1].loaded, 29);
+  assert.equal(summary[1].discovered, 37);
+  assert.equal(summary[1].loaded, 37);
   assert.equal(summary[1].skipped, 0);
-  assert.equal(summary[1].commands, 63);
+  assert.equal(summary[1].commands, 81);
   await app.stop();
 });
 

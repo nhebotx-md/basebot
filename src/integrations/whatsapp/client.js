@@ -56,6 +56,29 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
     });
     // Baileys exposes this in some builds but not all forks; keep the auth state explicit.
     sock.authState = state;
+    const outgoingMessageKeys = new Map();
+    const originalSendMessage = typeof sock.sendMessage === 'function' ? sock.sendMessage.bind(sock) : null;
+    if (originalSendMessage) {
+      sock.isOwnMessageKey = key => {
+        if (!key?.id || !key?.remoteJid) return false;
+        let remoteJid = key.remoteJid;
+        try { remoteJid = sock.decodeJid?.(remoteJid) || remoteJid; } catch { /* use the original JID */ }
+        return outgoingMessageKeys.has(`${remoteJid}:${key.id}`);
+      };
+      sock.sendMessage = async (jid, content, options) => {
+        const sent = await originalSendMessage(jid, content, options);
+        const key = sent?.key;
+        if (key?.id) {
+          let remoteJid = key.remoteJid || jid;
+          try { remoteJid = sock.decodeJid?.(remoteJid) || remoteJid; } catch { /* use the original JID */ }
+          const cacheKey = `${remoteJid}:${key.id}`;
+          outgoingMessageKeys.delete(cacheKey);
+          outgoingMessageKeys.set(cacheKey, Date.now());
+          while (outgoingMessageKeys.size > 1000) outgoingMessageKeys.delete(outgoingMessageKeys.keys().next().value);
+        }
+        return sent;
+      };
+    }
     sock.lifecycleReasons = {
       loggedOut: baileys.DisconnectReason?.loggedOut,
       restartRequired: baileys.DisconnectReason?.restartRequired

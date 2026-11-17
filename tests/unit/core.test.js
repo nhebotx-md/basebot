@@ -27,6 +27,12 @@ test('normalizer unwraps ephemeral content and extracts standard message text', 
   assert.equal(m.isPrivate, true);
 });
 
+test('normalizer extracts row IDs from list, button, and native-flow responses as command text', () => {
+  assert.equal(getMessageText({ listResponseMessage: { title: 'Media', singleSelectReply: { selectedRowId: '.catmenu media' } } }), '.catmenu media');
+  assert.equal(getMessageText({ buttonsResponseMessage: { selectedDisplayText: 'Panduan', selectedButtonId: '.help sticker' } }), '.help sticker');
+  assert.equal(getMessageText({ interactiveResponseMessage: { body: { text: 'Group' }, nativeFlowResponseMessage: { paramsJson: JSON.stringify({ id: '.catmenu group' }) } } }), '.catmenu group');
+});
+
 test('normalizer prefers PN alternate JIDs over LID for private and group senders', () => {
   const privateMessage = normalizeMessage({
     key: { remoteJid: '987654321@lid', remoteJidAlt: '6281234567890@s.whatsapp.net', id: 'private-lid' },

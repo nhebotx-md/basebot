@@ -161,3 +161,25 @@ test('context resolves group metadata for group-category commands even without e
   assert.equal(f.getLookups(), 1);
   assert.equal(context.isGroupAdmin, true);
 });
+
+test('quoted message ownership is resolved from recent outgoing message IDs and fails closed otherwise', async () => {
+  const own = fixture('del', {}, 'message');
+  own.client.isOwnMessageKey = key => key.id === 'bot-outgoing';
+  own.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@g.us', participant: '6281111111111@s.whatsapp.net', id: 'command-own' },
+    message: { extendedTextMessage: { text: '.del', contextInfo: { remoteJid: '120363000000000000@g.us', stanzaId: 'bot-outgoing', quotedMessage: { conversation: 'pesan bot' } } } }
+  }, own.client);
+  const ownContext = await buildContext({ ...own, config: config(), logger, store: {} });
+  assert.equal(ownContext.quoted.key.fromMe, true);
+  assert.equal(ownContext.quoted.key.participant, own.client.user.id);
+
+  const other = fixture('del', {}, 'message');
+  other.client.isOwnMessageKey = () => false;
+  other.m = normalizeMessage({
+    key: { remoteJid: '120363000000000000@g.us', participant: '6281111111111@s.whatsapp.net', id: 'command-other' },
+    message: { extendedTextMessage: { text: '.del', contextInfo: { remoteJid: '120363000000000000@g.us', participant: '6282222222222@s.whatsapp.net', stanzaId: 'other-message', quotedMessage: { conversation: 'pesan pengguna' } } } }
+  }, other.client);
+  const otherContext = await buildContext({ ...other, config: config(), logger, store: {} });
+  assert.equal(otherContext.quoted.key.fromMe, false);
+  assert.equal(otherContext.quoted.key.participant, '6282222222222@s.whatsapp.net');
+});
