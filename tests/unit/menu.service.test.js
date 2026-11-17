@@ -54,33 +54,74 @@ test('.menu keeps the manually selected theme and never rotates automatically', 
 });
 
 
-test('.setmenu and .setcatmenu are owner-only independent persistent settings', async () => {
+test('all five menu and category themes use distinct visual layouts', () => {
+  const mainOutputs = MENU_THEMES.map(theme => {
+    const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
+    return service.renderMenu(createContext().ctx, theme);
+  });
+  assert.equal(new Set(mainOutputs).size, 5);
+
+  const categoryOutputs = MENU_THEMES.map(theme => {
+    const database = { read: () => ({ menuPreferences: { categoryTheme: theme } }) };
+    const service = createMenuService({ registry: createRegistry(), config, database });
+    return service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
+  });
+  assert.equal(new Set(categoryOutputs).size, 5);
+
+  const categoryIndexes = MENU_THEMES.map(theme => {
+    const database = { read: () => ({ menuPreferences: { categoryTheme: theme } }) };
+    const service = createMenuService({ registry: createRegistry(), config, database });
+    return service.renderCategory(createContext({ command: 'catmenu' }).ctx);
+  });
+  assert.equal(new Set(categoryIndexes).size, 5);
+});
+
+test('menu theme settings are owner-only, independent, and persistent', async () => {
   const state = { plugins: {} };
   const database = {
     read: () => structuredClone(state.plugins),
     update: async (_collection, updater) => { await updater(state.plugins); }
   };
   const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
-  const denied = createContext({ command: 'setmenu', args: ['v2'] });
-  await service.execute(denied.ctx);
-  assert.match(denied.replies[0], /hanya dapat digunakan owner/);
+  const denied = createContext({ args: ['v2'] });
+  assert.match(await service.setTheme(denied.ctx, 'menu'), /hanya dapat digunakan owner/);
   assert.equal(service.preferences.menuTheme, 'showcase');
 
-  const ownerMain = createContext({ command: 'setmenu', args: ['v3'], isOwner: true });
-  await service.execute(ownerMain.ctx);
-  assert.match(ownerMain.replies[0], /V3/);
+  const ownerMain = createContext({ args: ['v3'], isOwner: true });
+  assert.match(await service.setTheme(ownerMain.ctx, 'menu'), /V3/);
   assert.equal(service.preferences.menuTheme, 'minimal');
   assert.equal(state.plugins.menuPreferences.menuTheme, 'minimal');
 
-  const ownerCategory = createContext({ command: 'setcatmenu', args: ['v5'], isOwner: true });
-  await service.execute(ownerCategory.ctx);
+  const ownerCategory = createContext({ args: ['v5'], isOwner: true });
+  assert.match(await service.setTheme(ownerCategory.ctx, 'category'), /V5/);
   assert.equal(service.preferences.categoryTheme, 'editorial');
   assert.equal(state.plugins.menuPreferences.categoryTheme, 'editorial');
   assert.equal(service.preferences.menuTheme, 'minimal');
 
-  const invalid = createContext({ command: 'setmenu', args: ['v9'], isOwner: true });
-  await service.execute(invalid.ctx);
-  assert.match(invalid.replies[0], /Versi tidak valid/);
+  const invalid = createContext({ args: ['v9'], isOwner: true });
+  assert.match(await service.setTheme(invalid.ctx, 'menu'), /Versi tidak valid/);
+});
+
+test('setmenu and setcatmenu are standalone owner plugins routed through the registry', async () => {
+  const registry = createRegistry();
+  const service = createMenuService({ registry, config, version: '2.0.0' });
+  registry.menuService = service;
+  const setmenu = require('../../plugins/owner/setmenu');
+  const setcatmenu = require('../../plugins/owner/setcatmenu');
+  assert.equal(setmenu.commands[0], 'setmenu');
+  assert.equal(setcatmenu.commands[0], 'setcatmenu');
+  assert.equal(setmenu.permissions.ownerOnly, true);
+  assert.equal(setcatmenu.permissions.ownerOnly, true);
+
+  for (const [plugin, command, args, expected] of [
+    [setmenu, 'setmenu', ['v2'], 'terminal'],
+    [setcatmenu, 'setcatmenu', ['v4'], 'premium']
+  ]) {
+    const { ctx, replies } = createContext({ command, args, isOwner: true, registry });
+    await plugin.execute(ctx);
+    assert.equal(service.preferences[command === 'setmenu' ? 'menuTheme' : 'categoryTheme'], expected);
+    assert.match(replies[0], /THEME UPDATED/);
+  }
 });
 
 test('menu theme preferences are restored from database on service recreation', () => {
@@ -157,23 +198,23 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   const menu = service.renderMenu(createContext().ctx, 'premium');
   const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
   for (const output of [menu, category]) {
-    assert.match(output, /^╭━━━━━━━━〔/);
-    assert.match(output, /┣━━━━━━━━━━━━━━━━━━━━━━━━/);
-    assert.match(output, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
+    assert.match(output, /^╔══════════════ ✦/);
+    assert.match(output, /╠══════════════════════════════════════════════╣/);
+    assert.match(output, /╚══════════════════════════════════════════════╝/);
   }
-  assert.match(menu, /USER INFO/);
-  assert.match(menu, /BOT INFO/);
-  assert.match(menu, /FEATURE DIRECTORY/);
+  assert.match(menu, /MEMBER/);
+  assert.match(menu, /STATUS/);
+  assert.match(menu, /FEATURE COLLECTION/);
   assert.match(category, /DOWNLOAD STUDIO/);
-  assert.match(category, /KATALOG FITUR/);
+  assert.match(category, /MODULES/);
 });
 
 test('.catmenu category index and unknown category use the same premium frame language', () => {
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   const index = service.renderCategory(createContext({ command: 'catmenu' }).ctx);
   const missing = service.renderCategory(createContext({ command: 'catmenu', args: ['not-real'] }).ctx);
-  assert.match(index, /CATEGORY INDEX/);
-  assert.match(index, /╭━━━━━━━━〔/);
+  assert.match(index, /CATEGORY COLLECTION/);
+  assert.match(index, /╔════════════ ✦ CATEGORY COLLECTION/);
   assert.match(missing, /CATEGORY NOT FOUND/);
   assert.match(missing, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
 });
