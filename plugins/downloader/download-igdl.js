@@ -17,13 +17,26 @@ module.exports = {
       return ctx.reply('Media tidak ditemukan atau layanan downloader tidak tersedia.');
     }
     await progress.update('Mengunduh media Instagram', { detail: items.length + ' item ditemukan. Memeriksa dan mengunduh setiap file.' });
+    const albumItems = [];
+    let totalBytes = 0;
     for (const [index, item] of items.entries()) {
       await assertPublicHttpUrl(item.url);
       const { buffer, contentType } = await ctx.services.media.downloadBuffer(item.url, { maxBytes: 15 * 1024 * 1024, timeoutMs: 20000 });
-      if (contentType.startsWith('image/')) await ctx.sendMessage(ctx.chat, { image: buffer, caption: 'Media Instagram ' + (index + 1) + '/' + items.length + '.' }, { quoted: ctx.m.raw });
-      else if (contentType.startsWith('video/')) await ctx.sendMessage(ctx.chat, { video: buffer, mimetype: contentType, caption: 'Media Instagram ' + (index + 1) + '/' + items.length + '.' }, { quoted: ctx.m.raw });
+      if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new Error('Media Instagram kosong atau tidak valid.');
+      totalBytes += buffer.length;
+      if (totalBytes > 40 * 1024 * 1024) throw new Error('Total media carousel Instagram melebihi batas 40 MB.');
+      const caption = 'Media Instagram ' + (index + 1) + '/' + items.length + '.';
+      if (contentType.startsWith('image/')) albumItems.push({ image: buffer, caption });
+      else if (contentType.startsWith('video/')) albumItems.push({ video: buffer, mimetype: contentType, caption });
       else throw new Error('Jenis media dari Instagram tidak didukung.');
-      await progress.update('Mengirim media Instagram', { detail: 'Item ' + (index + 1) + ' dari ' + items.length + ' berhasil dikirim.' });
+      await progress.update('Menyiapkan album Instagram', { detail: 'Item ' + (index + 1) + ' dari ' + items.length + ' berhasil diunduh dan divalidasi.' });
     }
+    await progress.update('Mengirim album Instagram', { detail: albumItems.length + ' media akan dikirim dalam satu album WhatsApp.' });
+    if (typeof ctx.client?.albumMessage === 'function') {
+      await ctx.client.albumMessage(ctx.chat, albumItems, ctx.m.raw);
+    } else {
+      for (const item of albumItems) await ctx.sendMessage(ctx.chat, item, { quoted: ctx.m.raw });
+    }
+    await progress.update('Album Instagram berhasil dikirim', { detail: albumItems.length + ' media terkirim.' });
   }
 };
