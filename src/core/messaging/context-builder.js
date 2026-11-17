@@ -11,7 +11,7 @@ const { downloadBuffer } = require('../services/media.service');
 const { fetchPublic, postPublicJson } = require('../security/safe-url');
 
 function isPhoneIdentity(value) {
-  return typeof value === 'string' && /@(s\\.whatsapp\\.net|c\\.us)$/i.test(value);
+  return typeof value === 'string' && /@(s\.whatsapp\.net|c\.us)$/i.test(value);
 }
 
 async function resolveIdentity(value, client, decode) {
