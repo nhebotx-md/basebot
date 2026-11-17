@@ -110,7 +110,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     quoted = { ...m.quoted, mtype: type, msg: content, key, id: key.id, raw: { key, message: m.quoted, messageTimestamp: quoteInfo.messageTimestamp, pushName: quoteInfo.pushName }, text: content.text || content.caption || content.conversation || content.contentText || '', download: async () => client.downloadMediaMessage({ ...content, mtype: type }) };
   }
   const userProfile = registry.userService && sender ? await registry.userService.getProfile(sender) : null;
-  const messageService = createMessageService(client);
+  const messageService = createMessageService(client, { botName: config.botName || 'ShooNhee-AI', verified: true });
   const services = {
     ...messageService, config, logger, store,
     pluginManager: registry.pluginManager || null,

@@ -1,5 +1,7 @@
 'use strict';
 
+const { createFakeQuoted } = require('../messaging/fake-quoted');
+
 const MAX_STEPS = 6;
 const MAX_LABEL = 110;
 
@@ -29,7 +31,7 @@ function getPluginProgress(ctx) {
   return typeof ctx?.progress === 'function' ? ctx.progress : createNoopPluginProgress();
 }
 
-function createPluginProgress({ client, message, plugin, command, logger = console } = {}) {
+function createPluginProgress({ client, message, plugin, command, logger = console, botName = 'ShooNhee-AI' } = {}) {
   if (!client || typeof client.sendMessage !== 'function' || !message?.chat || !message?.key) return createNoopPluginProgress();
   const state = { started: false, finished: false, status: 'running', statusMessage: null, steps: [], current: null, startedAt: 0, deliveryUnavailable: false };
 
@@ -65,7 +67,7 @@ function createPluginProgress({ client, message, plugin, command, logger = conso
       if (state.statusMessage?.key) {
         await client.sendMessage(message.chat, { ...content, edit: state.statusMessage.key });
       } else {
-        state.statusMessage = await client.sendMessage(message.chat, content, { quoted: message.raw || message });
+        state.statusMessage = await client.sendMessage(message.chat, content, { quoted: createFakeQuoted(botName, true, message.chat) });
       }
       if (reaction) {
         try { await client.sendMessage(message.chat, { react: { text: reaction, key: message.key } }); }

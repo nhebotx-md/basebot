@@ -228,7 +228,7 @@ class CommandDispatcher {
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
     this.activeCommands += 1;
-    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, logger: this.logger });
+    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, logger: this.logger, botName: ctx.config?.botName || 'ShooNhee-AI' });
     ctx.process = ctx.progress;
     if (ctx.services) ctx.services.progress = ctx.progress;
     await this.recordCommand(ctx);
