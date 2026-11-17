@@ -236,8 +236,14 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
       return ['╭━━━━━━━━〔 ✕ CATEGORY NOT FOUND 〕━━━━━━━━', '│ Kategori *' + requested + '* tidak ditemukan atau tidak tersedia.', '│ Pilihan: ' + available, '╰━━━━━━━━━━━━━━━━━━━━━━━━', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
     }
+    const selectedCommand = String((ctx.args || [])[1] || '').trim().toLowerCase();
+    if (selectedCommand) {
+      const selectedPlugin = category.plugins.find(plugin => plugin.commands.includes(selectedCommand) || plugin.name === selectedCommand);
+      if (!selectedPlugin) return 'Fitur *' + selectedCommand + '* tidak ditemukan di kategori *' + category.slug + '*.';
+      return renderPluginHelp(ctx, selectedPlugin.commands[0]) || 'Panduan fitur tidak tersedia.';
+    }
     const lines = renderCategoryLayout(category, commandPrefix, theme);
-    lines.push('Ketik *' + commandPrefix + 'help <command>* untuk melihat panduan fitur.', 'Ketik *' + commandPrefix + 'menu* untuk kembali.');
+    lines.push('Ketik *' + commandPrefix + 'catmenu ' + category.slug + ' <command>* untuk memilih fitur.', 'Ketik *' + commandPrefix + 'menu* untuk kembali.');
     return lines.join('\n').trim();
   }
 
