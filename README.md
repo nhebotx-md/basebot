@@ -134,6 +134,7 @@ Permission plugin dapat memakai:
 - `privateOnly: true`: hanya chat pribadi.
 - `adminOnly: true`: memerlukan admin grup.
 - `botAdminOnly: true`: bot harus menjadi admin grup.
+- `metadataRequired: true`: core memuat metadata grup untuk pemeriksaan permission per-subcommand.
 - `roles: ['premium', 'moderator']` atau `minRole: 'premium'`: pembatas role.
 - `accessRequired: true`: perlu grant akses command/kategori dari owner.
 
