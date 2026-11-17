@@ -13,7 +13,7 @@ module.exports = {
   category: 'management',
   description: 'Mengelola grup, nama, deskripsi, undangan, dan akses grup.',
   usage: '.groupadmin <create|name|desc|invite|revoke|joininfo|join|leave> [data]',
-  permissions: { registrationExempt: true },
+  permissions: { registrationExempt: true, metadataRequired: true },
   async execute(ctx) {
     const [action, ...parts] = String(ctx.text || '').trim().split(/\s+/);
     const value = parts.join(' ').trim();
