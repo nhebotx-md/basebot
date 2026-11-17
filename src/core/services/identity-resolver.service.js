@@ -38,8 +38,8 @@ class IdentityResolver {
     while (this.cache.size > this.maxEntries) this.cache.delete(this.cache.keys().next().value);
   }
 
-  async resolvePair(value) {
-    const identity = normalizeIdentity(value, this.client.decodeJid);
+  async resolvePair(value, decodeJid = this.client.decodeJid) {
+    const identity = normalizeIdentity(value, decodeJid);
     if (!identity) return { identity: '', phoneNumber: '', lid: '', identities: [] };
     const cached = this._read(identity);
     if (cached) return cached;
@@ -49,15 +49,15 @@ class IdentityResolver {
     const mapping = this.client.signalRepository?.lidMapping;
 
     if (lid && typeof mapping?.getPNForLID === 'function') {
-      try { phoneNumber = normalizeIdentity(await mapping.getPNForLID(lid), this.client.decodeJid) || phoneNumber; }
+      try { phoneNumber = normalizeIdentity(await mapping.getPNForLID(lid), decodeJid) || phoneNumber; }
       catch { /* LID mapping is optional; retain the original identity. */ }
     }
 
     if (typeof this.client.findUserId === 'function') {
       try {
         const found = await this.client.findUserId(identity);
-        phoneNumber = normalizeIdentity(found?.phoneNumber, this.client.decodeJid) || phoneNumber;
-        lid = normalizeIdentity(found?.lid, this.client.decodeJid) || lid;
+        phoneNumber = normalizeIdentity(found?.phoneNumber, decodeJid) || phoneNumber;
+        lid = normalizeIdentity(found?.lid, decodeJid) || lid;
       } catch {
         // Never turn a failed directory lookup into an identity/permission match.
       }
@@ -70,14 +70,14 @@ class IdentityResolver {
     return result;
   }
 
-  async resolve(value) {
-    return (await this.resolvePair(value)).identity;
+  async resolve(value, decodeJid) {
+    return (await this.resolvePair(value, decodeJid)).identity;
   }
 
-  async resolveBest(values) {
+  async resolveBest(values, decodeJid) {
     let fallback = '';
     for (const value of values || []) {
-      const result = await this.resolvePair(value);
+      const result = await this.resolvePair(value, decodeJid);
       if (!result.identity) continue;
       if (!fallback) fallback = result.identity;
       if (result.phoneNumber) return result.phoneNumber;
