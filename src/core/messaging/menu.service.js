@@ -10,7 +10,8 @@ const CATEGORY_ICONS = Object.freeze({
   panel: '▦', vps: '⌁', anime: '✿', finance: '＄', news: '▤',
   convert: '⇄', rpg: '⚔', tts: '♫'
 });
-const MENU_THEMES = Object.freeze(['showcase', 'terminal', 'minimal', 'premium']);
+const MENU_THEMES = Object.freeze(['showcase', 'terminal', 'minimal', 'premium', 'editorial']);
+const MENU_THEME_VERSIONS = Object.freeze({ v1: 'showcase', v2: 'terminal', v3: 'minimal', v4: 'premium', v5: 'editorial' });
 const CATEGORY_LAYOUTS = Object.freeze({
   owner: 'control', system: 'control', panel: 'control', vps: 'control',
   download: 'media', downloader: 'media', media: 'media', sticker: 'media',
@@ -23,7 +24,8 @@ const FRAME = Object.freeze({
   showcase: { top: '╭━━━━━━━━〔', mid: '┣━━━━━━━━━━━━━━━━━━━━━━━━', bottom: '╰━━━━━━━━━━━━━━━━━━━━━━━━', bullet: '◆' },
   terminal: { top: '┌─〔', mid: '├────────────────────────', bottom: '└────────────────────────', bullet: '›' },
   minimal: { top: '╭─〔', mid: '├────────────────────────', bottom: '╰────────────────────────', bullet: '·' },
-  premium: { top: '╭━━━━━━━━〔', mid: '┣━━━━━━━━━━━━━━━━━━━━━━━━', bottom: '╰━━━━━━━━━━━━━━━━━━━━━━━━', bullet: '✦' }
+  premium: { top: '╭━━━━━━━━〔', mid: '┣━━━━━━━━━━━━━━━━━━━━━━━━', bottom: '╰━━━━━━━━━━━━━━━━━━━━━━━━', bullet: '✦' },
+  editorial: { top: '╭──────〔', mid: '├────────────────────────', bottom: '╰────────────────────────', bullet: '▸' }
 });
 
 function normalizeCategory(value) {
@@ -96,10 +98,14 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
   return lines;
 }
 
-function createMenuService({ registry, config, version = '0.0.0', startedAt = Date.now(), clock = () => new Date() }) {
+function createMenuService({ registry, config, database = null, version = '0.0.0', startedAt = Date.now(), clock = () => new Date() }) {
   if (!registry || typeof registry.list !== 'function') throw new TypeError('MenuService membutuhkan PluginRegistry.');
   if (!config) throw new TypeError('MenuService membutuhkan konfigurasi.');
-  let themeCursor = 0;
+  const savedPreferences = database?.read?.('plugins')?.menuPreferences || {};
+  const preferences = {
+    menuTheme: MENU_THEMES.includes(savedPreferences.menuTheme) ? savedPreferences.menuTheme : 'showcase',
+    categoryTheme: MENU_THEMES.includes(savedPreferences.categoryTheme) ? savedPreferences.categoryTheme : 'premium'
+  };
 
   function getVisiblePlugins(ctx) {
     return registry.list({ includeDisabled: false }).filter(plugin => validatePermission(plugin, ctx).allowed);
@@ -114,12 +120,29 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     }
     return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label, 'id'));
   }
-  function getNextTheme() {
-    const theme = MENU_THEMES[themeCursor % MENU_THEMES.length];
-    themeCursor = (themeCursor + 1) % MENU_THEMES.length;
-    return theme;
+  function getNextTheme() { return preferences.menuTheme; }
+
+  async function setTheme(ctx, type) {
+    const isCategory = type === 'category';
+    const command = isCategory ? 'setcatmenu' : 'setmenu';
+    const requested = String((ctx.args || [])[0] || '').trim().toLowerCase();
+    if (!ctx.isOwner) return '╭━━━━━━━━〔 ACCESS DENIED 〕\n│ Command *.' + command + '* hanya dapat digunakan owner bot.\n╰━━━━━━━━━━━━━━━━━━━━━━━━';
+    if (!requested) {
+      const current = isCategory ? preferences.categoryTheme : preferences.menuTheme;
+      const currentVersion = Object.keys(MENU_THEME_VERSIONS).find(key => MENU_THEME_VERSIONS[key] === current) || 'v1';
+      return ['╭━━━━━━━━〔 MENU THEME SETTINGS 〕', '│ Pengaturan: *' + (isCategory ? 'CATEGORY MENU' : 'MAIN MENU') + '*', '│ Tema aktif: *' + currentVersion + '* (' + current + ')', '┣━━━━━━━━━━━━━━━━━━━━━━━━', ...Object.entries(MENU_THEME_VERSIONS).map(([v, theme]) => '│ ' + v + '  •  ' + theme), '╰━━━━━━━━━━━━━━━━━━━━━━━━', 'Gunakan *' + (ctx.prefix || '.') + command + ' v1-v5* untuk memilih tema.'].join('\n');
+    }
+    const selected = MENU_THEME_VERSIONS[requested];
+    if (!selected) return 'Versi tidak valid. Pilihan tersedia: *v1, v2, v3, v4, v5*.\nContoh: *' + (ctx.prefix || '.') + command + ' v3*';
+    const key = isCategory ? 'categoryTheme' : 'menuTheme';
+    preferences[key] = selected;
+    if (database?.update) await database.update('plugins', state => {
+      state.menuPreferences = { ...(state.menuPreferences || {}), [key]: selected };
+    });
+    return '╭━━━━━━━━〔 THEME UPDATED 〕\n│ ' + (isCategory ? 'CATEGORY MENU' : 'MAIN MENU') + ' berhasil diubah.\n│ Versi: *' + requested.toUpperCase() + '*\n│ Tema: *' + selected + '*\n╰━━━━━━━━━━━━━━━━━━━━━━━━';
   }
-  function renderMenu(ctx, selectedTheme = getNextTheme()) {
+
+  function renderMenu(ctx, selectedTheme = preferences.menuTheme) {
     const theme = MENU_THEMES.includes(selectedTheme) ? selectedTheme : MENU_THEMES[0];
     const frame = FRAME[theme];
     const plugins = getVisiblePlugins(ctx);
@@ -167,7 +190,7 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
     const commandPrefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const requested = normalizeCategory((ctx.args || []).join(' '));
     const categories = getCategories(ctx);
-    const theme = 'premium';
+    const theme = preferences.categoryTheme;
     if (!requested) {
       const lines = frameLines('▣ CATEGORY INDEX', theme, 'PILIH DIREKTORI FITUR YANG INGIN DIBUKA');
       for (const category of categories) {
@@ -195,13 +218,16 @@ function createMenuService({ registry, config, version = '0.0.0', startedAt = Da
   }
 
   return Object.freeze({
-    canHandle(command) { return command === 'menu' || command === 'help' || command === 'catmenu'; },
+    canHandle(command) { return ['menu', 'help', 'catmenu', 'setmenu', 'setcatmenu'].includes(command); },
     async execute(ctx) {
-      const output = ctx.command === 'catmenu' ? renderCategory(ctx) : renderMenu(ctx);
+      let output;
+      if (ctx.command === 'setmenu') output = await setTheme(ctx, 'menu');
+      else if (ctx.command === 'setcatmenu') output = await setTheme(ctx, 'category');
+      else output = ctx.command === 'catmenu' ? renderCategory(ctx) : renderMenu(ctx);
       await ctx.reply(output);
       return { handled: true, command: ctx.command };
     },
-    renderMenu, renderCategory, getCategories, getNextTheme, themes: MENU_THEMES
+    renderMenu, renderCategory, getCategories, getNextTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
   });
 }
 
