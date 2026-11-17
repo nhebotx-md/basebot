@@ -29,7 +29,7 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 | Downloader | `.play` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram; `.tt`/`.tiktok` untuk video, slideshow, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
 | Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar. |
 | Media | Brat sticker statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui satu REST API (`stickerapi`/`stapi`), image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
-| Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, serta pengelolaan file sementara dan sesi. |
+| Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
 | User | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik. |
 
 Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape`, `fast`, `fat`, `nightcore`, `reverse`, `robot`, `slow`, `smooth`, dan `tupai`. Gunakan sesuai command yang terdaftar pada menu.
