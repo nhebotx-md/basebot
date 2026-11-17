@@ -204,9 +204,9 @@ class CommandDispatcher {
     if (!plugin) {
       const suggestions = findCommandSuggestions(ctx.command, this.registry, ctx);
       if (suggestions.length) {
-        const lines = ['Command *' + ctx.prefix + ctx.command + '* tidak ditemukan.', 'Mungkin maksudmu:'];
-        for (const item of suggestions) lines.push('• *' + ctx.prefix + item.command + '*');
-        lines.push('Gunakan *' + ctx.prefix + 'menu* untuk melihat daftar fitur.');
+        const lines = ['Command *' + (ctx.prefix || '.') + ctx.command + '* tidak ditemukan.', 'Mungkin maksudmu:'];
+        for (const item of suggestions) lines.push('• *' + (ctx.prefix || '.') + item.command + '*');
+        lines.push('Gunakan *' + (ctx.prefix || '.') + 'menu* untuk melihat daftar fitur.');
         await ctx.reply(lines.join('\n'));
         return { handled: true, reason: 'unknown-command', suggestions: suggestions.map(item => item.command) };
       }
