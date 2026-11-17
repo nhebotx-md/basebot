@@ -3,6 +3,7 @@
 const COMMAND_PATTERN = /^[\p{L}\p{N}_-]{1,40}$/u;
 const PERMISSION_KEYS = ['ownerOnly', 'groupOnly', 'privateOnly', 'adminOnly', 'botAdminOnly', 'restricted', 'ownerAdminBypass', 'accessRequired', 'registrationExempt'];
 const ROLE_NAMES = ['user', 'premium', 'moderator'];
+const { BAILEYS_PLUGIN_EVENTS } = require('../events/event-dispatcher');
 
 function validatePlugin(plugin, filePath = '<unknown>') {
   const errors = [];
@@ -31,7 +32,17 @@ function validatePlugin(plugin, filePath = '<unknown>') {
     } else if (!PERMISSION_KEYS.includes(key)) errors.push(`permission tidak dikenal: ${key}.`);
     else if (typeof permissions[key] !== 'boolean') errors.push(`permissions.${key} harus boolean.`);
   }
-  if (plugin.events !== undefined && (!Array.isArray(plugin.events) || plugin.events.some(event => typeof event !== 'string'))) errors.push('events harus berupa array nama event.');
+  if (plugin.events !== undefined) {
+    if (!Array.isArray(plugin.events) || plugin.events.some(event => typeof event !== 'string')) errors.push('events harus berupa array nama event.');
+    else {
+      const seenEvents = new Set();
+      for (const event of plugin.events) {
+        if (!BAILEYS_PLUGIN_EVENTS.includes(event)) errors.push('event Baileys tidak didukung: ' + event + '.');
+        if (seenEvents.has(event)) errors.push('event plugin duplikat: ' + event + '.');
+        seenEvents.add(event);
+      }
+    }
+  }
   if (plugin.onEvent !== undefined && typeof plugin.onEvent !== 'function') errors.push('onEvent harus berupa function.');
   if (plugin.events?.length && typeof plugin.onEvent !== 'function') errors.push('plugin event wajib menyediakan onEvent(ctx, event).');
   return { valid: errors.length === 0, errors: errors.map(error => `${filePath}: ${error}`) };
