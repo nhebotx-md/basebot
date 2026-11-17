@@ -52,6 +52,6 @@ test('TikTok slideshow downloads photos and sends them as one native album', asy
   await tiktok.execute(ctx);
   assert.equal(ctx.albums.length, 1);
   assert.equal(ctx.albums[0][1].length, 2);
-  assert.equal(ctx.albums[0][1][0].caption, 'Slideshow TikTok 1\\nSlideshow');
+  assert.equal(ctx.albums[0][1][0].caption, 'Slideshow TikTok 1\nSlideshow');
   assert.equal(ctx.messages.length, 0);
 });
