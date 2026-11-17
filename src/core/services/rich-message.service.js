@@ -1,6 +1,6 @@
 'use strict';
 
-const { assertPublicHttpUrl } = require('../security/safe-url');
+const { assertPublicHttpUrl, fetchPublic } = require('../security/safe-url');
 
 const LANGUAGES = new Set(['css', 'html', 'javascript', 'typescript', 'python', 'golang', 'rust', 'c', 'c#', 'c++', 'bash', 'bat', 'powershell']);
 
@@ -134,15 +134,20 @@ function createRichMessageService(sendMessage) {
       const cards = input?.cards;
       if (!Array.isArray(cards) || cards.length < 2 || cards.length > 10) throw new TypeError('Carousel harus berisi 2 sampai 10 kartu.');
       const normalized = [];
+      let totalImageBytes = 0;
       for (const card of cards) {
         if (!card || typeof card !== 'object' || Array.isArray(card)) throw new TypeError('Kartu carousel tidak valid.');
         const image = card.image;
         let media;
         if (typeof image === 'string') {
           await assertPublicHttpUrl(image);
-          media = { url: image };
+          const downloaded = await fetchPublic(image, { maxBytes: 10 * 1024 * 1024, timeoutMs: 15000 });
+          if (!downloaded.ok || !downloaded.contentType.toLowerCase().startsWith('image/')) throw new TypeError('URL kartu tidak menghasilkan gambar yang valid.');
+          media = downloaded.buffer;
         } else if (Buffer.isBuffer(image)) media = image;
         else throw new TypeError('Setiap kartu wajib memiliki gambar berupa URL publik atau Buffer.');
+        totalImageBytes += media.length;
+        if (totalImageBytes > 25 * 1024 * 1024) throw new RangeError('Total gambar carousel melebihi batas 25 MB.');
         const item = {
           image: media,
           caption: boundedText(card.caption || card.title || ' ', 'Caption kartu', 500, true)
