@@ -6,7 +6,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 
 ## Fitur utama
 
-- **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event pesan, pembaruan suara poll, event peserta grup, dan shutdown terkontrol.
+- **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event dispatcher terpusat untuk reaction, presence, group join request, perubahan grup, newsletter, pembaruan suara poll, dan shutdown terkontrol.
 - **Plugin registry:** pemindaian direktori plugin secara rekursif dan deterministik, validasi metadata, deteksi nama/command duplikat, isolasi file plugin yang gagal dimuat, serta status plugin aktif/nonaktif.
 - **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan lima tema yang dipilih owner melalui `.setmenu v1` sampai `.setmenu v5`. `.catmenu` memiliki pilihan tema independen melalui `.setcatmenu v1` sampai `.setcatmenu v5`. `.menui` membuka kategori melalui tombol native-flow di chat pribadi; command teks yang sama selalu disertakan sebagai fallback untuk klien yang tidak menampilkan tombol. Pilihan tema tersimpan di database dan tidak berubah bergiliran. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
 - **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, reload manual, dan auto reload saat file plugin JavaScript berubah. Registry kandidat divalidasi dahulu; reload gagal tidak mengganti registry aktif.
@@ -17,8 +17,8 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 - **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command, tema warna, serta format JSON terstruktur. Ringkasan aktivitas tidak menampilkan identitas pengirim atau isi pesan.
 - **Plugin process feedback:** plugin dapat menampilkan tahapan kerja yang informatif melalui satu pesan status yang diperbarui, disertai reaksi mulai/selesai/gagal. Dispatcher otomatis menutup status saat plugin selesai atau gagal.
 - **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
-- **Grup dan pesan:** command admin untuk info/undangan, pengaturan grup, anggota dan join request; poll dengan hasil suara anonim; tindakan pesan untuk reaksi, pin/unpin, edit, dan hapus dengan pemeriksaan kepemilikan; wrapper spoiler, view-once, dan ephemeral untuk media.
-- **Keamanan:** normalisasi identitas owner, permission fail-closed saat metadata grup tidak tersedia, validasi URL publik untuk mengurangi SSRF, serta pembatasan path dan permission file storage.
+- **Grup dan pesan:** command admin untuk info/undangan, pengaturan grup, anggota dan join request; poll dengan hasil suara anonim; tindakan pesan untuk reaksi, pin/unpin, edit, dan hapus dengan pemeriksaan kepemilikan; wrapper spoiler, view-once, dan ephemeral untuk media; builder pesan kaya untuk code block, tabel, tautan, rich response, carousel, dan native-flow; manajer grup, Community, dan Channel.
+- **Keamanan:** resolver identitas PN/LID dengan cache dan fallback fail-closed, permission fail-closed saat metadata grup tidak tersedia, validasi URL publik untuk mengurangi SSRF, serta pembatasan path dan permission file storage.
 
 ## Katalog plugin
 
@@ -28,10 +28,10 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 |---|---|
 | AI | `bocchi` (alias `.bocci`/`.bocchi`) untuk percakapan dengan asisten Bocchi; `jeslyn` untuk asisten AI. |
 | Downloader | `.play` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram yang dikirim sebagai album native; `.tt`/`.tiktok` untuk video, slideshow foto sebagai album native, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
-| Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar; `groupinfo`/`grupinfo` untuk info dan tautan undangan; `grupset` untuk izin grup dan pesan sementara; `anggota` untuk add/remove/promote/demote dengan mention; `joinrequests`/`permintaanmasuk` untuk permintaan pending; `joinrequest`/`permintaan` untuk approve/reject yang sudah diverifikasi pending. Operasi mutasi memerlukan bot sebagai admin. |
+| Group | `.groupadmin` untuk pembuatan grup, ubah nama/deskripsi, undangan, pemeriksaan link, dan keluar grup dengan kontrol owner/admin; `.community` untuk Community, subgrup, tautan, undangan, dan persetujuan; `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar; `groupinfo`/`grupinfo` untuk info dan tautan undangan; `grupset` untuk izin grup dan pesan sementara; `anggota` untuk add/remove/promote/demote dengan mention; `joinrequests`/`permintaanmasuk` untuk permintaan pending; `joinrequest`/`permintaan` untuk approve/reject yang sudah diverifikasi pending. Operasi mutasi memerlukan bot sebagai admin. |
 | Media | Brat sticker statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui satu REST API (`stickerapi`/`stapi`), image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
-| Message | `.poll [--multi] pertanyaan \\| opsi1 \\| opsi2` untuk membuat poll; `.pollhasil` (balas pesan poll bot) untuk melihat jumlah suara anonim; `.react`, `.pin`, `.unpin`, `.edit`, dan `.del` untuk tindakan terhadap pesan yang dibalas; `.spoiler`, `.viewonce`, dan `.ephemeral` untuk mengirim ulang gambar/video dengan wrapper pesan Baileys. Edit dibatasi ke pesan bot sendiri; hapus hanya pesan bot sendiri atau oleh admin grup. |
-| Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
+| Message | `.richmsg` untuk code block, tabel, inline links, rich response, carousel, dan native-flow melalui satu builder; `.poll [--multi] pertanyaan \\| opsi1 \\| opsi2` untuk membuat poll; `.pollhasil` (balas pesan poll bot) untuk melihat jumlah suara anonim; `.react`, `.pin`, `.unpin`, `.edit`, dan `.del` untuk tindakan terhadap pesan yang dibalas; `.spoiler`, `.viewonce`, dan `.ephemeral` untuk mengirim ulang gambar/video dengan wrapper pesan Baileys. Edit dibatasi ke pesan bot sendiri; hapus hanya pesan bot sendiri atau oleh admin grup. |
+| Owner | `.newsletter` untuk follow/unfollow, mute/unmute, info, subscriber, pembuatan Channel, perubahan metadata, dan foto; pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
 | User / Utility | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik; `.menui` untuk memilih kategori lewat tombol interaktif di chat pribadi, dengan command teks sebagai fallback. |
 
 Catatan: `viewonce` tidak mencegah penerima mengambil tangkapan layar atau merekam layar. Jangan gunakan sebagai jaminan kerahasiaan.
@@ -134,6 +134,7 @@ Permission plugin dapat memakai:
 - `privateOnly: true`: hanya chat pribadi.
 - `adminOnly: true`: memerlukan admin grup.
 - `botAdminOnly: true`: bot harus menjadi admin grup.
+- `metadataRequired: true`: core memuat metadata grup untuk pemeriksaan permission per-subcommand.
 - `roles: ['premium', 'moderator']` atau `minRole: 'premium'`: pembatas role.
 - `accessRequired: true`: perlu grant akses command/kategori dari owner.
 
@@ -162,12 +163,12 @@ ID referensi pada pesan pengguna dapat dicocokkan dengan record error di log ser
 
 - `index.js`, `src/app.js`: entry point dan bootstrap.
 - `src/core/client`, `src/core/connection`: client WhatsApp, pairing, reconnect, dan lifecycle.
-- `src/core/events`: handler pesan, koneksi, kontak, dan peserta grup.
+- `src/core/events`: handler pesan, koneksi, kontak, peserta grup, dan dispatcher event Baileys terpusat.
 - `src/core/messaging`: normalisasi pesan, parser, context, dispatcher, dan menu.
 - `src/core/plugins`: validator, registry, loader, dan plugin manager.
 - `src/core/security`: permission manager dan validasi URL publik.
 - `src/core/database`: database JSON dan service pengguna/grup.
-- `src/core/services`: logger, pesan, media, downloader, storage.
+- `src/core/services`: logger, pesan, rich message, identity resolver, media, downloader, storage.
 - `plugins/<kategori>/*.js`: fitur bot.
 - `tests/unit/*.test.js`: unit test.
 - `docs/`: dokumentasi API dan pengembangan.

@@ -2,6 +2,8 @@
 
 const { parseCommand } = require('./command-parser');
 const { normalizeIdentity } = require('../security/permission-manager');
+const { getIdentityResolver } = require('../services/identity-resolver.service');
+const { createRichMessageService } = require('../services/rich-message.service');
 const { createMessageService } = require('../services/message.service');
 const { createStorageService } = require('../services/storage.service');
 const { createDownloaderService } = require('../services/downloader.service');
@@ -13,31 +15,11 @@ function isPhoneIdentity(value) {
 }
 
 async function resolveIdentity(value, client, decode) {
-  const identity = normalizeIdentity(value, decode);
-  if (!identity || !identity.endsWith('@lid')) return identity;
-
-  const lidMapping = client.signalRepository?.lidMapping;
-  if (typeof lidMapping?.getPNForLID !== 'function') return identity;
-
-  try {
-    const phoneJid = await lidMapping.getPNForLID(identity);
-    const mappedIdentity = normalizeIdentity(phoneJid, decode);
-    return mappedIdentity || identity;
-  } catch {
-    // Permission checks remain fail-closed when Baileys has no LID mapping.
-    return identity;
-  }
+  return getIdentityResolver(client).resolve(value, decode);
 }
 
 async function resolveBestIdentity(values, client, decode) {
-  let fallback = '';
-  for (const value of values) {
-    const identity = await resolveIdentity(value, client, decode);
-    if (!identity) continue;
-    if (!fallback) fallback = identity;
-    if (isPhoneIdentity(identity)) return identity;
-  }
-  return fallback;
+  return getIdentityResolver(client).resolveBest(values, decode);
 }
 
 const newsletterOwnerCache = new WeakMap();
@@ -80,7 +62,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const parsed = parseCommand(m.body, config.prefix);
   let groupMetadata = null;
   const targetPlugin = parsed ? registry.getByCommand(parsed.command) : null;
-  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || (targetPlugin?.category?.toLowerCase() === 'group' && !targetPlugin?.permissions?.ownerOnly) || parsed?.command === 'del' || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
+  const needsGroupMetadata = Boolean(m.isGroup && (targetPlugin?.permissions?.metadataRequired || targetPlugin?.permissions?.adminOnly || targetPlugin?.permissions?.botAdminOnly || (targetPlugin?.category?.toLowerCase() === 'group' && !targetPlugin?.permissions?.ownerOnly) || parsed?.command === 'del' || parsed?.command === 'menu' || parsed?.command === 'help' || parsed?.command === 'catmenu'));
   if (needsGroupMetadata) {
     try { groupMetadata = await client.groupMetadata(m.chat); }
     catch (error) { logger.warn('Metadata grup tidak tersedia; izin admin ditolak.', { error: error.message }); }
@@ -124,6 +106,8 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   const messageService = createMessageService(client, { botName: config.botName || 'ShooNhee-AI', verified: true });
   const services = {
     ...messageService, config, logger, store,
+    identity: getIdentityResolver(client),
+    richMessage: createRichMessageService(messageService.sendMessage),
     pluginManager: registry.pluginManager || null,
     health: registry.healthService || null,
     database: registry.databaseService || null,

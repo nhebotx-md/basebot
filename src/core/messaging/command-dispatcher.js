@@ -269,8 +269,10 @@ class CommandDispatcher {
 
   async dispatchEvent(eventName, ctx, event) {
     const results = [];
-    for (const plugin of this.registry.list({ includeDisabled: false })) {
-      if (!plugin.events?.includes(eventName)) continue;
+    const eventPlugins = typeof this.registry.getByEvent === 'function'
+      ? this.registry.getByEvent(eventName)
+      : this.registry.list({ includeDisabled: false }).filter(plugin => plugin.events?.includes(eventName));
+    for (const plugin of eventPlugins) {
       if (this.activeCommands >= this.maxConcurrentCommands) { results.push({ plugin: plugin.name, ok: false, reason: 'busy' }); continue; }
       this.activeCommands += 1;
       try { await plugin.onEvent(ctx, event); results.push({ plugin: plugin.name, ok: true }); }

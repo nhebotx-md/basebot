@@ -4,8 +4,7 @@ const { createPairingManager } = require('./pairing-manager');
 const { createConnectionUpdateHandler } = require('../events/connection-update');
 const { createMessagesUpsertHandler } = require('../events/messages-upsert');
 const { createContactsUpdateHandler } = require('../events/contacts-update');
-const { createGroupParticipantsHandler } = require('../events/group-participants');
-const { createMessagesUpdateHandler } = require('../events/messages-update');
+const { createBaileysEventDispatcher } = require('../events/event-dispatcher');
 
 function errorContext(error) {
   if (!(error instanceof Error)) return { error: String(error) };
@@ -76,19 +75,13 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       client.public = runtimePublicMode;
       const onMessages = createMessagesUpsertHandler({ dispatcher, config, registry, logger, userService, groupService });
       const onContacts = createContactsUpdateHandler({ logger });
-      const onGroupParticipants = createGroupParticipantsHandler({ dispatcher, client, config, registry, logger });
-      const onMessagesUpdate = createMessagesUpdateHandler({ dispatcher, client, config, registry, logger });
+      const eventDispatcher = createBaileysEventDispatcher({ dispatcher, client, config, registry, logger });
+      eventDispatcher.bind(client);
       client.ev.on('messages.upsert', update => {
         Promise.resolve(onMessages(client, update, store)).catch(error => logger.error('Handler messages.upsert gagal.', errorContext(error)));
       });
       client.ev.on('contacts.update', update => {
         try { onContacts(update); } catch (error) { logger.error('Handler contacts.update gagal.', errorContext(error)); }
-      });
-      client.ev.on('group-participants.update', update => {
-        Promise.resolve(onGroupParticipants(update)).catch(error => logger.error('Handler group-participants.update gagal.', errorContext(error)));
-      });
-      client.ev.on('messages.update', update => {
-        Promise.resolve(onMessagesUpdate(update)).catch(error => logger.error('Handler messages.update gagal.', errorContext(error)));
       });
       client.ev.on('connection.update', createConnectionUpdateHandler({
         logger,

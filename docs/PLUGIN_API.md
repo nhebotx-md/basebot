@@ -23,7 +23,7 @@ module.exports = {
 };
 ```
 
-`name` dan command harus unik tanpa membedakan kapitalisasi. Alias dicantumkan dalam `commands`. `category`, `description`, dan `usage` wajib diisi. Properti `permissions` dapat menghilangkan flag yang tidak digunakan; semua flag yang diberikan harus boolean. `restricted: true` membatasi plugin ke owner, begitu pula ketika bot berada pada mode self.
+`name` dan command harus unik tanpa membedakan kapitalisasi. Alias dicantumkan dalam `commands`. `category`, `description`, dan `usage` wajib diisi. Properti `permissions` dapat menghilangkan flag yang tidak digunakan; semua flag yang diberikan harus boolean. `restricted: true` membatasi plugin ke owner, begitu pula ketika bot berada pada mode self. `metadataRequired: true` meminta core memuat metadata grup sebelum membuat context saat command dijalankan di grup; ini berguna untuk plugin yang memeriksa role admin per-subcommand.
 
 Context dibangun oleh core dan berisi `client`/`sock`, `m` (pesan normalisasi), `chatUpdate`, `store`, `registry`, `config`, `logger`, `command`, `prefix`, `args`, `text`, `sender`, `chat`, `pushname`, `isGroup`, `isPrivate`, `isOwner`, `isGroupAdmin`, `isBotAdmin`, `groupMetadata`, `reply`, `react`, `sendMessage`, `quoted`, `mime`, `progress`, `process`, dan `services`. Metadata grup gagal dimuat berarti pemeriksaan admin gagal secara tertutup. `services` berisi service pesan, media unduhan berbatas, storage, logger, `sleep`, `fetchJson`, serta `database`, `users`, dan `groups`. Gunakan `services.users` dan `services.groups`; jangan mengakses file JSON secara langsung.
 
@@ -70,3 +70,19 @@ Plugin boleh mendengarkan event tanpa mendaftarkan command palsu sebagai jalur k
 ## Plugin Manager
 
 Command owner untuk mengelola plugin runtime didokumentasikan di [PLUGIN_MANAGEMENT.md](./PLUGIN_MANAGEMENT.md). Plugin manager tersedia melalui `ctx.services.pluginManager`; API ini hanya diberikan setelah bootstrap membuat registry dan manager. Status enable/disable bersifat runtime dan reload seluruh plugin dilakukan secara staged.
+
+## Baileys Event API
+
+Plugin event harus berlangganan nama event yang diizinkan core. Nama event divalidasi saat plugin dimuat; event arbitrary dan duplikat ditolak. Event dispatcher memasang satu listener per event Baileys dan meneruskan payload hanya ke plugin yang terdaftar.
+
+Plugin dapat mengisi properti events dan onEvent(ctx, event). Event yang tersedia mencakup messages.update, messages.reaction, presence.update, group-participants.update, group.join-request, groups.update, groups.upsert, newsletter.reaction, newsletter.view, newsletter-participants.update, newsletter-settings.update, lid-mapping.update, message-receipt.update, messages.delete, messages.media-update, blocklist.update, dan settings.update.
+
+Event callback menerima ctx.client/ctx.sock, ctx.chat, flag jenis chat, logger, registry, dan service inti. Payload Baileys tersedia sebagai argumen kedua onEvent(ctx, event). Jangan mengirim payload event mentah ke chat atau log karena dapat berisi identitas pengguna.
+
+## Identity Resolver
+
+ctx.services.identity menyediakan resolver PN/LID dengan cache terbatas dan TTL. resolve(jid) mengembalikan identitas nomor telepon bila pemetaan tersedia; jika tidak, ia mempertahankan LID. resolvePair(jid) mengembalikan identity, phoneNumber, lid, dan identities. Core menggunakan resolver ini untuk pemeriksaan owner dan admin. Kegagalan lookup tidak pernah memberikan hak akses.
+
+## Rich Message Builder
+
+ctx.services.richMessage menyediakan sendCode, sendTable, sendLinks, sendRichResponse, sendCarousel, dan sendNativeFlow. Semua metode memvalidasi batas panjang, struktur tabel, jumlah kartu/tombol, bahasa code block, dan URL publik sebelum mengirim. Command richmsg memakai satu plugin dengan payload JSON untuk semua format tersebut.
