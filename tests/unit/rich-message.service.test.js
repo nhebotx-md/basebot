@@ -26,4 +26,5 @@ test('rich message builder rejects malformed tables, unsupported languages, and 
   await assert.rejects(service.sendTable('chat', { rows: [['A', 'B'], ['1']] }), /Struktur tabel/);
   await assert.rejects(service.sendLinks('chat', { links: [{ text: 'Local', url: 'http://127.0.0.1/admin' }] }), /private|privat|IP/i);
   await assert.rejects(service.sendCarousel('chat', { cards: [{ image: Buffer.from('only') }] }), /2 sampai 10/);
+  await assert.rejects(service.sendCarousel('chat', { cards: [{ image: 'http://127.0.0.1/image.png' }, { image: Buffer.from('two') }] }), /privat|private|tidak publik/i);
 });
