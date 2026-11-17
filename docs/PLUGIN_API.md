@@ -23,7 +23,7 @@ module.exports = {
 };
 ```
 
-`name` dan command harus unik tanpa membedakan kapitalisasi. Alias dicantumkan dalam `commands`. `category`, `description`, dan `usage` wajib diisi. Properti `permissions` dapat menghilangkan flag yang tidak digunakan; semua flag yang diberikan harus boolean. `restricted: true` membatasi plugin ke owner, begitu pula ketika bot berada pada mode self.
+`name` dan command harus unik tanpa membedakan kapitalisasi. Alias dicantumkan dalam `commands`. `category`, `description`, dan `usage` wajib diisi. Properti `permissions` dapat menghilangkan flag yang tidak digunakan; semua flag yang diberikan harus boolean. `restricted: true` membatasi plugin ke owner, begitu pula ketika bot berada pada mode self. `metadataRequired: true` meminta core memuat metadata grup sebelum membuat context saat command dijalankan di grup; ini berguna untuk plugin yang memeriksa role admin per-subcommand.
 
 Context dibangun oleh core dan berisi `client`/`sock`, `m` (pesan normalisasi), `chatUpdate`, `store`, `registry`, `config`, `logger`, `command`, `prefix`, `args`, `text`, `sender`, `chat`, `pushname`, `isGroup`, `isPrivate`, `isOwner`, `isGroupAdmin`, `isBotAdmin`, `groupMetadata`, `reply`, `react`, `sendMessage`, `quoted`, `mime`, `progress`, `process`, dan `services`. Metadata grup gagal dimuat berarti pemeriksaan admin gagal secara tertutup. `services` berisi service pesan, media unduhan berbatas, storage, logger, `sleep`, `fetchJson`, serta `database`, `users`, dan `groups`. Gunakan `services.users` dan `services.groups`; jangan mengakses file JSON secara langsung.
 
