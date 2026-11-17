@@ -1,7 +1,7 @@
 'use strict';
 
 const COMMAND_PATTERN = /^[\p{L}\p{N}_-]{1,40}$/u;
-const PERMISSION_KEYS = ['ownerOnly', 'groupOnly', 'privateOnly', 'adminOnly', 'botAdminOnly', 'restricted', 'ownerAdminBypass', 'accessRequired', 'registrationExempt'];
+const PERMISSION_KEYS = ['ownerOnly', 'groupOnly', 'privateOnly', 'adminOnly', 'botAdminOnly', 'restricted', 'ownerAdminBypass', 'accessRequired', 'registrationExempt', 'metadataRequired'];
 const ROLE_NAMES = ['user', 'premium', 'moderator'];
 const { BAILEYS_PLUGIN_EVENTS } = require('../events/event-dispatcher');
 
