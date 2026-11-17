@@ -202,7 +202,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
 
   function renderCategory(ctx) {
     const commandPrefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
-    const requested = normalizeCategory((ctx.args || []).join(' '));
+    const requested = normalizeCategory((ctx.args || [])[0]);
     const categories = getCategories(ctx);
     const theme = preferences.categoryTheme;
     if (!requested) {
