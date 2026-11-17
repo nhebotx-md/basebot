@@ -29,7 +29,8 @@ function createContext(overrides = {}) {
 
 function createRegistry() {
   return {
-    list: ({ includeDisabled } = {}) => includeDisabled ? plugins : plugins
+    list: ({ includeDisabled } = {}) => includeDisabled ? plugins : plugins,
+    getByCommand: command => plugins.find(plugin => plugin.commands.includes(String(command).toLowerCase()))
   };
 }
 
@@ -242,7 +243,7 @@ test('.help uses the same core menu renderer as .menu', async () => {
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   assert.equal(service.canHandle('help'), true);
   await service.execute(ctx);
-  assert.match(replies[0], /COMMAND MENU/);
+  assert.match(replies[0], /FEATURE MENU/);
   assert.match(replies[0], /ShoNhe/);
 });
 
@@ -253,9 +254,9 @@ test('.help <command> shows plugin guidance only when requested', async () => {
   await service.execute(ctx);
   assert.match(replies[0], /FEATURE GUIDE/);
   assert.match(replies[0], /\\.ytmp4/);
-  assert.match(replies[0], /\\.ytv/);
-  assert.match(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\\.ytmp4 <url>/);
+  assert.doesNotMatch(replies[0], /\\.ytv/);
+  assert.doesNotMatch(replies[0], /Unduh video dari YouTube/);
+  assert.doesNotMatch(replies[0], /\\.ytmp4 <url>/);
 });
 
 test('command similarity ranks typo corrections and respects user permissions', () => {
