@@ -208,7 +208,7 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   assert.match(menu, /STATUS/);
   assert.match(menu, /FEATURE COLLECTION/);
   assert.match(category, /DOWNLOAD STUDIO/);
-  assert.doesNotMatch(category, /MODULES|commands|Unduh video dari YouTube|\\.ytv/);
+  assert.doesNotMatch(category, /MODULES|commands|Unduh video dari YouTube|\.ytv/);
 });
 
 test('.catmenu category index and unknown category use the same premium frame language', () => {
@@ -253,10 +253,10 @@ test('.help <command> shows plugin guidance only when requested', async () => {
   const service = createMenuService({ registry: createRegistry(), config });
   await service.execute(ctx);
   assert.match(replies[0], /FEATURE GUIDE/);
-  assert.match(replies[0], /\\.ytmp4/);
-  assert.match(replies[0], /\\.ytv/);
+  assert.match(replies[0], /\.ytmp4/);
+  assert.match(replies[0], /\.ytv/);
   assert.match(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\\.ytmp4 <url>/);
+  assert.match(replies[0], /\.ytmp4 <url>/);
 });
 
 test('command similarity ranks typo corrections and respects user permissions', () => {
@@ -273,7 +273,7 @@ test('.menu and .catmenu never leak descriptions, aliases, usage, or module tota
   const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
   for (const output of [menu, category]) {
     assert.doesNotMatch(output, /root@basebot|catalog --|exit 0|modules loaded|commands/i);
-    assert.doesNotMatch(output, /Unduh video dari YouTube|\\.ytv|<url>/);
+    assert.doesNotMatch(output, /Unduh video dari YouTube|\.ytv|<url>/);
   }
 });
 
@@ -283,8 +283,8 @@ test('.catmenu <category> <command> opens contextual plugin guidance', async () 
   const service = createMenuService({ registry: createRegistry(), config });
   await service.execute(ctx);
   assert.match(replies[0], /FEATURE GUIDE/);
-  assert.match(replies[0], /\\.ytmp4/);
-  assert.match(replies[0], /\\.ytv/);
+  assert.match(replies[0], /\.ytmp4/);
+  assert.match(replies[0], /\.ytv/);
   assert.match(replies[0], /Unduh video dari YouTube/);
 });
 
@@ -296,5 +296,5 @@ test('dispatcher replies with a permission-safe typo correction', async () => {
   assert.equal(result.reason, 'unknown-command');
   assert.ok(result.suggestions.includes('ytmp4'));
   assert.match(replies[0], /Mungkin maksudmu/);
-  assert.match(replies[0], /\\.ytmp4/);
+  assert.match(replies[0], /\.ytmp4/);
 });
