@@ -20,5 +20,6 @@ test('mock messages.upsert builds context, dispatches case-insensitive command, 
   assert.equal(sent.length, 1);
   assert.equal(sent[0][0], '6289999999999@s.whatsapp.net');
   assert.equal(sent[0][1].text, 'Pong: hello there');
-  assert.equal(sent[0][2].quoted.key.id, 'cmd1');
+  assert.equal(sent[0][2].quoted.key.remoteJid, '6289999999999@s.whatsapp.net');
+  assert.equal(sent[0][2].quoted.message.contactMessage.displayName, '✅ ShooNhee-AI');
 });
