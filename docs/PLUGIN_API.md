@@ -70,3 +70,19 @@ Plugin boleh mendengarkan event tanpa mendaftarkan command palsu sebagai jalur k
 ## Plugin Manager
 
 Command owner untuk mengelola plugin runtime didokumentasikan di [PLUGIN_MANAGEMENT.md](./PLUGIN_MANAGEMENT.md). Plugin manager tersedia melalui `ctx.services.pluginManager`; API ini hanya diberikan setelah bootstrap membuat registry dan manager. Status enable/disable bersifat runtime dan reload seluruh plugin dilakukan secara staged.
+
+## Baileys Event API
+
+Plugin event harus berlangganan nama event yang diizinkan core. Nama event divalidasi saat plugin dimuat; event arbitrary dan duplikat ditolak. Event dispatcher memasang satu listener per event Baileys dan meneruskan payload hanya ke plugin yang terdaftar.
+
+Plugin dapat mengisi properti events dan onEvent(ctx, event). Event yang tersedia mencakup messages.update, messages.reaction, presence.update, group-participants.update, group.join-request, groups.update, groups.upsert, newsletter.reaction, newsletter.view, newsletter-participants.update, newsletter-settings.update, lid-mapping.update, message-receipt.update, messages.delete, messages.media-update, blocklist.update, dan settings.update.
+
+Event callback menerima ctx.client/ctx.sock, ctx.chat, flag jenis chat, logger, registry, dan service inti. Payload Baileys tersedia sebagai argumen kedua onEvent(ctx, event). Jangan mengirim payload event mentah ke chat atau log karena dapat berisi identitas pengguna.
+
+## Identity Resolver
+
+ctx.services.identity menyediakan resolver PN/LID dengan cache terbatas dan TTL. resolve(jid) mengembalikan identitas nomor telepon bila pemetaan tersedia; jika tidak, ia mempertahankan LID. resolvePair(jid) mengembalikan identity, phoneNumber, lid, dan identities. Core menggunakan resolver ini untuk pemeriksaan owner dan admin. Kegagalan lookup tidak pernah memberikan hak akses.
+
+## Rich Message Builder
+
+ctx.services.richMessage menyediakan sendCode, sendTable, sendLinks, sendRichResponse, sendCarousel, dan sendNativeFlow. Semua metode memvalidasi batas panjang, struktur tabel, jumlah kartu/tombol, bahasa code block, dan URL publik sebelum mengirim. Command richmsg memakai satu plugin dengan payload JSON untuk semua format tersebut.
