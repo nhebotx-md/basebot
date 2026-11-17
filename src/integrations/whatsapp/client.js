@@ -26,6 +26,23 @@ function securePrivateDirectory(directory) {
   return root;
 }
 
+const MAX_ALBUM_ITEMS = 10;
+
+async function sendAlbumMessage(client, jid, items, quoted) {
+  if (!client || typeof client.sendMessage !== 'function') throw new TypeError('Client WhatsApp tidak menyediakan sendMessage.');
+  if (typeof jid !== 'string' || !jid.trim()) throw new TypeError('Tujuan album tidak valid.');
+  if (!Array.isArray(items) || items.length === 0) throw new TypeError('Album harus berisi minimal satu media.');
+  if (items.length > MAX_ALBUM_ITEMS) throw new RangeError('Album maksimal berisi ' + MAX_ALBUM_ITEMS + ' media.');
+  for (const [index, item] of items.entries()) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) throw new TypeError('Item album ke-' + (index + 1) + ' tidak valid.');
+    const hasImage = item.image !== undefined && item.image !== null;
+    const hasVideo = item.video !== undefined && item.video !== null;
+    if (hasImage === hasVideo) throw new TypeError('Setiap item album harus berisi tepat satu gambar atau video.');
+  }
+  const options = quoted === undefined ? {} : { quoted };
+  if (items.length === 1) return client.sendMessage(jid, items[0], options);
+  return client.sendMessage(jid, { album: items }, options);
+}
 function createClientFactory({ config, logger = createLogger(), dependencies } = {}) {
   const suppliedBaileys = dependencies?.baileys;
   const pino = dependencies?.pino || require('pino');
@@ -159,15 +176,11 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
       finally { if (typeof sticker === 'string') await fs.promises.unlink(sticker).catch(() => {}); }
       return sticker;
     };
-    sock.albumMessage = async (jid, items, quoted) => {
-      let result;
-      for (const item of items) result = await sock.sendMessage(jid, item, { quoted });
-      return result;
-    };
+    sock.albumMessage = async (jid, items, quoted) => sendAlbumMessage(sock, jid, items, quoted);
     sock.sendStatusMention = async (content, jids = []) => sock.sendMessage('status@broadcast', content, { statusJidList: jids });
     logger.info('Socket WhatsApp dibuat.', { authDirectory: sessionDirectory, baileysLogLevel: baileysLogOptions.level });
     return sock;
   };
 }
 
-module.exports = { createClientFactory, securePrivateDirectory };
+module.exports = { createClientFactory, securePrivateDirectory, sendAlbumMessage, MAX_ALBUM_ITEMS };
