@@ -13,7 +13,7 @@ module.exports = {
   commands: ['community'],
   category: 'owner',
   description: 'Mengelola Community, subgrup, tautan, dan permintaan bergabung.',
-  usage: '.community <create|list|info|groups|subgroup|link|unlink|invite|revoke|join|joininfo|leave|approve>',
+  usage: '.community <create|list|info|groups|subgroup|link|unlink|invite|revoke|join|joininfo|leave|rename|description|setting|addmode|ephemeral|approval|requests|approve>',
   permissions: { ownerOnly: true, registrationExempt: true, metadataRequired: true },
   async execute(ctx) {
     const input = String(ctx.text || '').trim();
@@ -77,6 +77,55 @@ module.exports = {
       if (unavailable(method)) return ctx.reply('API tautkan/lepas grup tidak tersedia.');
       await client[method](ctx.chat, communityJid);
       return ctx.reply(action === 'link' ? 'Grup berhasil ditautkan ke Community.' : 'Grup berhasil dilepas dari Community.');
+    }
+    if (['rename', 'description', 'setting', 'addmode', 'ephemeral', 'approval', 'requests'].includes(action)) {
+      const communityJid = args[0];
+      const rest = args.slice(1);
+      if (!validJid(communityJid)) return ctx.reply('Masukkan JID Community yang valid setelah subcommand.');
+      const methods = {
+        rename: 'communityUpdateSubject',
+        description: 'communityUpdateDescription',
+        setting: 'communitySettingUpdate',
+        addmode: 'communityMemberAddMode',
+        ephemeral: 'communityToggleEphemeral',
+        approval: 'communityJoinApprovalMode',
+        requests: 'communityRequestParticipantsList'
+      };
+      const method = methods[action];
+      if (unavailable(method)) return ctx.reply('API ' + action + ' Community tidak tersedia.');
+      if (action === 'requests') {
+        const pending = await client[method](communityJid);
+        const entries = Array.isArray(pending) ? pending : Object.values(pending || {});
+        return ctx.reply(entries.length ? 'Permintaan bergabung Community:\n' + entries.slice(0, 30).map((item, index) => (index + 1) + '. ' + String(item.jid || item.id || item.phoneNumber || 'Pemohon')).join('\n') : 'Tidak ada permintaan bergabung yang menunggu.');
+      }
+      const setting = rest.join(' ').trim();
+      if (action === 'rename' || action === 'description') {
+        const limit = action === 'rename' ? 100 : 500;
+        if (!setting || setting.length > limit) return ctx.reply('Masukkan ' + (action === 'rename' ? 'nama' : 'deskripsi') + ' Community baru.');
+        await client[method](communityJid, setting);
+        return ctx.reply('Metadata Community berhasil diperbarui.');
+      }
+      if (action === 'setting') {
+        if (!['announcement', 'not_announcement', 'locked', 'unlocked'].includes(setting)) return ctx.reply('Setting valid: announcement, not_announcement, locked, unlocked.');
+        await client[method](communityJid, setting);
+        return ctx.reply('Pengaturan Community berhasil diperbarui.');
+      }
+      if (action === 'addmode') {
+        if (!['admin_add', 'all_member_add'].includes(setting)) return ctx.reply('Mode valid: admin_add atau all_member_add.');
+        await client[method](communityJid, setting);
+        return ctx.reply('Mode penambahan anggota Community berhasil diperbarui.');
+      }
+      if (action === 'ephemeral') {
+        const seconds = Number(setting);
+        if (![0, 86400, 604800, 7776000].includes(seconds)) return ctx.reply('Durasi valid: 0, 86400, 604800, atau 7776000 detik.');
+        await client[method](communityJid, seconds);
+        return ctx.reply('Durasi pesan sementara Community berhasil diperbarui.');
+      }
+      if (action === 'approval') {
+        if (!['on', 'off'].includes(setting)) return ctx.reply('Mode approval harus on atau off.');
+        await client[method](communityJid, setting);
+        return ctx.reply('Pengaturan persetujuan anggota Community berhasil diperbarui.');
+      }
     }
     if (action === 'approve') {
       const communityJid = args[0];
