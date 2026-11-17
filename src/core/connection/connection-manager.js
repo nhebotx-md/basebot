@@ -5,6 +5,7 @@ const { createConnectionUpdateHandler } = require('../events/connection-update')
 const { createMessagesUpsertHandler } = require('../events/messages-upsert');
 const { createContactsUpdateHandler } = require('../events/contacts-update');
 const { createGroupParticipantsHandler } = require('../events/group-participants');
+const { createMessagesUpdateHandler } = require('../events/messages-update');
 
 function errorContext(error) {
   if (!(error instanceof Error)) return { error: String(error) };
@@ -76,6 +77,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       const onMessages = createMessagesUpsertHandler({ dispatcher, config, registry, logger, userService, groupService });
       const onContacts = createContactsUpdateHandler({ logger });
       const onGroupParticipants = createGroupParticipantsHandler({ dispatcher, client, config, registry, logger });
+      const onMessagesUpdate = createMessagesUpdateHandler({ dispatcher, client, config, registry, logger });
       client.ev.on('messages.upsert', update => {
         Promise.resolve(onMessages(client, update, store)).catch(error => logger.error('Handler messages.upsert gagal.', errorContext(error)));
       });
@@ -84,6 +86,9 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       });
       client.ev.on('group-participants.update', update => {
         Promise.resolve(onGroupParticipants(update)).catch(error => logger.error('Handler group-participants.update gagal.', errorContext(error)));
+      });
+      client.ev.on('messages.update', update => {
+        Promise.resolve(onMessagesUpdate(update)).catch(error => logger.error('Handler messages.update gagal.', errorContext(error)));
       });
       client.ev.on('connection.update', createConnectionUpdateHandler({
         logger,

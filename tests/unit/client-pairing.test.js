@@ -34,7 +34,7 @@ test('client factory serializes async credential writes and exposes a flush barr
         }
       };
     },
-    makeWASocket(input) { options = input; return { ev: new EventEmitter(), sendMessage: async () => {}, end() {} }; },
+    makeWASocket(input) { options = input; return { ev: new EventEmitter(), sendMessage: async jid => ({ key: { remoteJid: jid, id: 'outbound-id' } }), end() {} }; },
     jidDecode(value) { return { user: value.split('@')[0].split(':')[0], server: value.split('@')[1] }; },
     async downloadContentFromMessage() { return Readable.from([Buffer.from('media')]); }
   };
@@ -49,6 +49,9 @@ test('client factory serializes async credential writes and exposes a flush barr
   assert.deepEqual(client.lifecycleReasons, { loggedOut: 401, restartRequired: 515 });
   assert.equal(options.printQRInTerminal, false);
   assert.equal(pinoOptions.level, 'warn');
+  await client.sendMessage('120363000000000000@g.us', { text: 'sent' });
+  assert.equal(client.isOwnMessageKey({ remoteJid: '120363000000000000@g.us', id: 'outbound-id' }), true);
+  assert.equal(client.isOwnMessageKey({ remoteJid: '120363999999999999@g.us', id: 'outbound-id' }), false);
   client.ev.emit('creds.update', { id: 'first' });
   client.ev.emit('creds.update', { id: 'second' });
   await client.waitForCredentialPersistence();

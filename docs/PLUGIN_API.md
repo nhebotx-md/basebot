@@ -65,7 +65,7 @@ async execute(ctx) {
 
 Gunakan `.fail('Alasan singkat', { detail: 'Keterangan aman untuk pengguna' })` jika plugin menangani exception sendiri dan tetap melakukan return. Jangan menaruh URL privat, token, path lokal, atau detail sensitif pada pesan progres. Jika `execute` melempar exception, dispatcher otomatis mengubah status menjadi gagal dan mengirim diagnostik error. Lihat [PLUGIN_PROCESS_FEEDBACK.md](./PLUGIN_PROCESS_FEEDBACK.md).
 
-Plugin boleh mendengarkan event tanpa mendaftarkan command palsu sebagai jalur khusus: gunakan `events: ['group-participants.update']` dan `async onEvent(ctx, event)`. Event non-command tidak dipaksa melewati command parser. Error plugin diisolasi dan dicatat; error satu plugin tidak menghentikan listener lain.
+Plugin boleh mendengarkan event tanpa mendaftarkan command palsu sebagai jalur khusus: gunakan `events: ['group-participants.update']` atau `events: ['messages.update']` dan `async onEvent(ctx, event)`. Untuk `messages.update`, `event` adalah payload pembaruan Baileys dan `ctx` menyediakan `client`/`sock`, `config`, `registry`, `logger`, serta `services` minimal; event tidak dipaksa melewati command parser. Error plugin diisolasi dan dicatat; error satu plugin tidak menghentikan listener lain.
 
 ## Plugin Manager
 

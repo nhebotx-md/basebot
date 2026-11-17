@@ -6,9 +6,9 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 
 ## Fitur utama
 
-- **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event pesan, event peserta grup, dan shutdown terkontrol.
+- **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event pesan, pembaruan suara poll, event peserta grup, dan shutdown terkontrol.
 - **Plugin registry:** pemindaian direktori plugin secara rekursif dan deterministik, validasi metadata, deteksi nama/command duplikat, isolasi file plugin yang gagal dimuat, serta status plugin aktif/nonaktif.
-- **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan lima tema yang dipilih owner melalui `.setmenu v1` sampai `.setmenu v5`. `.catmenu` memiliki pilihan tema independen melalui `.setcatmenu v1` sampai `.setcatmenu v5`. Pilihan tema tersimpan di database dan tidak berubah bergiliran. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
+- **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan lima tema yang dipilih owner melalui `.setmenu v1` sampai `.setmenu v5`. `.catmenu` memiliki pilihan tema independen melalui `.setcatmenu v1` sampai `.setcatmenu v5`. `.menui` membuka kategori melalui tombol native-flow di chat pribadi; command teks yang sama selalu disertakan sebagai fallback untuk klien yang tidak menampilkan tombol. Pilihan tema tersimpan di database dan tidak berubah bergiliran. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
 - **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, reload manual, dan auto reload saat file plugin JavaScript berubah. Registry kandidat divalidasi dahulu; reload gagal tidak mengganti registry aktif.
 - **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
@@ -17,6 +17,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 - **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command, tema warna, serta format JSON terstruktur. Ringkasan aktivitas tidak menampilkan identitas pengirim atau isi pesan.
 - **Plugin process feedback:** plugin dapat menampilkan tahapan kerja yang informatif melalui satu pesan status yang diperbarui, disertai reaksi mulai/selesai/gagal. Dispatcher otomatis menutup status saat plugin selesai atau gagal.
 - **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
+- **Grup dan pesan:** command admin untuk info/undangan, pengaturan grup, anggota dan join request; poll dengan hasil suara anonim; tindakan pesan untuk reaksi, pin/unpin, edit, dan hapus dengan pemeriksaan kepemilikan.
 - **Keamanan:** normalisasi identitas owner, permission fail-closed saat metadata grup tidak tersedia, validasi URL publik untuk mengurangi SSRF, serta pembatasan path dan permission file storage.
 
 ## Katalog plugin
@@ -27,10 +28,11 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 |---|---|
 | AI | `bocchi` (alias `.bocci`/`.bocchi`) untuk percakapan dengan asisten Bocchi; `jeslyn` untuk asisten AI. |
 | Downloader | `.play` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram; `.tt`/`.tiktok` untuk video, slideshow, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
-| Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar. |
+| Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar; `groupinfo`/`grupinfo` untuk info dan tautan undangan; `grupset` untuk izin grup dan pesan sementara; `anggota` untuk add/remove/promote/demote dengan mention; `joinrequests`/`permintaanmasuk` untuk permintaan pending; `joinrequest`/`permintaan` untuk approve/reject yang sudah diverifikasi pending. Operasi mutasi memerlukan bot sebagai admin. |
 | Media | Brat sticker statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui satu REST API (`stickerapi`/`stapi`), image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
+| Message | `.poll [--multi] pertanyaan \| opsi1 \| opsi2` untuk membuat poll; `.pollhasil` (balas pesan poll bot) untuk melihat jumlah suara anonim; `.react`, `.pin`, `.unpin`, `.edit`, dan `.del` untuk tindakan terhadap pesan yang dibalas. Edit dibatasi ke pesan bot sendiri; hapus hanya pesan bot sendiri atau oleh admin grup. |
 | Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
-| User | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik. |
+| User / Utility | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik; `.menui` untuk memilih kategori lewat tombol interaktif di chat pribadi, dengan command teks sebagai fallback. |
 
 Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape`, `fast`, `fat`, `nightcore`, `reverse`, `robot`, `slow`, `smooth`, dan `tupai`. Gunakan sesuai command yang terdaftar pada menu.
 
@@ -39,6 +41,7 @@ Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape
 - `.menu` atau `.help`: direktori utama.
 - `.catmenu`: indeks kategori yang dapat diakses.
 - `.catmenu <kategori>`: daftar plugin, command utama, alias, deskripsi, dan contoh penggunaan pada kategori tersebut.
+- `.menui`: membuka tombol kategori interaktif di chat pribadi; memilih kategori menjalankan command `.catmenu` yang sesuai. Command teks selalu disertakan agar tetap dapat digunakan saat tombol tidak ditampilkan oleh klien WhatsApp.
 - `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama melalui plugin owner mandiri (`plugins/owner/setmenu.js`).
 - `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema category menu melalui plugin owner mandiri (`plugins/owner/setcatmenu.js`), terpisah dari menu utama.
 
@@ -183,4 +186,3 @@ Lihat [Panduan Pengembangan Plugin](docs/PLUGIN_DEVELOPMENT.md) dan [Plugin API]
 Satu plugin media menyediakan `.brat <teks>` untuk sticker Brat statis dan `.bratvid <teks>` untuk sticker animasi. Alias `.bratvideo` tetap tersedia. `.stickerapi brat <teks>` dan `.stickerapi animated <teks>` (alias `.stapi`) juga dipertahankan untuk kompatibilitas.
 
 Siputzx menjadi satu-satunya provider. BASEBOT membatasi teks hingga 300 karakter, timeout 15 detik, respons 8 MiB, memvalidasi signature PNG/GIF, lalu mengonversi media ke format sticker WhatsApp dengan metadata pack lokal. Jika API gagal atau format respons tidak valid, bot melaporkan kegagalan tanpa mengirim file yang belum tervalidasi. Jangan kirim teks rahasia karena teks diproses oleh provider pihak ketiga.
-

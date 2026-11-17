@@ -18,7 +18,6 @@ function getMessageText(message) {
   for (const type of Object.keys(content)) {
     const item = content[type];
     if (!item || typeof item !== 'object') continue;
-    for (const key of ['text', 'caption', 'selectedDisplayText', 'contentText', 'title']) if (typeof item[key] === 'string') return item[key];
     const row = item.singleSelectReply?.selectedRowId;
     if (typeof row === 'string') return row;
     if (typeof item.selectedButtonId === 'string') return item.selectedButtonId;
@@ -27,6 +26,7 @@ function getMessageText(message) {
     if (typeof params === 'string') {
       try { const parsed = JSON.parse(params); if (typeof parsed.id === 'string') return parsed.id; } catch { /* invalid interactive payload */ }
     }
+    for (const key of ['text', 'caption', 'selectedDisplayText', 'contentText', 'title']) if (typeof item[key] === 'string') return item[key];
   }
   return '';
 }
