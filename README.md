@@ -8,7 +8,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 
 - **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event pesan, event peserta grup, dan shutdown terkontrol.
 - **Plugin registry:** pemindaian direktori plugin secara rekursif dan deterministik, validasi metadata, deteksi nama/command duplikat, isolasi file plugin yang gagal dimuat, serta status plugin aktif/nonaktif.
-- **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan empat tema bergilir (showcase, terminal, minimal, premium). `.catmenu` menampilkan indeks dan detail kategori. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
+- **Menu dinamis:** `.menu` dan `.help` menampilkan direktori fitur dengan lima tema yang dipilih owner melalui `.setmenu v1` sampai `.setmenu v5`. `.catmenu` memiliki pilihan tema independen melalui `.setcatmenu v1` sampai `.setcatmenu v5`. Pilihan tema tersimpan di database dan tidak berubah bergiliran. Kategori dan command dihitung dari plugin aktif yang boleh dilihat oleh pengguna.
 - **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, reload manual, dan auto reload saat file plugin JavaScript berubah. Registry kandidat divalidasi dahulu; reload gagal tidak mengganti registry aktif.
 - **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
@@ -39,6 +39,10 @@ Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape
 - `.menu` atau `.help`: direktori utama.
 - `.catmenu`: indeks kategori yang dapat diakses.
 - `.catmenu <kategori>`: daftar plugin, command utama, alias, deskripsi, dan contoh penggunaan pada kategori tersebut.
+- `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama (khusus owner).
+- `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema kategori/catmenu secara terpisah (khusus owner).
+
+Pilihan tema: `v1` showcase, `v2` terminal, `v3` minimal, `v4` premium, dan `v5` editorial. Pengaturan disimpan pada collection `plugins` dan dipulihkan saat bot dijalankan kembali.
 
 Daftar menu mengikuti registry dan permission pengguna. Plugin owner-only tidak ditampilkan kepada pengguna biasa; plugin group-only mengikuti konteks grup dan izin admin yang berlaku.
 
