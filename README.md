@@ -29,7 +29,7 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 | Downloader | `.play` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram; `.tt`/`.tiktok` untuk video, slideshow, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
 | Group | `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome-status` untuk event anggota masuk/keluar. |
 | Media | Brat sticker statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui satu REST API (`stickerapi`/`stapi`), image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`), sticker watermark (`wm` dan alias), sticker maker (`sticker`/`s`), serta voice changer berbasis FFmpeg. |
-| Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, serta pengelolaan file sementara dan sesi. |
+| Owner | Pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
 | User | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik. |
 
 Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape`, `fast`, `fat`, `nightcore`, `reverse`, `robot`, `slow`, `smooth`, dan `tupai`. Gunakan sesuai command yang terdaftar pada menu.
@@ -39,10 +39,10 @@ Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape
 - `.menu` atau `.help`: direktori utama.
 - `.catmenu`: indeks kategori yang dapat diakses.
 - `.catmenu <kategori>`: daftar plugin, command utama, alias, deskripsi, dan contoh penggunaan pada kategori tersebut.
-- `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama (khusus owner).
-- `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema kategori/catmenu secara terpisah (khusus owner).
+- `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama melalui plugin owner mandiri (`plugins/owner/setmenu.js`).
+- `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema category menu melalui plugin owner mandiri (`plugins/owner/setcatmenu.js`), terpisah dari menu utama.
 
-Pilihan tema: `v1` showcase, `v2` terminal, `v3` minimal, `v4` premium, dan `v5` editorial. Pengaturan disimpan pada collection `plugins` dan dipulihkan saat bot dijalankan kembali.
+Pilihan tema:\n- `v1` Showcase: panel informasi berbingkai dan direktori kategori.\n- `v2` Terminal: tampilan console/CLI dengan prompt, status runtime, dan indeks bernomor.\n- `v3` Minimal: daftar ringkas tanpa panel dekoratif.\n- `v4` Premium: kartu koleksi dengan panel bertingkat dan ringkasan modul.\n- `v5` Editorial: layout seperti majalah/jurnal dengan section dan nomor indeks.\n\nKelima layout mengubah struktur konten, bukan hanya karakter border. Tema `.menu` dan `.catmenu` disimpan secara terpisah pada collection `plugins` dan dipulihkan setelah restart. Plugin pengaturan tema hanya dapat dijalankan owner bot yang terverifikasi.
 
 Daftar menu mengikuti registry dan permission pengguna. Plugin owner-only tidak ditampilkan kepada pengguna biasa; plugin group-only mengikuti konteks grup dan izin admin yang berlaku.
 
