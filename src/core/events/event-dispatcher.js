@@ -1,6 +1,8 @@
 'use strict';
 
 const BAILEYS_PLUGIN_EVENTS = Object.freeze([
+  'messages.update',
+  'group-participants.update',
   'messages.reaction',
   'presence.update',
   'group.join-request',
