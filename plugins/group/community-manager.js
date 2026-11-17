@@ -51,6 +51,11 @@ module.exports = {
       const methods = { info: 'communityMetadata', groups: 'communityFetchLinkedGroups', invite: 'communityInviteCode', revoke: 'communityRevokeInvite', leave: 'communityLeave' };
       const method = methods[action];
       if (unavailable(method)) return ctx.reply('API ' + action + ' Community tidak tersedia.');
+      if (action === 'leave') {
+        await ctx.reply('Bot akan keluar dari Community.');
+        await client.communityLeave(value);
+        return;
+      }
       const result = await client[method](value);
       if (action === 'info') return ctx.reply('Community:\nNama: ' + String(result?.subject || '-') + '\nID: ' + String(result?.id || '-') + '\nDeskripsi: ' + String(result?.desc || result?.description || '-') + '\nAnggota: ' + String(result?.size ?? '-'));
       if (action === 'groups') {
@@ -59,7 +64,6 @@ module.exports = {
       }
       if (action === 'invite') return ctx.reply('Undangan Community:\n' + String(result?.code || result?.inviteCode || result));
       if (action === 'revoke') return ctx.reply('Tautan undangan Community berhasil dicabut.');
-      return ctx.reply('Bot telah keluar dari Community.');
     }
     if (action === 'subgroup') {
       const communityJid = args[0];
