@@ -79,6 +79,7 @@ async function createApp(options = {}) {
   if (pluginFiles.length === 0) logger.warn('Tidak ada file plugin yang ditemukan.', { directory: path.relative(process.cwd(), pluginDirectory) || '.' });
 
   const menuService = createMenuService({ registry, config, database, version: packageInfo.version, startedAt: Date.now() });
+  registry.menuService = menuService;
   const dispatcher = new CommandDispatcher({ registry, logger, menuService });
   const createClient = createClientFactory({ config, logger });
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
