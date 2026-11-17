@@ -129,7 +129,7 @@ test('menu theme preferences are restored from database on service recreation', 
   const service = createMenuService({ registry: createRegistry(), config, database });
   assert.equal(service.preferences.menuTheme, 'terminal');
   assert.equal(service.preferences.categoryTheme, 'minimal');
-  assert.match(service.renderMenu(createContext().ctx), /COMMAND CENTER/);
+  assert.match(service.renderMenu(createContext().ctx), /BASEBOT SYSTEM CONSOLE/);
   assert.match(service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx), /DOWNLOAD STUDIO/);
 });
 
