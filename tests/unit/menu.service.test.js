@@ -167,7 +167,7 @@ test('.catmenu renders a compact feature list without descriptions, aliases, or 
   assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /\.ytmp4/);
   assert.match(replies[0], /\.ytv/);
-  assert.match(replies[0], /Unduh video dari YouTube/);
+  assert.doesNotMatch(replies[0], /Unduh video dari YouTube/);
   assert.match(replies[0], /\.ytmp4 <url>/);
 });
 
@@ -254,9 +254,9 @@ test('.help <command> shows plugin guidance only when requested', async () => {
   await service.execute(ctx);
   assert.match(replies[0], /FEATURE GUIDE/);
   assert.match(replies[0], /\\.ytmp4/);
-  assert.doesNotMatch(replies[0], /\\.ytv/);
-  assert.doesNotMatch(replies[0], /Unduh video dari YouTube/);
-  assert.doesNotMatch(replies[0], /\\.ytmp4 <url>/);
+  assert.match(replies[0], /\\.ytv/);
+  assert.match(replies[0], /Unduh video dari YouTube/);
+  assert.match(replies[0], /\\.ytmp4 <url>/);
 });
 
 test('command similarity ranks typo corrections and respects user permissions', () => {
@@ -286,4 +286,15 @@ test('.catmenu <category> <command> opens contextual plugin guidance', async () 
   assert.match(replies[0], /\\.ytmp4/);
   assert.match(replies[0], /\\.ytv/);
   assert.match(replies[0], /Unduh video dari YouTube/);
+});
+
+
+test('dispatcher replies with a permission-safe typo correction', async () => {
+  const { ctx, replies } = createContext({ command: 'ytmpp4', args: [], m: { id: 'typo-test' } });
+  const dispatcher = new CommandDispatcher({ registry: createRegistry(), rateLimit: 0 });
+  const result = await dispatcher.dispatch(ctx);
+  assert.equal(result.reason, 'unknown-command');
+  assert.ok(result.suggestions.includes('ytmp4'));
+  assert.match(replies[0], /Mungkin maksudmu/);
+  assert.match(replies[0], /\\.ytmp4/);
 });
