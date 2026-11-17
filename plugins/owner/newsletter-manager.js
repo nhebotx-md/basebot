@@ -21,7 +21,7 @@ module.exports = {
   commands: ['newsletter'],
   category: 'owner',
   description: 'Mengelola WhatsApp Channel: follow, mute, metadata, foto, dan subscriber.',
-  usage: '.newsletter <info|follow|unfollow|mute|unmute|subscribers|create|rename|description|photo|remove-photo>',
+  usage: '.newsletter <info|list|follow|unfollow|mute|unmute|subscribers|create|rename|description|photo|remove-photo>',
   permissions: { ownerOnly: true, registrationExempt: true },
   async execute(ctx) {
     const [action, ...args] = String(ctx.text || '').trim().split(/\s+/);
@@ -30,6 +30,13 @@ module.exports = {
     const need = name => typeof client[name] === 'function';
     if (!action) return ctx.reply('Format: .newsletter <info|follow|unfollow|mute|unmute|subscribers|create|rename|description|photo|remove-photo>.');
 
+    if (action === 'list') {
+      if (!need('newsletterSubscribed')) return ctx.reply('API daftar Channel yang diikuti tidak tersedia.');
+      const result = await client.newsletterSubscribed();
+      const channels = Array.isArray(result) ? result : Object.values(result || {});
+      if (!channels.length) return ctx.reply('Bot belum mengikuti Channel apa pun.');
+      return ctx.reply('Channel yang diikuti:\\n' + channels.slice(0, 30).map((item, index) => (index + 1) + '. ' + (item.name || item.subject || 'Channel') + '\\n' + (item.id || '')).join('\\n'));
+    }
     if (action === 'create') {
       const [name, description = ''] = value.split('|').map(item => item.trim());
       if (!name || name.length > 100 || description.length > 500) return ctx.reply('Format: .newsletter create Nama Channel | Deskripsi');
