@@ -86,61 +86,41 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
   const icon = CATEGORY_ICONS[category.slug] || '▣';
   const heading = icon + ' ' + categoryTitle(category);
   const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-  const entries = plugins.map((plugin, index) => ({
-    plugin,
-    index,
-    command: prefix + ((plugin.commands || [])[0] || plugin.name)
-  }));
-  const commands = entries.map(({ command }, index) => {
-    const number = String(index + 1).padStart(2, '0');
-    if (theme === 'terminal') return '│ ◃ ' + command;
-    if (theme === 'minimal') return command;
-    if (theme === 'premium') return '║  ' + number + '  ◇  *' + command + '*';
-    if (theme === 'editorial') return number + '  /  ' + command;
-    return '│ ◈ ' + command;
-  });
-  if (theme === 'terminal') return [
+  const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+  const lines = [
     '┌─ [ ' + heading + ' ]',
     '│ ◈ Kategori : ' + cleanLabel(category.label),
-    '│ ◈ Fitur    : ' + entries.length + ' command',
-    '├─ [ FEATURE DIRECTORY ]',
-    ...(commands.length ? commands : ['│ ◈ Belum ada fitur aktif.']),
-    '└─ END OF CATEGORY'
+    '│ ◈ Plugin   : ' + plugins.length,
+    '│ ◈ Command  : ' + commandCount,
+    '├─ [ DAFTAR PLUGIN & FITUR ]'
   ];
-  if (theme === 'minimal') return [
-    heading.toUpperCase(),
-    'FEATURES / ' + entries.length,
-    '────────────────────────',
-    ...(commands.length ? commands : ['Belum ada fitur aktif.']),
-    '────────────────────────'
-  ];
-  if (theme === 'premium') return [
-    '╔══════════════ ' + heading + ' ══════════════╗',
-    '║  CATEGORY PROFILE',
-    '║  NAME      ' + cleanLabel(category.label),
-    '║  FEATURES  ' + entries.length,
-    '╠══════════════ FEATURE DIRECTORY ════════════╣',
-    ...(commands.length ? commands : ['║  Belum ada fitur aktif.']),
-    '╚═════════════════════════════════════════════╝'
-  ];
-  if (theme === 'editorial') return [
-    'BASEBOT / FEATURE INDEX',
-    'CATEGORY ' + titleCase(category.label),
-    '────────────────────────────────',
-    'DIRECTORY  ·  ' + entries.length + ' ENTRIES',
-    ...(commands.length ? commands : ['Belum ada fitur aktif.']),
-    '────────────────────────────────'
-  ];
-  return [
-    '┌─ [ ' + heading + ' ]',
-    '│ ◈ Kategori : ' + cleanLabel(category.label),
-    '│ ◈ Total    : ' + entries.length + ' fitur',
-    '├─ [ FEATURE DIRECTORY ]',
-    ...(commands.length ? commands : ['│ ◈ Belum ada fitur aktif.']),
-    '└──────────────────────────────'
-  ];
-}
 
+  for (const [index, plugin] of plugins.entries()) {
+    const number = String(index + 1).padStart(2, '0');
+    const commands = (plugin.commands || []).length ? plugin.commands : [plugin.name];
+    const commandChunks = [];
+    for (let offset = 0; offset < commands.length; offset += 5) {
+      commandChunks.push(commands.slice(offset, offset + 5).map(command => prefix + command).join(', '));
+    }
+
+    if (theme === 'terminal') lines.push('│ [' + number + '] ' + cleanLabel(plugin.name));
+    else if (theme === 'minimal') lines.push(number + '. ' + cleanLabel(plugin.name));
+    else if (theme === 'premium') lines.push('║  ' + number + '  ◇  *' + cleanLabel(plugin.name) + '*');
+    else if (theme === 'editorial') lines.push(number + ' / ' + cleanLabel(plugin.name).toUpperCase());
+    else lines.push('│ ◈ ' + number + '  *' + cleanLabel(plugin.name) + '*');
+
+    for (let chunkIndex = 0; chunkIndex < commandChunks.length; chunkIndex += 1) {
+      const label = chunkIndex === 0 ? 'Command: ' : '         ';
+      lines.push('│    ' + label + commandChunks[chunkIndex]);
+    }
+    if (plugin.description) lines.push('│    Fungsi : ' + cleanLabel(plugin.description));
+    if (index < plugins.length - 1) lines.push('│');
+  }
+
+  if (!plugins.length) lines.push('│ Belum ada plugin aktif di kategori ini.');
+  lines.push('└──────────────────────────────');
+  return lines;
+}
 function formatMemory(bytes) {
   const value = Math.max(0, Number(bytes) || 0) / (1024 ** 3);
   return value.toFixed(2) + ' GB';
@@ -245,11 +225,14 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     }));
     const directory = rows.map(row => {
       const command = commandPrefix + 'catmenu ' + row.category.slug;
-      if (theme === 'terminal') return '│ ◃ ' + command;
-      if (theme === 'minimal') return command;
-      if (theme === 'premium') return '║  ' + row.icon + '  *' + command + '*';
-      if (theme === 'editorial') return String(row.index + 1).padStart(2, '0') + '  /  ' + row.category.label.toUpperCase() + '  ·  ' + command;
-      return '│ ◈ ' + row.icon + '  *' + command + '*';
+      const pluginCount = row.category.plugins.length;
+      const commands = row.category.plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+      const summary = pluginCount + ' plugin / ' + commands + ' command';
+      if (theme === 'terminal') return '│ ◃ ' + command + '  (' + summary + ')';
+      if (theme === 'minimal') return command + '  ·  ' + summary;
+      if (theme === 'premium') return '║  ' + row.icon + '  *' + command + '*  ·  ' + summary;
+      if (theme === 'editorial') return String(row.index + 1).padStart(2, '0') + '  /  ' + row.category.label.toUpperCase() + '  ·  ' + summary + '  ·  ' + command;
+      return '│ ◈ ' + row.icon + '  *' + command + '*  (' + summary + ')';
     });
     const info = [
       '│ ◈ WIB    : ' + system.wib,
@@ -410,21 +393,17 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
   }
 
   async function sendInteractiveList(ctx, { text, buttonText, sectionTitle, rows, fallback }) {
-    if (typeof ctx.sendMessage !== 'function' || !rows.length) {
+    if (typeof ctx.sendMessage !== 'function' || !rows.length || rows.length > 10) {
       await ctx.reply(fallback);
       return false;
     }
-    const visibleRows = rows.slice(0, 10);
-    const messageText = rows.length > visibleRows.length
-      ? text + '\nMenampilkan 10 pilihan pertama. Gunakan command teks untuk pilihan lainnya.'
-      : text;
     try {
       await ctx.sendMessage(ctx.chat, {
-        text: messageText,
+        text,
         footer: 'BASEBOT',
         buttons: [{
           text: buttonText,
-          sections: [{ title: sectionTitle, rows: visibleRows }]
+          sections: [{ title: sectionTitle, rows }]
         }]
       });
       return true;
@@ -439,12 +418,12 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const prefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const rows = categories.map(category => ({
       title: cleanLabel(category.label, 'Kategori').slice(0, 24),
-      description: cleanLabel(category.plugins.length + ' fitur tersedia', 'Buka kategori', 72),
+      description: cleanLabel(category.plugins.length + ' plugin / ' + category.plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0) + ' command', 'Buka kategori'),
       id: prefix + 'catmenu ' + category.slug
     }));
     const now = clock();
     const uptime = formatUptime((now.getTime() - startedAt) / 1000);
-    const featureCount = categories.reduce((total, category) => total + category.plugins.length, 0);
+    const featureCount = countCommands(categories);
     const system = getSystemInfo(now, config.timezone, uptime, featureCount);
     const text = [
       '┌─ [ 👤 USER INFO ]',
@@ -502,13 +481,13 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       return false;
     }
     const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-    const rows = plugins.map(plugin => {
-      const command = (plugin.commands || [])[0] || plugin.name;
-      return {
+    const rows = plugins.flatMap(plugin => {
+      const commands = (plugin.commands || []).length ? plugin.commands : [plugin.name];
+      return commands.map(command => ({
         title: cleanLabel(command, 'Fitur').slice(0, 24),
-        description: cleanLabel(plugin.description, 'Jalankan fitur ini.', 72),
+        description: cleanLabel(plugin.name + ' · ' + (plugin.description || 'Jalankan fitur ini.')),
         id: prefix + command
-      };
+      }));
     });
     return sendInteractiveList(ctx, {
       text: '┌─ ' + categoryTitle(category) + '\n├─ FEATURE DIRECTORY\nPilih fitur untuk menjalankannya.',
