@@ -15,15 +15,18 @@ const plugins = [
 
 function createContext(overrides = {}) {
   const replies = [];
+  const sends = [];
   return {
     ctx: {
       command: 'menu', args: [], prefix: '.', pushname: 'Pengguna Uji',
       isOwner: false, isGroupAdmin: false, isGroup: false, isPrivate: true,
       publicMode: true, sender: 'user@s.whatsapp.net', chat: 'user@s.whatsapp.net',
       reply: async value => replies.push(value),
+      sendMessage: async (...args) => sends.push(args),
       ...overrides
     },
-    replies
+    replies,
+    sends
   };
 }
 
@@ -125,36 +128,64 @@ test('setmenu and setcatmenu are standalone owner plugins routed through the reg
   }
 });
 
-test('setmenu v2 and setcatmenu v2 expose only their own five interactive theme choices', async () => {
+test('.menu renders an interactive category list only when main-menu theme is v2', async () => {
+  const database = { read: () => ({ menuPreferences: { menuTheme: 'terminal' } }) };
+  const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
+  const { ctx, replies, sends } = createContext({ command: 'menu' });
+
+  await service.execute(ctx);
+
+  assert.equal(replies.length, 0);
+  assert.equal(sends.length, 1);
+  const payload = sends[0][1];
+  assert.match(payload.text, /BASEBOT SYSTEM DASHBOARD/);
+  assert.equal(payload.buttons[0].text, 'Pilih kategori');
+  const rows = payload.buttons[0].sections[0].rows;
+  assert.ok(rows.some(row => row.id === '.catmenu download'));
+  assert.ok(rows.some(row => row.id === '.catmenu utility'));
+  assert.ok(rows.some(row => row.id === '.catmenu ai'));
+  assert.ok(rows.every(row => row.title.length <= 24));
+  assert.ok(rows.every(row => row.description.length <= 72));
+});
+
+test('.catmenu renders interactive category and feature lists only when category-menu theme is v2', async () => {
+  const database = { read: () => ({ menuPreferences: { categoryTheme: 'terminal' } }) };
+  const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
+
+  const index = createContext({ command: 'catmenu', args: [] });
+  await service.execute(index.ctx);
+  assert.equal(index.replies.length, 0);
+  assert.equal(index.sends.length, 1);
+  assert.equal(index.sends[0][1].buttons[0].text, 'Pilih kategori');
+  assert.ok(index.sends[0][1].buttons[0].sections[0].rows.some(row => row.id === '.catmenu download'));
+
+  const category = createContext({ command: 'catmenu', args: ['download'] });
+  await service.execute(category.ctx);
+  assert.equal(category.replies.length, 0);
+  assert.equal(category.sends.length, 1);
+  assert.equal(category.sends[0][1].buttons[0].text, 'Pilih fitur');
+  const rows = category.sends[0][1].buttons[0].sections[0].rows;
+  assert.ok(rows.some(row => row.id === '.ytmp4'));
+  assert.ok(rows.every(row => row.title.length <= 24));
+  assert.ok(rows.every(row => row.description.length <= 72));
+});
+
+test('.setmenu and .setcatmenu remain plain theme-setting commands', async () => {
   const registry = createRegistry();
   const service = createMenuService({ registry, config, version: '2.0.0' });
   registry.menuService = service;
+  const setmenu = require('../../plugins/owner/setmenu');
+  const setcatmenu = require('../../plugins/owner/setcatmenu');
 
-  for (const [pluginPath, command, preferenceKey, expectedTitle, expectedCurrent] of [
-    ['../../plugins/owner/setmenu', 'setmenu', 'menuTheme', 'Tema menu utama', 'V1'],
-    ['../../plugins/owner/setcatmenu', 'setcatmenu', 'categoryTheme', 'Tema category menu', 'V4']
+  for (const [plugin, command, args, expected] of [
+    [setmenu, 'setmenu', ['v2'], 'terminal'],
+    [setcatmenu, 'setcatmenu', ['v2'], 'terminal']
   ]) {
-    const plugin = require(pluginPath);
-    const calls = [];
-    const { ctx, replies } = createContext({ command, args: [], isOwner: true, registry });
-    ctx.services = { richMessage: { sendNativeFlow: async (jid, payload) => calls.push({ jid, payload }) } };
-
+    const { ctx, replies, sends } = createContext({ command, args, isOwner: true, registry });
     await plugin.execute(ctx);
-
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0].jid, ctx.chat);
-    assert.equal(calls[0].payload.optionTitle, expectedTitle);
-    assert.equal(calls[0].payload.buttons.length, 5);
-    assert.deepEqual(calls[0].payload.buttons.map(button => button.id), [
-      '.' + command + ' v1',
-      '.' + command + ' v2',
-      '.' + command + ' v3',
-      '.' + command + ' v4',
-      '.' + command + ' v5'
-    ]);
-    assert.ok(calls[0].payload.text.includes('Tema aktif: ' + expectedCurrent));
-    assert.equal(replies.length, 0);
-    assert.equal(service.preferences[preferenceKey], preferenceKey === 'menuTheme' ? 'showcase' : 'premium');
+    assert.equal(service.preferences[command === 'setmenu' ? 'menuTheme' : 'categoryTheme'], expected);
+    assert.match(replies[0], /THEME UPDATED/);
+    assert.equal(sends.length, 0);
   }
 });
 
