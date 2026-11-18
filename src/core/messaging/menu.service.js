@@ -256,15 +256,20 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const messageText = rows.length > visibleRows.length
       ? text + '\nMenampilkan 10 pilihan pertama. Gunakan command teks untuk pilihan lainnya.'
       : text;
-    await ctx.sendMessage(ctx.chat, {
-      text: messageText,
-      footer: 'BASEBOT',
-      buttons: [{
-        text: buttonText,
-        sections: [{ title: sectionTitle, rows: visibleRows }]
-      }]
-    });
-    return true;
+    try {
+      await ctx.sendMessage(ctx.chat, {
+        text: messageText,
+        footer: 'BASEBOT',
+        buttons: [{
+          text: buttonText,
+          sections: [{ title: sectionTitle, rows: visibleRows }]
+        }]
+      });
+      return true;
+    } catch {
+      await ctx.reply(fallback);
+      return false;
+    }
   }
 
   async function sendInteractiveMainMenu(ctx) {
