@@ -247,12 +247,109 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     return lines.join('\n').trim();
   }
 
+  async function sendInteractiveList(ctx, { text, buttonText, sectionTitle, rows, fallback }) {
+    if (typeof ctx.sendMessage !== 'function' || !rows.length) {
+      await ctx.reply(fallback);
+      return false;
+    }
+    const visibleRows = rows.slice(0, 10);
+    const messageText = rows.length > visibleRows.length
+      ? text + '\nMenampilkan 10 pilihan pertama. Gunakan command teks untuk pilihan lainnya.'
+      : text;
+    await ctx.sendMessage(ctx.chat, {
+      text: messageText,
+      footer: 'BASEBOT',
+      buttons: [{
+        text: buttonText,
+        sections: [{ title: sectionTitle, rows: visibleRows }]
+      }]
+    });
+    return true;
+  }
+
+  async function sendInteractiveMainMenu(ctx) {
+    const categories = getCategories(ctx);
+    const prefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
+    const rows = categories.map(category => ({
+      title: cleanLabel(category.label, 'Kategori').slice(0, 24),
+      description: cleanLabel(category.plugins.length + ' fitur tersedia', 'Buka kategori', 72),
+      id: prefix + 'catmenu ' + category.slug
+    }));
+    const text = [
+      '┌─ BASEBOT SYSTEM DASHBOARD',
+      '│ SESSION : ' + cleanLabel(ctx.pushname, 'Pengguna'),
+      '│ MODE    : ' + (config.publicMode ? 'PUBLIC' : 'SELF'),
+      '│ PREFIX  : ' + prefix,
+      '│ RUNTIME : v' + cleanLabel(version) ,
+      '├─ FEATURE DIRECTORY',
+      'Pilih kategori melalui daftar interaktif di bawah.'
+    ].join('\n');
+    return sendInteractiveList(ctx, {
+      text,
+      buttonText: 'Pilih kategori',
+      sectionTitle: 'Kategori fitur',
+      rows,
+      fallback: renderMenu(ctx)
+    });
+  }
+
+  async function sendInteractiveCategoryMenu(ctx) {
+    const prefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
+    const categories = getCategories(ctx);
+    const requested = normalizeCategory((ctx.args || [])[0]);
+    if (!requested) {
+      const rows = categories.map(category => ({
+        title: cleanLabel(category.label, 'Kategori').slice(0, 24),
+        description: cleanLabel(category.plugins.length + ' fitur tersedia', 'Buka kategori', 72),
+        id: prefix + 'catmenu ' + category.slug
+      }));
+      return sendInteractiveList(ctx, {
+        text: '┌─ CATEGORY DIRECTORY\n├─ SELECT CATEGORY\nPilih kategori yang ingin dibuka.',
+        buttonText: 'Pilih kategori',
+        sectionTitle: 'Kategori',
+        rows,
+        fallback: renderCategory(ctx)
+      });
+    }
+
+    const category = categories.find(item => item.slug === requested);
+    if (!category) {
+      await ctx.reply(renderCategory(ctx));
+      return false;
+    }
+    const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
+    const rows = plugins.map(plugin => {
+      const command = (plugin.commands || [])[0] || plugin.name;
+      return {
+        title: cleanLabel(command, 'Fitur').slice(0, 24),
+        description: cleanLabel(plugin.description, 'Jalankan fitur ini.', 72),
+        id: prefix + command
+      };
+    });
+    return sendInteractiveList(ctx, {
+      text: '┌─ ' + categoryTitle(category) + '\n├─ FEATURE DIRECTORY\nPilih fitur untuk menjalankannya.',
+      buttonText: 'Pilih fitur',
+      sectionTitle: cleanLabel(category.label, 'Fitur'),
+      rows,
+      fallback: renderCategory(ctx)
+    });
+  }
+
   return Object.freeze({
     canHandle(command) { return ['menu', 'help', 'catmenu'].includes(command); },
     async execute(ctx) {
-      let output;
-      output = ctx.command === 'catmenu' ? renderCategory(ctx) : ctx.command === 'help' && (ctx.args || []).length ? (renderPluginHelp(ctx, ctx.args[0]) || 'Fitur tidak ditemukan atau tidak tersedia untuk akun ini.') : renderMenu(ctx);
-      await ctx.reply(output);
+      if (ctx.command === 'menu' && preferences.menuTheme === 'terminal') {
+        await sendInteractiveMainMenu(ctx);
+      } else if (ctx.command === 'catmenu' && preferences.categoryTheme === 'terminal' && (ctx.args || []).length < 2) {
+        await sendInteractiveCategoryMenu(ctx);
+      } else {
+        const output = ctx.command === 'catmenu'
+          ? renderCategory(ctx)
+          : ctx.command === 'help' && (ctx.args || []).length
+            ? (renderPluginHelp(ctx, ctx.args[0]) || 'Fitur tidak ditemukan atau tidak tersedia untuk akun ini.')
+            : renderMenu(ctx);
+        await ctx.reply(output);
+      }
       return { handled: true, command: ctx.command };
     },
     renderMenu, renderCategory, renderPluginHelp, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
