@@ -5,6 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { createLogger } = require('../../core/services/logger.service');
 const { downloadBuffer } = require('../../core/services/media.service');
+const { createFakeQuoted } = require('../../core/messaging/fake-quoted');
 
 function securePrivateDirectory(directory) {
   const root = path.resolve(directory);
@@ -82,8 +83,14 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
         try { remoteJid = sock.decodeJid?.(remoteJid) || remoteJid; } catch { /* use the original JID */ }
         return outgoingMessageKeys.has(`${remoteJid}:${key.id}`);
       };
-      sock.sendMessage = async (jid, content, options) => {
-        const sent = await originalSendMessage(jid, content, options);
+      sock.sendMessage = async (jid, content, options = {}) => {
+        const isControlMessage = Boolean(content?.react || content?.delete || content?.protocolMessage);
+        const hasExplicitQuote = Object.hasOwn(options, 'quoted') && options.quoted !== undefined;
+        const shouldAddFakeQuote = !hasExplicitQuote && !isControlMessage && jid !== 'status@broadcast';
+        const sendOptions = shouldAddFakeQuote
+          ? { ...options, quoted: createFakeQuoted(config.botName || 'ShooNhee-AI', true) }
+          : options;
+        const sent = await originalSendMessage(jid, content, sendOptions);
         const key = sent?.key;
         if (key?.id) {
           let remoteJid = key.remoteJid || jid;
