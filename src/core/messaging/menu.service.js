@@ -291,10 +291,9 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     } else if (theme === 'premium') {
       lines = [
         '╔══════════════ ' + botName + ' ══════════════╗',
-        '║  USER PROFILE',
-        '║  NAME     ' + userName,
-        '║  ROLE     ' + role,
-        '║  MODE     ' + mode,
+        '║  FEATURE COLLECTION',
+        '║  MEMBER   ' + userName + ' (' + role + ')',
+        '║  STATUS   ' + mode + '  ·  ' + uptime,
         '║  VERSION  v' + cleanLabel(version) + '  ·  PREFIX ' + prefixLabel,
         '╠══════════════ SYSTEM MONITOR ══════════════╣',
         ...info.map(line => '║ ' + line.replace(/^│ /, '')),
@@ -461,6 +460,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       '└──────────────',
       '',
       '【 ⚙ MAIN MENU 】',
+      'BASEBOT SYSTEM DASHBOARD',
       'Pilih kategori melalui daftar interaktif di bawah.'
     ].join('\n');
     return sendInteractiveList(ctx, {
