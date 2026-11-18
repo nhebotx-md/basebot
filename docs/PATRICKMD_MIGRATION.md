@@ -12,11 +12,11 @@ Arsip sumber berisi 33 plugin Owner, 23 Group, 40 Maker, 5 Sticker, dan 9 Downlo
 
 ## Owner
 
-**Sudah diterapkan:** `.setbio`, `.block`, `.unblock`, `.listgc`.
+**Sudah diterapkan:** `.setbio`, `.setname`, `.setthumb`, `.block`, `.unblock`, `.listgc`.
 
 **Sudah tersedia di BASEBOT:** plugin manager, health, public/self, get, newsletter, upsw, pengelolaan file sementara, pengaturan menu, serta operasi join/leave dan admin grup melalui `.groupadmin`.
 
-**Belum dipindahkan:** `eval`/`exec` (berbahaya); `addowner`/`delowner` (owner berasal dari `OWNER_NUMBERS`); `getfile`/`savefile`/`getdb` (akses file/database PatrickMD tidak sesuai batas storage BASEBOT); `bc`/`broadcastgc`/`pushkontak` (perlu consent, rate limit, dan pembatasan penerima); `restart` (perlu lifecycle terkontrol); `autoreactsw`/`autoreadsw`/`autotyping`/`randomreact` (perlu integrasi event/presence/status); `sedekah` (database RPG tidak kompatibel); serta `setthumb`/`upch`/`botsetting` yang perlu pemetaan API lebih lanjut.
+**Belum dipindahkan:** `eval`/`exec` (berbahaya); `addowner`/`delowner` (owner berasal dari `OWNER_NUMBERS`); `getfile`/`savefile`/`getdb` (akses file/database PatrickMD tidak sesuai batas storage BASEBOT); `bc`/`broadcastgc`/`pushkontak` (perlu consent, rate limit, dan pembatasan penerima); `restart` (perlu lifecycle terkontrol); `autoreactsw`/`autoreadsw`/`autotyping`/`randomreact` (perlu integrasi event/presence/status); `sedekah` (database RPG tidak kompatibel); serta `upch`/`botsetting` yang perlu pemetaan API lebih lanjut.
 
 ## Group
 
