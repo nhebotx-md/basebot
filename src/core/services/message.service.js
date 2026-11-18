@@ -4,7 +4,7 @@ const { createFakeQuoted } = require('../messaging/fake-quoted');
 
 function createMessageService(client, { botName = 'ShooNhee-AI', verified = true } = {}) {
   function defaultQuote(jid) {
-    return createFakeQuoted(botName, verified, jid);
+    return createFakeQuoted(botName, verified);
   }
 
   function withDefaultQuote(jid, options = {}) {
