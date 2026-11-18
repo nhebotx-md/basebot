@@ -3,7 +3,7 @@
 const { getPluginProgress } = require('../../src/core/services/plugin-progress.service');
 const yts = require('yt-search');
 module.exports = {
-  name: 'play', commands: ['play'], category: 'downloader',
+  name: 'play', commands: ['play', 'musik', 'music', 'song'], category: 'downloader',
   description: 'Mencari judul lagu dan mengirim audio.', usage: '.play <judul lagu>', permissions: {},
   async execute(ctx) {
     const progress = getPluginProgress(ctx);
