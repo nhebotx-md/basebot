@@ -49,12 +49,12 @@ test('formatUptime formats process uptime', () => {
 
 test('.menu keeps the manually selected theme and never rotates automatically', async () => {
   const { ctx, replies } = createContext();
-  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
+  const database = { read: () => ({ menuPreferences: { menuTheme: 'premium' } }) };
+  const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0', startedAt: Date.now() - 60000 });
   for (let index = 0; index < 5; index += 1) await service.execute(ctx);
   assert.equal(replies.length, 5);
-  assert.ok(replies.every(output => output.includes('FEATURE MENU')));
-  assert.ok(replies.every(output => output.includes('ShoNhe / FEATURE MENU')));
-  assert.equal(service.getNextTheme(), 'showcase');
+  assert.ok(replies.every(output => output.includes('FEATURE COLLECTION')));
+  assert.equal(service.getNextTheme(), 'premium');
 });
 
 
