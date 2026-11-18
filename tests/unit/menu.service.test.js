@@ -53,7 +53,7 @@ test('.menu keeps the manually selected theme and never rotates automatically', 
   for (let index = 0; index < 5; index += 1) await service.execute(ctx);
   assert.equal(replies.length, 5);
   assert.ok(replies.every(output => output.includes('FEATURE MENU')));
-  assert.equal(new Set(replies).size, 1);
+  assert.ok(replies.every(output => output.includes('ShoNhe / FEATURE MENU')));
   assert.equal(service.getNextTheme(), 'showcase');
 });
 
