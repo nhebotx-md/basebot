@@ -39,7 +39,7 @@ async function fetchGeneratedMedia(ctx, mode, text) {
 module.exports = {
   name: 'sticker-rest-api',
   commands: ['brat', 'bratvid', 'bratvideo', 'stickerapi', 'stapi'],
-  category: 'media',
+  category: 'sticker',
   description: 'Membuat sticker Brat statis dan animasi melalui satu REST API.',
   usage: '.brat <teks> atau .bratvid <teks>',
   permissions: {},

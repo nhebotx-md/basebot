@@ -1,7 +1,7 @@
 'use strict';
 const { assertPublicHttpUrl } = require('../../src/core/security/safe-url');
 module.exports = {
-  name: 'ytmp3', commands: ['ytmp3'], category: 'downloader',
+  name: 'ytmp3', commands: ['ytmp3', 'yta', 'ytmp3api'], category: 'downloader',
   description: 'Mengambil audio MP3 dari tautan YouTube yang boleh diunduh.', usage: '.ytmp3 <tautan YouTube>', permissions: {},
   async execute(ctx) {
     if (!ctx.text) return ctx.reply(`Contoh: ${ctx.prefix}ytmp3 https://youtu.be/VIDEO_ID`);

@@ -3,7 +3,7 @@
 const { getPluginProgress } = require('../../src/core/services/plugin-progress.service');
 const fs = require('node:fs/promises');
 module.exports = {
-  name: 'sticker', commands: ['sticker', 's'], category: 'media',
+  name: 'sticker', commands: ['sticker', 's'], category: 'sticker',
   description: 'Membuat sticker dari gambar atau video yang dibalas.', usage: '.sticker (balas gambar/video)', permissions: {},
   async execute(ctx) {
     const progress = getPluginProgress(ctx);

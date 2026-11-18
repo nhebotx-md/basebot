@@ -1,6 +1,6 @@
 'use strict';
 module.exports = {
-  name: 'sticker-watermark', commands: ['wm', 'swm', 'stickerwm', 'take'], category: 'media',
+  name: 'sticker-watermark', commands: ['wm', 'swm', 'stickerwm', 'take'], category: 'sticker',
   description: 'Membuat ulang sticker dengan metadata pack.', usage: '.wm <nama pack>|<pembuat> (balas media)', permissions: {},
   async execute(ctx) {
     if (!ctx.text) return ctx.reply(`Contoh: ${ctx.prefix}${ctx.command} Nama Pack|Pembuat`);
