@@ -13,7 +13,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(app.config.paths.database, './data/database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
-  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 138);
+  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 140);
   assert.ok(app.registry.list().some(plugin => plugin.name === 'profile'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'health'));
   assert.ok(app.registry.getByCommand('tt'));
@@ -33,6 +33,8 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.ok(app.registry.getByCommand('bratfoto'));
   assert.ok(app.registry.getByCommand('welcome'));
   assert.ok(app.registry.getByCommand('setbio'));
+  assert.ok(app.registry.getByCommand('setname'));
+  assert.ok(app.registry.getByCommand('setthumb'));
   for (const name of ['group-info', 'group-settings', 'group-members', 'group-requests', 'group-request-action', 'poll', 'message-actions', 'interactive-menu', 'message-wrappers', 'group-admin-manager', 'community-manager', 'newsletter-manager', 'rich-message']) {
     assert.ok(app.registry.list().some(plugin => plugin.name === name), `missing plugin: ${name}`);
   }
@@ -43,7 +45,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(summary[1].discovered, 49);
   assert.equal(summary[1].loaded, 49);
   assert.equal(summary[1].skipped, 0);
-  assert.equal(summary[1].commands, 138);
+  assert.equal(summary[1].commands, 140);
   await app.stop();
 });
 
