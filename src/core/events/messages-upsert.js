@@ -13,8 +13,17 @@ function createMessagesUpsertHandler({ dispatcher, config, registry, logger, use
       const m = normalizeMessage(raw, client);
       if (!m) continue;
       if (m.isGroup && m.mtype === 'groupStatusMentionMessage') {
-        try { await client.sendMessage(m.chat, { delete: m.key }); }
-        catch (error) { logger.warn('Gagal menghapus pesan status grup.', { messageId: m.id, error: error.message }); }
+        let enabled = true;
+        try {
+          const profile = await groupService?.getGroup(m.chat);
+          enabled = profile?.settings?.antiStatusMention !== false;
+        } catch (error) {
+          logger.warn('Status anti-status-mention grup gagal dibaca; memakai default aman.', { chat: m.chat, error: error.message });
+        }
+        if (enabled) {
+          try { await client.sendMessage(m.chat, { delete: m.key }); }
+          catch (error) { logger.warn('Gagal menghapus pesan status grup.', { messageId: m.id, error: error.message }); }
+        }
         continue;
       }
       if (!m.body && !m.message) continue;
