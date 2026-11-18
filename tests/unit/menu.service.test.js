@@ -148,6 +148,23 @@ test('.menu renders an interactive category list only when main-menu theme is v2
   assert.ok(rows.every(row => row.description.length <= 72));
 });
 
+test('.menu falls back to its text layout when WhatsApp rejects the interactive list', async () => {
+  const database = { read: () => ({ menuPreferences: { menuTheme: 'terminal' } }) };
+  const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
+  const replies = [];
+  const { ctx } = createContext({
+    command: 'menu',
+    sendMessage: async () => { throw new Error('interactive list unavailable'); },
+    reply: async value => replies.push(value)
+  });
+
+  await service.execute(ctx);
+
+  assert.equal(replies.length, 1);
+  assert.match(replies[0], /BASEBOT SYSTEM DASHBOARD/);
+  assert.match(replies[0], /\\.catmenu download/);
+});
+
 test('.catmenu renders interactive category and feature lists only when category-menu theme is v2', async () => {
   const database = { read: () => ({ menuPreferences: { categoryTheme: 'terminal' } }) };
   const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
