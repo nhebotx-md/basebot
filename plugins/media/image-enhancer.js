@@ -2,7 +2,7 @@
 
 const { getPluginProgress } = require('../../src/core/services/plugin-progress.service');
 module.exports = {
-  name: 'image-enhancer', commands: ['enhancer', 'unblur', 'enhance', 'hdr', 'hd', 'remini'], category: 'media',
+  name: 'image-enhancer', commands: ['enhancer', 'unblur', 'enhance', 'hdr', 'hd', 'remini'], category: 'maker',
   description: 'Meningkatkan kualitas gambar yang dikutip.', usage: '.remini (balas gambar)', permissions: {},
   async execute(ctx) {
     const progress = getPluginProgress(ctx);
