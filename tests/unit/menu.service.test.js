@@ -379,3 +379,28 @@ test('dispatcher replies with a permission-safe typo correction', async () => {
   assert.match(replies[0], /Mungkin maksudmu/);
   assert.match(replies[0], /\.ytmp4/);
 });
+
+test('all five themes expose the same live system information and registered command count', () => {
+  const service = createMenuService({
+    registry: createRegistry(),
+    config,
+    version: '2.0.0',
+    startedAt: Date.now() - 3661_000,
+    clock: () => new Date('2026-11-18T02:57:53.000Z')
+  });
+  for (const theme of MENU_THEMES) {
+    const output = service.renderMenu(createContext().ctx, theme);
+    assert.match(output, /Pengguna Uji/);
+    assert.match(output, /PUBLIC/);
+    assert.match(output, /WIB\s*:/);
+    assert.match(output, /WITA\s*:/);
+    assert.match(output, /WIT\s*:/);
+    assert.match(output, /Tanggal\s*:/);
+    assert.match(output, /Uptime\s*:/);
+    assert.match(output, /OS\s*:/);
+    assert.match(output, /RAM\s*:/);
+    assert.match(output, /Fitur\s*:\s*4 Command/);
+    assert.match(output, /\.catmenu download/);
+  }
+});
+
