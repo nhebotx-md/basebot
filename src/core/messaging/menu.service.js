@@ -323,7 +323,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       ];
     } else {
       lines = [
-        '┌─ [ ' + botName.toUpperCase() + ' / SYSTEM MENU ]',
+        '┌─ [ ' + botName.toUpperCase() + ' / FEATURE MENU ]',
         '│ USER INFORMATION',
         '│ ◈ Nama   : ' + userName,
         '│ ◈ Status : ' + role,
@@ -438,13 +438,29 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       description: cleanLabel(category.plugins.length + ' fitur tersedia', 'Buka kategori', 72),
       id: prefix + 'catmenu ' + category.slug
     }));
+    const now = clock();
+    const uptime = formatUptime((now.getTime() - startedAt) / 1000);
+    const featureCount = categories.reduce((total, category) => total + category.plugins.length, 0);
+    const system = getSystemInfo(now, config.timezone, uptime, featureCount);
     const text = [
-      '┌─ BASEBOT SYSTEM DASHBOARD',
-      '│ SESSION : ' + cleanLabel(ctx.pushname, 'Pengguna'),
-      '│ MODE    : ' + (config.publicMode ? 'PUBLIC' : 'SELF'),
-      '│ PREFIX  : ' + prefix,
-      '│ RUNTIME : v' + cleanLabel(version) ,
-      '├─ FEATURE DIRECTORY',
+      '┌─ [ 👤 USER INFO ]',
+      '│ ◈ Nama   : ' + cleanLabel(ctx.pushname, 'Pengguna'),
+      '│ ◈ Status : ' + (ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN' : 'MEMBER'),
+      '│ ◈ Mode   : ' + (config.publicMode ? 'PUBLIC' : 'SELF'),
+      '└──────────────',
+      '',
+      '┌─ [ SYSTEM INFO ]',
+      '│ ◈ WIB    : ' + system.wib,
+      '│ ◈ WITA   : ' + system.wita,
+      '│ ◈ WIT    : ' + system.wit,
+      '│ ◈ Tanggal: ' + system.date,
+      '│ ◈ Uptime : ' + system.uptime,
+      '│ ◈ OS     : ' + system.os,
+      '│ ◈ RAM    : ' + system.ram,
+      '│ ◈ Fitur  : ' + system.featureCount + ' Command',
+      '└──────────────',
+      '',
+      '【 ⚙ MAIN MENU 】',
       'Pilih kategori melalui daftar interaktif di bawah.'
     ].join('\n');
     return sendInteractiveList(ctx, {
