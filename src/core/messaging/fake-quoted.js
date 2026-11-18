@@ -11,8 +11,12 @@ function createFakeQuoted(botName = 'ShooNhee-AI', verified = true) {
     },
     message: {
       contactMessage: {
-        displayName: verified ? '✅ ' + botName : botName,
-        vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:' + botName + '\nORG:' + (verified ? 'Verified Bot' : 'Bot') + '\nEND:VCARD'
+        displayName: verified ? \`✅ \${botName}\` : botName,
+        vcard: \`BEGIN:VCARD
+VERSION:3.0
+FN:\${botName}
+ORG:\${verified ? 'Verified Bot' : 'Bot'}
+END:VCARD\`
       }
     }
   };
