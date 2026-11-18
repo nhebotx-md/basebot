@@ -8,6 +8,7 @@ const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { Readable } = require('node:stream');
 const { createClientFactory, securePrivateDirectory } = require('../../src/integrations/whatsapp/client');
+const { createFakeQuoted } = require('../../src/core/messaging/fake-quoted');
 const legacyClientFactory = require('../../src/core/client/create-client');
 const { createPairingManager } = require('../../src/core/connection/pairing-manager');
 
@@ -20,6 +21,7 @@ test('client factory serializes async credential writes and exposes a flush barr
   let activeSaves = 0;
   let maxActiveSaves = 0;
   let options;
+  const sentOptions = [];
   const baileys = {
     DisconnectReason: { loggedOut: 401, restartRequired: 515 },
     async useMultiFileAuthState() {
@@ -34,7 +36,7 @@ test('client factory serializes async credential writes and exposes a flush barr
         }
       };
     },
-    makeWASocket(input) { options = input; return { ev: new EventEmitter(), sendMessage: async jid => ({ key: { remoteJid: jid, id: 'outbound-id' } }), end() {} }; },
+    makeWASocket(input) { options = input; return { ev: new EventEmitter(), sendMessage: async (jid, message, sendOptions) => { sentOptions.push(sendOptions); return { key: { remoteJid: jid, id: 'outbound-id' } }; }, end() {} }; },
     jidDecode(value) { return { user: value.split('@')[0].split(':')[0], server: value.split('@')[1] }; },
     async downloadContentFromMessage() { return Readable.from([Buffer.from('media')]); }
   };
@@ -50,6 +52,11 @@ test('client factory serializes async credential writes and exposes a flush barr
   assert.equal(options.printQRInTerminal, false);
   assert.equal(pinoOptions.level, 'warn');
   await client.sendMessage('120363000000000000@g.us', { text: 'sent' });
+  assert.deepEqual(sentOptions[0].quoted, createFakeQuoted('ShooNhee-AI', true));
+  await client.sendMessage('120363000000000000@g.us', { text: 'without quote' }, { quoted: null });
+  assert.equal(sentOptions[1].quoted, null);
+  await client.sendMessage('120363000000000000@g.us', { react: { text: '👍', key: { id: 'incoming' } } });
+  assert.equal(Object.hasOwn(sentOptions[2] || {}, 'quoted'), false);
   assert.equal(client.isOwnMessageKey({ remoteJid: '120363000000000000@g.us', id: 'outbound-id' }), true);
   assert.equal(client.isOwnMessageKey({ remoteJid: '120363999999999999@g.us', id: 'outbound-id' }), false);
   client.ev.emit('creds.update', { id: 'first' });
