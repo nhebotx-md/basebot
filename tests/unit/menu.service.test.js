@@ -259,12 +259,12 @@ test('.catmenu lists plugin descriptions, aliases, and usage', async () => {
   await service.execute(ctx);
   assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /yt-download/);
-  assert.match(replies[0], /\\.ytmp4/);
-  assert.match(replies[0], /\\.ytv/);
+  assert.match(replies[0], /\.ytmp4/);
+  assert.match(replies[0], /\.ytv/);
   assert.match(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\\.ytmp4 <url>/);
-  assert.match(replies[0], /PLUGINS\\s+1/);
-  assert.match(replies[0], /COMMANDS\\s+2/);
+  assert.match(replies[0], /\.ytmp4 <url>/);
+  assert.match(replies[0], /PLUGINS\s+1/);
+  assert.match(replies[0], /COMMANDS\s+2/);
 });
 
 test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
@@ -305,7 +305,7 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   assert.match(menu, /FEATURE COLLECTION/);
   assert.match(category, /DOWNLOAD STUDIO/);
   assert.match(category, /Unduh video dari YouTube/);
-  assert.match(category, /\\.ytv/);
+  assert.match(category, /\.ytv/);
 });
 
 test('.catmenu category index and unknown category use the same premium frame language', () => {
@@ -371,8 +371,8 @@ test('.menu keeps the overview concise while .catmenu exposes complete plugin de
   assert.doesNotMatch(menu, /root@basebot|catalog --|exit 0|modules loaded/i);
   assert.doesNotMatch(menu, /Unduh video dari YouTube|\\.ytv|<url>/);
   assert.match(category, /Unduh video dari YouTube/);
-  assert.match(category, /\\.ytv/);
-  assert.match(category, /\\.ytmp4 <url>/);
+  assert.match(category, /\.ytv/);
+  assert.match(category, /\.ytmp4 <url>/);
 });
 
 test('.catmenu <category> <command> opens contextual plugin guidance', async () => {
