@@ -125,6 +125,39 @@ test('setmenu and setcatmenu are standalone owner plugins routed through the reg
   }
 });
 
+test('setmenu v2 and setcatmenu v2 expose only their own five interactive theme choices', async () => {
+  const registry = createRegistry();
+  const service = createMenuService({ registry, config, version: '2.0.0' });
+  registry.menuService = service;
+
+  for (const [pluginPath, command, preferenceKey, expectedTitle, expectedCurrent] of [
+    ['../../plugins/owner/setmenu', 'setmenu', 'menuTheme', 'Tema menu utama', 'V1'],
+    ['../../plugins/owner/setcatmenu', 'setcatmenu', 'categoryTheme', 'Tema category menu', 'V4']
+  ]) {
+    const plugin = require(pluginPath);
+    const calls = [];
+    const { ctx, replies } = createContext({ command, args: [], isOwner: true, registry });
+    ctx.services = { richMessage: { sendNativeFlow: async (jid, payload) => calls.push({ jid, payload }) } };
+
+    await plugin.execute(ctx);
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].jid, ctx.chat);
+    assert.equal(calls[0].payload.optionTitle, expectedTitle);
+    assert.equal(calls[0].payload.buttons.length, 5);
+    assert.deepEqual(calls[0].payload.buttons.map(button => button.id), [
+      '.' + command + ' v1',
+      '.' + command + ' v2',
+      '.' + command + ' v3',
+      '.' + command + ' v4',
+      '.' + command + ' v5'
+    ]);
+    assert.ok(calls[0].payload.text.includes('Tema aktif: ' + expectedCurrent));
+    assert.equal(replies.length, 0);
+    assert.equal(service.preferences[preferenceKey], preferenceKey === 'menuTheme' ? 'showcase' : 'premium');
+  }
+});
+
 test('menu theme preferences are restored from database on service recreation', () => {
   const database = { read: () => ({ menuPreferences: { menuTheme: 'terminal', categoryTheme: 'minimal' } }) };
   const service = createMenuService({ registry: createRegistry(), config, database });
