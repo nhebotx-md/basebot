@@ -1,5 +1,6 @@
 'use strict';
 
+const os = require('node:os');
 const { validatePermission } = require('../security/permission-manager');
 
 const CATEGORY_ICONS = Object.freeze({
@@ -85,18 +86,99 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
   const icon = CATEGORY_ICONS[category.slug] || '▣';
   const heading = icon + ' ' + categoryTitle(category);
   const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-  const entries = plugins.map((plugin, index) => ({ plugin, index, command: prefix + (plugin.commands[0] || plugin.name) }));
-  if (theme === 'terminal') {
-    return ['┌─ ' + heading, '├─ FEATURE DIRECTORY', ...entries.map(({ command }, index) => '│ [' + String(index + 1).padStart(2, '0') + '] ' + command), '└─ END'];
+  const entries = plugins.map((plugin, index) => ({
+    plugin,
+    index,
+    command: prefix + ((plugin.commands || [])[0] || plugin.name)
+  }));
+  const commands = entries.map(({ command }, index) => {
+    const number = String(index + 1).padStart(2, '0');
+    if (theme === 'terminal') return '│ ◃ ' + command;
+    if (theme === 'minimal') return command;
+    if (theme === 'premium') return '║  ' + number + '  ◇  *' + command + '*';
+    if (theme === 'editorial') return number + '  /  ' + command;
+    return '│ ◈ ' + command;
+  });
+  if (theme === 'terminal') return [
+    '┌─ [ ' + heading + ' ]',
+    '│ ◈ Kategori : ' + cleanLabel(category.label),
+    '│ ◈ Fitur    : ' + entries.length + ' command',
+    '├─ [ FEATURE DIRECTORY ]',
+    ...(commands.length ? commands : ['│ ◈ Belum ada fitur aktif.']),
+    '└─ END OF CATEGORY'
+  ];
+  if (theme === 'minimal') return [
+    heading.toUpperCase(),
+    'FEATURES / ' + entries.length,
+    '────────────────────────',
+    ...(commands.length ? commands : ['Belum ada fitur aktif.']),
+    '────────────────────────'
+  ];
+  if (theme === 'premium') return [
+    '╔══════════════ ' + heading + ' ══════════════╗',
+    '║  CATEGORY PROFILE',
+    '║  NAME      ' + cleanLabel(category.label),
+    '║  FEATURES  ' + entries.length,
+    '╠══════════════ FEATURE DIRECTORY ════════════╣',
+    ...(commands.length ? commands : ['║  Belum ada fitur aktif.']),
+    '╚═════════════════════════════════════════════╝'
+  ];
+  if (theme === 'editorial') return [
+    'BASEBOT / FEATURE INDEX',
+    'CATEGORY ' + titleCase(category.label),
+    '────────────────────────────────',
+    'DIRECTORY  ·  ' + entries.length + ' ENTRIES',
+    ...(commands.length ? commands : ['Belum ada fitur aktif.']),
+    '────────────────────────────────'
+  ];
+  return [
+    '┌─ [ ' + heading + ' ]',
+    '│ ◈ Kategori : ' + cleanLabel(category.label),
+    '│ ◈ Total    : ' + entries.length + ' fitur',
+    '├─ [ FEATURE DIRECTORY ]',
+    ...(commands.length ? commands : ['│ ◈ Belum ada fitur aktif.']),
+    '└──────────────────────────────'
+  ];
+}
+
+function formatMemory(bytes) {
+  const value = Math.max(0, Number(bytes) || 0) / (1024 ** 3);
+  return value.toFixed(2) + ' GB';
+}
+
+function clockAt(timeZone, now) {
+  try {
+    return new Intl.DateTimeFormat('id-ID', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }).format(now);
+  } catch {
+    return '--:--:--';
   }
-  if (theme === 'minimal') return [heading, '', ...entries.map(({ command }) => command)];
-  if (theme === 'premium') return ['╔══════════ ✦ ' + heading + ' ✦ ══════════╗', '╠════════════════ FEATURE LIST ═══════════════╣', ...entries.map(({ command }, index) => '║  ' + String(index + 1).padStart(2, '0') + '  ✧  *' + command + '*'), '╚══════════════════════════════════════════════╝'];
-  if (theme === 'editorial') return ['THE FEATURE INDEX', 'CATEGORY / ' + category.label.toUpperCase(), '────────────────────────────────', ...entries.map(({ command }, index) => String(index + 1).padStart(2, '0') + '  /  ' + command), '────────────────────────────────'];
-  const lines = frameLines(heading, 'showcase', 'PILIH FITUR');
-  for (const { plugin, index } of entries) lines.push(...pluginLines(plugin, prefix, index, 'showcase'));
-  if (!entries.length) lines.push('│ Tidak ada fitur aktif.');
-  lines.push(FRAME.showcase.bottom);
-  return lines;
+}
+
+function countCommands(categories) {
+  return categories.reduce((total, category) => total + category.plugins.reduce((count, plugin) => count + Math.max(1, (plugin.commands || []).length), 0), 0);
+}
+
+function getSystemInfo(now, timeZone, uptime, featureCount) {
+  const totalMemory = os.totalmem();
+  const usedMemory = Math.max(0, totalMemory - os.freemem());
+  const date = dateParts(timeZone || 'Asia/Jakarta', now).date;
+  const platform = process.env.ANDROID_ROOT ? 'android' : process.platform;
+  return {
+    wib: clockAt('Asia/Jakarta', now),
+    wita: clockAt('Asia/Makassar', now),
+    wit: clockAt('Asia/Jayapura', now),
+    date,
+    uptime,
+    os: platform,
+    ram: formatMemory(usedMemory) + ' / ' + formatMemory(totalMemory),
+    featureCount
+  };
 }
 
 function createMenuService({ registry, config, database = null, version = '0.0.0', startedAt = Date.now(), clock = () => new Date() }) {
@@ -147,7 +229,6 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const theme = MENU_THEMES.includes(selectedTheme) ? selectedTheme : MENU_THEMES[0];
     const categories = getCategories(ctx);
     const now = clock();
-    const parts = dateParts(config.timezone, now);
     const role = ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN' : ({ user: 'USER', premium: 'PREMIUM', moderator: 'MODERATOR', guest: 'GUEST' }[ctx.userRole] || 'MEMBER');
     const userName = cleanLabel(ctx.pushname, 'Pengguna');
     const botName = cleanLabel(config.botName, 'BASEBOT');
@@ -155,30 +236,111 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const uptime = formatUptime((now.getTime() - startedAt) / 1000);
-    const rows = categories.map((category, index) => ({ category, index, icon: CATEGORY_ICONS[category.slug] || '▣' }));
+    const featureCount = countCommands(categories);
+    const system = getSystemInfo(now, config.timezone, uptime, featureCount);
+    const rows = categories.map((category, index) => ({
+      category,
+      index,
+      icon: CATEGORY_ICONS[category.slug] || '▣'
+    }));
+    const directory = rows.map(row => {
+      const command = commandPrefix + 'catmenu ' + row.category.slug;
+      if (theme === 'terminal') return '│ ◃ ' + command;
+      if (theme === 'minimal') return command;
+      if (theme === 'premium') return '║  ' + row.icon + '  *' + command + '*';
+      if (theme === 'editorial') return String(row.index + 1).padStart(2, '0') + '  /  ' + row.category.label.toUpperCase() + '  ·  ' + command;
+      return '│ ◈ ' + row.icon + '  *' + command + '*';
+    });
+    const info = [
+      '│ ◈ WIB    : ' + system.wib,
+      '│ ◈ WITA   : ' + system.wita,
+      '│ ◈ WIT    : ' + system.wit,
+      '│ ◈ Tanggal: ' + system.date,
+      '│ ◈ Uptime : ' + system.uptime,
+      '│ ◈ OS     : ' + system.os,
+      '│ ◈ RAM    : ' + system.ram,
+      '│ ◈ Fitur  : ' + system.featureCount + ' Command'
+    ];
     let lines;
     if (theme === 'terminal') {
-      lines = ['┌─ BASEBOT SYSTEM DASHBOARD', '│ SESSION : ' + userName + ' [' + role + ']', '│ MODE    : ' + mode, '│ PREFIX  : ' + prefixLabel, '│ RUNTIME : v' + cleanLabel(version) + ' / ' + uptime, '├─ FEATURE DIRECTORY'];
-      for (const row of rows) lines.push('│ [' + String(row.index + 1).padStart(2, '0') + '] ' + commandPrefix + 'catmenu ' + row.category.slug);
-      lines.push('└─ ' + parts.date + ' ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = [
+        '┌─ [ 👤 USER INFO ]',
+        '│ ◈ Nama   : ' + userName,
+        '│ ◈ Status : ' + role,
+        '│ ◈ Mode   : ' + mode,
+        '└──────────────',
+        '',
+        '┌─ [ SYSTEM INFO ]',
+        ...info,
+        '└──────────────',
+        '',
+        'BASEBOT SYSTEM DASHBOARD',
+        '【 ⚙ MAIN MENU 】',
+        ...directory,
+        '└─ END OF DIRECTORY'
+      ];
     } else if (theme === 'minimal') {
-      lines = [botName + ' / FEATURE MENU', userName + ' · ' + role, 'v' + cleanLabel(version) + ' · ' + mode + ' · ' + uptime, '', ...rows.map(row => row.icon + '  ' + commandPrefix + 'catmenu ' + row.category.slug), '', parts.date + ' · ' + parts.time + ' ' + timeZoneLabel(config.timezone)];
+      lines = [
+        botName.toUpperCase() + ' / MENU',
+        userName + ' · ' + role + ' · ' + mode,
+        'v' + cleanLabel(version) + '  |  ' + prefixLabel,
+        '────────────────────────',
+        'SYSTEM',
+        ...info.map(line => line.replace(/^│ ◈ /, '  ')),
+        '',
+        'FEATURE DIRECTORY',
+        ...directory,
+        '────────────────────────',
+        'Gunakan ' + commandPrefix + 'catmenu <kategori> untuk membuka fitur.'
+      ];
     } else if (theme === 'premium') {
-      lines = ['╔══════════════ ✦ ' + botName + ' ✦ ══════════════╗', '║  FEATURE COLLECTION', '║  MEMBER   ' + userName + ' (' + role + ')', '║  STATUS   ' + mode + '  •  ' + uptime, '║  PREFIX   ' + prefixLabel, '╠══════════════ FEATURE DIRECTORY ════════════╣'];
-      for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
-      lines.push('╚══════════════════════════════════════════════╝', parts.date + '  •  ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = [
+        '╔══════════════ ' + botName + ' ══════════════╗',
+        '║  FEATURE COLLECTION',
+        '║  MEMBER   ' + userName + ' (' + role + ')',
+        '║  STATUS   ' + mode + '  ·  ' + uptime,
+        '║  VERSION  v' + cleanLabel(version) + '  ·  PREFIX ' + prefixLabel,
+        '╠══════════════ SYSTEM MONITOR ══════════════╣',
+        ...info.map(line => '║ ' + line.replace(/^│ /, '')),
+        '╠══════════════ FEATURE DIRECTORY ══════════╣',
+        ...directory,
+        '╚════════════════════════════════════════════╝'
+      ];
     } else if (theme === 'editorial') {
-      lines = ['THE BASEBOT JOURNAL', 'FEATURE DIRECTORY', '────────────────────────────────────────', botName + '  |  v' + cleanLabel(version), userName + ' / ' + role + ' / ' + mode, 'Runtime ' + uptime + ' · Prefix ' + prefixLabel, '', 'CONTENTS'];
-      for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + '  /  ' + row.category.label.toUpperCase() + '  ·  ' + commandPrefix + 'catmenu ' + row.category.slug);
-      lines.push('────────────────────────────────────────', parts.date + ' · ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = [
+        botName.toUpperCase() + ' / SYSTEM DIRECTORY',
+        'A structured index of available features',
+        '────────────────────────────────────────',
+        'USER      / ' + userName,
+        'ROLE      / ' + role,
+        'MODE      / ' + mode,
+        'RELEASE   / v' + cleanLabel(version),
+        'PREFIX    / ' + prefixLabel,
+        '',
+        'SYSTEM REPORT',
+        ...info.map(line => line.replace(/^│ ◈ /, '  ')),
+        '',
+        'CONTENTS',
+        ...directory,
+        '────────────────────────────────────────',
+        'Pilih kategori dengan ' + commandPrefix + 'catmenu <kategori>'
+      ];
     } else {
-      lines = frameLines('✦ ' + botName + ' / FEATURE MENU', 'showcase', 'PILIH KATEGORI FITUR');
-      lines.push('│ USER   : *' + userName + '*', '│ ROLE   : *' + role + '*', '│ MODE   : *' + mode + '*', '│ PREFIX : *' + prefixLabel + '*', '│ VERSION: *v' + cleanLabel(version) + '*', '│ UPTIME : *' + uptime + '*', FRAME.showcase.mid, '│ FEATURE DIRECTORY');
-      for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
-      if (!rows.length) lines.push('│ Tidak ada kategori aktif.');
-      lines.push(FRAME.showcase.bottom, parts.date + '  •  ' + parts.time + ' ' + timeZoneLabel(config.timezone));
+      lines = [
+        '┌─ [ ' + botName + ' / FEATURE MENU ]',
+        '│ USER INFORMATION',
+        '│ ◈ Nama   : ' + userName,
+        '│ ◈ Status : ' + role,
+        '│ ◈ Mode   : ' + mode,
+        '│ ◈ Versi  : v' + cleanLabel(version),
+        '│ ◈ Prefix : ' + prefixLabel,
+        '├─ [ SYSTEM MONITOR ]',
+        ...info,
+        '├─ [ FEATURE DIRECTORY ]',
+        ...directory,
+        '└──────────────────────────────'
+      ];
     }
-    lines.push('Ketik *' + commandPrefix + 'catmenu <kategori>* untuk membuka pilihan fitur.');
     return lines.join('\n');
   }
 
@@ -280,13 +442,30 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       description: cleanLabel(category.plugins.length + ' fitur tersedia', 'Buka kategori', 72),
       id: prefix + 'catmenu ' + category.slug
     }));
+    const now = clock();
+    const uptime = formatUptime((now.getTime() - startedAt) / 1000);
+    const featureCount = categories.reduce((total, category) => total + category.plugins.length, 0);
+    const system = getSystemInfo(now, config.timezone, uptime, featureCount);
     const text = [
-      '┌─ BASEBOT SYSTEM DASHBOARD',
-      '│ SESSION : ' + cleanLabel(ctx.pushname, 'Pengguna'),
-      '│ MODE    : ' + (config.publicMode ? 'PUBLIC' : 'SELF'),
-      '│ PREFIX  : ' + prefix,
-      '│ RUNTIME : v' + cleanLabel(version) ,
-      '├─ FEATURE DIRECTORY',
+      '┌─ [ 👤 USER INFO ]',
+      '│ ◈ Nama   : ' + cleanLabel(ctx.pushname, 'Pengguna'),
+      '│ ◈ Status : ' + (ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN' : 'MEMBER'),
+      '│ ◈ Mode   : ' + (config.publicMode ? 'PUBLIC' : 'SELF'),
+      '└──────────────',
+      '',
+      '┌─ [ SYSTEM INFO ]',
+      '│ ◈ WIB    : ' + system.wib,
+      '│ ◈ WITA   : ' + system.wita,
+      '│ ◈ WIT    : ' + system.wit,
+      '│ ◈ Tanggal: ' + system.date,
+      '│ ◈ Uptime : ' + system.uptime,
+      '│ ◈ OS     : ' + system.os,
+      '│ ◈ RAM    : ' + system.ram,
+      '│ ◈ Fitur  : ' + system.featureCount + ' Command',
+      '└──────────────',
+      '',
+      '【 ⚙ MAIN MENU 】',
+      'BASEBOT SYSTEM DASHBOARD',
       'Pilih kategori melalui daftar interaktif di bawah.'
     ].join('\n');
     return sendInteractiveList(ctx, {
