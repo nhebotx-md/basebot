@@ -9,10 +9,10 @@ function resolveTarget(ctx) {
 
 module.exports = {
   name: 'owner-account-tools',
-  commands: ['setbio', 'block', 'unblock', 'listgc'],
+  commands: ['setbio', 'setname', 'setthumb', 'block', 'unblock', 'listgc'],
   category: 'owner',
   description: 'Pengaturan profil bot, daftar grup, dan blokir kontak.',
-  usage: '.setbio <teks> | .block @user | .unblock @user | .listgc',
+  usage: '.setbio <teks> | .setname <nama> | .setthumb (balas gambar) | .block @user | .unblock @user | .listgc',
   permissions: { ownerOnly: true },
   async execute(ctx) {
     const client = ctx.client;
@@ -23,6 +23,28 @@ module.exports = {
       if (typeof client.updateProfileStatus !== 'function') return ctx.reply('API pembaruan bio tidak tersedia pada koneksi Baileys ini.');
       await client.updateProfileStatus(bio);
       return ctx.reply('Bio profil WhatsApp bot berhasil diperbarui.');
+    }
+
+    if (ctx.command === 'setname') {
+      const name = String(ctx.text || '').trim();
+      if (!name) return ctx.reply('Masukkan nama profil bot. Contoh: ' + ctx.prefix + 'setname BASEBOT');
+      if (name.length > 25) return ctx.reply('Nama profil WhatsApp maksimal 25 karakter.');
+      if (typeof client.updateProfileName !== 'function') return ctx.reply('API pembaruan nama profil tidak tersedia pada koneksi Baileys ini.');
+      await client.updateProfileName(name);
+      return ctx.reply('Nama profil WhatsApp bot berhasil diperbarui.');
+    }
+
+    if (ctx.command === 'setthumb') {
+      if (!ctx.quoted || !/^image\\//i.test(String(ctx.mime || ''))) return ctx.reply('Balas gambar dengan command ' + ctx.prefix + 'setthumb.');
+      if (typeof client.updateProfilePicture !== 'function') return ctx.reply('API pembaruan foto profil tidak tersedia pada koneksi Baileys ini.');
+      const image = await ctx.quoted.download();
+      if (!Buffer.isBuffer(image) || image.length === 0 || image.length > 5 * 1024 * 1024) {
+        return ctx.reply('Gambar kosong atau melebihi batas 5 MB.');
+      }
+      const jid = client.user?.id;
+      if (!jid) return ctx.reply('Identitas akun bot belum tersedia.');
+      await client.updateProfilePicture(jid, image);
+      return ctx.reply('Foto profil WhatsApp bot berhasil diperbarui.');
     }
 
     if (ctx.command === 'block' || ctx.command === 'unblock') {
