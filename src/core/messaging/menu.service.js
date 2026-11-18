@@ -327,7 +327,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       ];
     } else {
       lines = [
-        '┌─ [ ' + botName.toUpperCase() + ' / FEATURE MENU ]',
+        '┌─ [ ' + botName + ' / FEATURE MENU ]',
         '│ USER INFORMATION',
         '│ ◈ Nama   : ' + userName,
         '│ ◈ Status : ' + role,
