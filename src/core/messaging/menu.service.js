@@ -87,13 +87,23 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
   const heading = icon + ' ' + categoryTitle(category);
   const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
   const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
-  const lines = [
-    '┌─ [ ' + heading + ' ]',
-    '│ ◈ Kategori : ' + cleanLabel(category.label),
-    '│ ◈ Plugin   : ' + plugins.length,
-    '│ ◈ Command  : ' + commandCount,
-    '├─ [ DAFTAR PLUGIN & FITUR ]'
-  ];
+  const premium = theme === 'premium';
+  const lines = premium
+    ? [
+        '╔══════════════ ' + heading + ' ══════════════╗',
+        '║  CATEGORY PROFILE',
+        '║  CATEGORY  ' + cleanLabel(category.label),
+        '║  PLUGINS   ' + plugins.length,
+        '║  COMMANDS  ' + commandCount,
+        '╠══════════════ PLUGIN DIRECTORY ═════════════╣'
+      ]
+    : [
+        '┌─ [ ' + heading + ' ]',
+        '│ ◈ Kategori : ' + cleanLabel(category.label),
+        '│ ◈ Plugin   : ' + plugins.length,
+        '│ ◈ Command  : ' + commandCount,
+        '├─ [ DAFTAR PLUGIN & FITUR ]'
+      ];
 
   for (const [index, plugin] of plugins.entries()) {
     const number = String(index + 1).padStart(2, '0');
@@ -111,14 +121,15 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
 
     for (let chunkIndex = 0; chunkIndex < commandChunks.length; chunkIndex += 1) {
       const label = chunkIndex === 0 ? 'Command: ' : '         ';
-      lines.push('│    ' + label + commandChunks[chunkIndex]);
+      lines.push((premium ? '║    ' : '│    ') + label + commandChunks[chunkIndex]);
     }
-    if (plugin.description) lines.push('│    Fungsi : ' + cleanLabel(plugin.description));
-    if (index < plugins.length - 1) lines.push('│');
+    if (plugin.description) lines.push((premium ? '║    ' : '│    ') + 'Fungsi : ' + cleanLabel(plugin.description));
+    if (plugin.usage) lines.push((premium ? '║    ' : '│    ') + 'Pakai  : ' + cleanLabel(plugin.usage));
+    if (index < plugins.length - 1) lines.push(premium ? '║' : '│');
   }
 
-  if (!plugins.length) lines.push('│ Belum ada plugin aktif di kategori ini.');
-  lines.push('└──────────────────────────────');
+  if (!plugins.length) lines.push(premium ? '║  Belum ada plugin aktif di kategori ini.' : '│ Belum ada plugin aktif di kategori ini.');
+  lines.push(premium ? '╚═════════════════════════════════════════════╝' : '└──────────────────────────────');
   return lines;
 }
 function formatMemory(bytes) {
