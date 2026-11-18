@@ -270,6 +270,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
         ...info,
         '└──────────────',
         '',
+        'BASEBOT SYSTEM DASHBOARD',
         '【 ⚙ MAIN MENU 】',
         ...directory,
         '└─ END OF DIRECTORY'
