@@ -47,7 +47,7 @@ function runFfmpeg(input, output, filterArgs) {
 }
 
 module.exports = {
-  name: 'voicechanger', commands: Object.keys(FILTERS), category: 'media',
+  name: 'voicechanger', commands: Object.keys(FILTERS), category: 'maker',
   description: 'Mengubah karakteristik audio menggunakan FFmpeg.', usage: '.bass (balas audio)', permissions: {},
   async execute(ctx) {
     const progress = getPluginProgress(ctx);
