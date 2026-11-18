@@ -2,6 +2,7 @@
 
 const { normalizeMessage } = require('../messaging/normalize-message');
 const { buildContext } = require('../messaging/context-builder');
+const { containsExternalLink } = require('./anti-link');
 
 function createMessagesUpsertHandler({ dispatcher, config, registry, logger, userService = registry.userService, groupService = registry.groupService }) {
   return async function onMessagesUpsert(client, chatUpdate, store) {
@@ -27,6 +28,22 @@ function createMessagesUpsertHandler({ dispatcher, config, registry, logger, use
         if (m.isGroup && groupService) {
           try { ctx.groupProfile = await groupService.recordMessage(m.chat, { subject: ctx.groupMetadata?.subject }); }
           catch (error) { logger.warn('Gagal memperbarui statistik grup; pemrosesan pesan tetap dilanjutkan.', { error: error.message }); }
+        }
+        const antiLinkEnabled = m.isGroup && ctx.groupProfile?.settings?.antiLink === true;
+        if (antiLinkEnabled && !m.fromMe && !ctx.isOwner && !ctx.isGroupAdmin && containsExternalLink(m.body)) {
+          if (ctx.isBotAdmin) {
+            try {
+              await client.sendMessage(m.chat, { delete: m.key });
+              await client.sendMessage(m.chat, {
+                text: 'Tautan dihapus karena fitur anti-link aktif. Hanya admin grup yang dapat membagikan tautan.'
+              });
+            } catch (error) {
+              logger.warn('Pesan bertautan gagal dihapus oleh anti-link.', { messageId: m.id, error: error.message });
+            }
+          } else {
+            logger.warn('Anti-link aktif tetapi bot bukan admin grup; pesan tidak dapat dihapus.', { chat: m.chat });
+          }
+          continue;
         }
         if (typeof logger.message === 'function') logger.message({
           chatType: m.isNewsletter ? 'newsletter' : (m.isGroup ? 'group' : 'private'),
