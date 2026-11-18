@@ -160,6 +160,10 @@ function clockAt(timeZone, now) {
   }
 }
 
+function countCommands(categories) {
+  return categories.reduce((total, category) => total + category.plugins.reduce((count, plugin) => count + Math.max(1, (plugin.commands || []).length), 0), 0);
+}
+
 function getSystemInfo(now, timeZone, uptime, featureCount) {
   const totalMemory = os.totalmem();
   const usedMemory = Math.max(0, totalMemory - os.freemem());
@@ -232,7 +236,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const uptime = formatUptime((now.getTime() - startedAt) / 1000);
-    const featureCount = categories.reduce((total, category) => total + category.plugins.length, 0);
+    const featureCount = countCommands(categories);
     const system = getSystemInfo(now, config.timezone, uptime, featureCount);
     const rows = categories.map((category, index) => ({
       category,
