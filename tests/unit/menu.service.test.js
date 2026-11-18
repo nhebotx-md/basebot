@@ -162,7 +162,7 @@ test('.menu falls back to its text layout when WhatsApp rejects the interactive 
 
   assert.equal(replies.length, 1);
   assert.match(replies[0], /BASEBOT SYSTEM DASHBOARD/);
-  assert.match(replies[0], /\\.catmenu download/);
+  assert.match(replies[0], /\.catmenu download/);
 });
 
 test('.catmenu renders interactive category and feature lists only when category-menu theme is v2', async () => {
