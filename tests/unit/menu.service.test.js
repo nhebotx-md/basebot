@@ -130,9 +130,9 @@ test('setmenu v2 and setcatmenu v2 expose only their own five interactive theme 
   const service = createMenuService({ registry, config, version: '2.0.0' });
   registry.menuService = service;
 
-  for (const [pluginPath, command, preferenceKey, expectedTitle] of [
-    ['../../plugins/owner/setmenu', 'setmenu', 'menuTheme', 'Tema menu utama'],
-    ['../../plugins/owner/setcatmenu', 'setcatmenu', 'categoryTheme', 'Tema category menu']
+  for (const [pluginPath, command, preferenceKey, expectedTitle, expectedCurrent] of [
+    ['../../plugins/owner/setmenu', 'setmenu', 'menuTheme', 'Tema menu utama', 'V1'],
+    ['../../plugins/owner/setcatmenu', 'setcatmenu', 'categoryTheme', 'Tema category menu', 'V4']
   ]) {
     const plugin = require(pluginPath);
     const calls = [];
@@ -152,7 +152,7 @@ test('setmenu v2 and setcatmenu v2 expose only their own five interactive theme 
       '.' + command + ' v4',
       '.' + command + ' v5'
     ]);
-    assert.match(calls[0].payload.text, /Tema aktif: V1/);
+    assert.ok(calls[0].payload.text.includes('Tema aktif: ' + expectedCurrent));
     assert.equal(replies.length, 0);
     assert.equal(service.preferences[preferenceKey], preferenceKey === 'menuTheme' ? 'showcase' : 'premium');
   }
