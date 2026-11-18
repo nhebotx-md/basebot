@@ -48,13 +48,25 @@ test('formatUptime formats process uptime', () => {
 });
 
 test('.menu keeps the manually selected theme and never rotates automatically', async () => {
+  const state = { plugins: {} };
+  const database = {
+    read: () => structuredClone(state.plugins),
+    update: async (_collection, updater) => { await updater(state.plugins); }
+  };
+  const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
+  const selected = createContext({ args: ['v4'], isOwner: true });
+  assert.match(await service.setTheme(selected.ctx, 'menu'), /THEME UPDATED/);
+  assert.equal(service.preferences.menuTheme, 'premium');
+  assert.equal(state.plugins.menuPreferences.menuTheme, 'premium');
+
   const { ctx, replies } = createContext();
-  const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0', startedAt: Date.now() - 60000 });
   for (let index = 0; index < 5; index += 1) await service.execute(ctx);
+
   assert.equal(replies.length, 5);
-  assert.ok(replies.every(output => output.includes('FEATURE MENU')));
-  assert.equal(new Set(replies).size, 1);
-  assert.equal(service.getNextTheme(), 'showcase');
+  assert.ok(replies.every(output => output.includes('FEATURE COLLECTION')));
+  assert.ok(replies.every(output => output.includes('Pengguna Uji')));
+  assert.equal(service.getNextTheme(), 'premium');
+  assert.equal(service.preferences.menuTheme, 'premium');
 });
 
 
