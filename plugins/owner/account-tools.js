@@ -35,7 +35,7 @@ module.exports = {
     }
 
     if (ctx.command === 'setthumb') {
-      if (!ctx.quoted || !/^image\\//i.test(String(ctx.mime || ''))) return ctx.reply('Balas gambar dengan command ' + ctx.prefix + 'setthumb.');
+      if (!ctx.quoted || !String(ctx.mime || '').toLowerCase().startsWith('image/')) return ctx.reply('Balas gambar dengan command ' + ctx.prefix + 'setthumb.');
       if (typeof client.updateProfilePicture !== 'function') return ctx.reply('API pembaruan foto profil tidak tersedia pada koneksi Baileys ini.');
       const image = await ctx.quoted.download();
       if (!Buffer.isBuffer(image) || image.length === 0 || image.length > 5 * 1024 * 1024) {
