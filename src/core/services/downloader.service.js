@@ -52,7 +52,7 @@ function createDownloaderService(config = {}, adapters = {}) {
   const ytDlpAudio = adapters.ytdlpAudio || (url => downloadWithYtDlp(url, {
     binary: config.ytDlpPath || 'yt-dlp', tempDir: config.tempDir || './storage/temp'
   }));
-  const providerManager = adapters.providerManager || new ProviderManager(config.providerOptions || {});
+  const providerManager = adapters.providerManager || new ProviderManager(config.providerOptions || { timeoutMs: config.providerTimeoutMs, retries: config.providerRetries, failureThreshold: config.providerFailureThreshold, cooldownMs: config.providerCooldownMs });
   const tikTokProvider = adapters.tiktok || (async url => {
     const response = await axios.get('https://www.laurine.site/api/downloader/tiktok', {
       params: { url }, timeout: 15000, maxRedirects: 0, maxContentLength: 1024 * 1024
@@ -76,6 +76,7 @@ function createDownloaderService(config = {}, adapters = {}) {
         return await providerManager.run(name, run, {
           timeoutMs: config.providerTimeoutMs || 30000,
           retries: config.providerRetries ?? 0,
+          failureThreshold: config.providerFailureThreshold ?? 2,
           cooldownMs: config.providerCooldownMs || 30000
         });
       } catch (error) { errors.push(`${name}: ${String(error?.message || error).slice(0, 180)}`); }
