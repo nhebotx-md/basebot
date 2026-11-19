@@ -81,7 +81,7 @@ async function createApp(options = {}) {
 
   const menuService = createMenuService({ registry, config, database, version: packageInfo.version, startedAt: Date.now() });
   registry.menuService = menuService;
-  const dispatcher = new CommandDispatcher({ registry, logger, menuService, rateLimit: config.commandLimits.rateLimit, rateWindowMs: config.commandLimits.rateWindowMs, maxConcurrentCommands: config.commandLimits.maxConcurrent });
+  const dispatcher = new CommandDispatcher({ registry, logger, menuService, rateLimit: config.commandLimits?.rateLimit ?? 8, rateWindowMs: config.commandLimits?.rateWindowMs ?? 10000, maxConcurrentCommands: config.commandLimits?.maxConcurrent ?? 20 });
   const createClient = createClientFactory({ config, logger });
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
   const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
