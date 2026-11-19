@@ -496,14 +496,10 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       return false;
     }
     const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-    const rows = plugins.flatMap(plugin => {
-      const commands = (plugin.commands || []).length ? plugin.commands : [plugin.name];
-      return commands.map(command => ({
-        title: cleanLabel(command, 'Fitur').slice(0, 24),
-        description: cleanLabel(plugin.name + ' · ' + (plugin.description || 'Jalankan fitur ini.')),
-        id: prefix + command
-      }));
-    });
+    const rows = plugins.map(plugin => ({
+      title: cleanLabel(plugin.name, 'Fitur').slice(0, 24),
+      id: prefix + ((plugin.commands || [])[0] || plugin.name)
+    }));
     return sendInteractiveList(ctx, {
       text: '┌─ ' + categoryTitle(category) + '\n├─ FEATURE DIRECTORY\nPilih fitur untuk menjalankannya.',
       buttonText: 'Pilih fitur',
