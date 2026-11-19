@@ -8,7 +8,7 @@
 module.exports = {
   botName: 'BASEBOT',
   ownerName: 'Owner',
-  owners: ['6281234567890'],
+  owners: [],
   prefix: '.',
   publicMode: true,
   pairing: { phone: '', code: '' },
