@@ -18,6 +18,7 @@ function summary(report, prefix) {
     'Memory RSS: ' + formatMb(report.memory.rssMb) + ' · Heap: ' + report.memory.heapUsagePercent + '%',
     'Event loop p95: ' + report.eventLoopDelay.p95Ms + ' ms',
     'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF'),
+    'Job queue: ' + report.jobs.active + ' aktif · ' + report.jobs.queued + ' antre · limit ' + report.jobs.concurrency,
     '',
     'Detail: ' + prefix + 'health detail'
   ].join('\n');
@@ -41,6 +42,7 @@ function details(report) {
     'Schema: ' + (report.database.schemaVersion ?? 'unknown'),
     'Collections: ' + report.database.collections.join(', '),
     'Pending writes: ' + report.database.pendingWrites,
+    'Job queue active/queued: ' + report.jobs.active + '/' + report.jobs.queued + ' · capacity ' + report.jobs.concurrency + '/' + report.jobs.maxQueued,
     '',
     '*PLUGINS*',
     'Total: ' + report.plugins.total,
