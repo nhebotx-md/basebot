@@ -65,7 +65,7 @@ class JobQueue {
         job.reject(abortError());
         continue;
       }
-      void this._run(job);
+      job.done = this._run(job);
     }
   }
 
@@ -116,8 +116,12 @@ class JobQueue {
       cancelled: this.cancelled, closed: this.closed };
   }
 
-  close() {
-    if (this.closed) return;
+  async close({ timeoutMs = 5000 } = {}) {
+    if (this.closed) {
+      const running = [...this.active.values()].map(job => job.done).filter(Boolean);
+      if (running.length) await Promise.race([Promise.allSettled(running), new Promise(resolve => setTimeout(resolve, Math.max(0, timeoutMs)))]);
+      return;
+    }
     this.closed = true;
     for (const job of this.queue.splice(0)) {
       job.status = 'cancelled';
@@ -126,7 +130,10 @@ class JobQueue {
       this.cancelled += 1;
       job.reject(abortError('JobQueue ditutup sebelum job dijalankan.'));
     }
-    for (const job of this.active.values()) job.controller.abort();
+    const running = [...this.active.values()];
+    for (const job of running) job.controller.abort();
+    const pending = running.map(job => job.done).filter(Boolean);
+    if (pending.length) await Promise.race([Promise.allSettled(pending), new Promise(resolve => setTimeout(resolve, Math.max(0, timeoutMs)))]);
   }
 }
 
