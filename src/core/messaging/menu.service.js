@@ -403,7 +403,8 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       return renderPluginHelp(ctx, selectedPlugin.commands[0]) || 'Panduan fitur tidak tersedia.';
     }
     const lines = renderCategoryLayout(category, commandPrefix, theme, detailed);
-    lines.push('Ketik *' + commandPrefix + 'catmenu ' + category.slug + ' <command>* untuk memilih fitur.', 'Ketik *' + commandPrefix + 'menu* untuk kembali.');
+    if (detailed) lines.push('Ketik *' + commandPrefix + 'menu* untuk kembali.');
+    else lines.push('Ketik *' + commandPrefix + category.slug + '* untuk melihat panduan command, fungsi, dan cara pakai.');
     return lines.join('\n').trim();
   }
 
