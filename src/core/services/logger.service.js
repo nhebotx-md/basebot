@@ -223,7 +223,8 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(edge + padVisible(fitVisible(subtitle, width), width) + right);
     panelLine(border(width, '  ├', '┤'));
     section('Runtime environment');
-    row('ENGINE', 'Node.js ' + details.node + '  /  ' + process.platform + ' ' + process.arch, ANSI.teal);
+    row('ENGINE', 'Node.js ' + details.node, ANSI.teal);
+    row('PLATFORM', process.platform + ' / ' + process.arch, ANSI.teal);
     row('MODE', String(details.mode).toUpperCase(), details.mode === 'public' ? ANSI.green : ANSI.yellow);
     row('PREFIX', details.prefix);
     row('TIMEZONE', details.timezone);
@@ -259,7 +260,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(border(width, '  ├', '┤'));
     row('PLUGINS', loaded + ' / ' + discovered + ' loaded', skipped ? ANSI.yellow : ANSI.green);
     row('COMMANDS', String(commands) + ' registered', ANSI.teal);
-    row('HEALTH', skipped ? skipped + ' MODULE(S) NEED ATTENTION' : 'ALL SYSTEMS OPERATIONAL', skipped ? ANSI.yellow : ANSI.green);
+    row('HEALTH', skipped ? skipped + ' MODULE(S) NEED ATTENTION' : 'ALL READY', skipped ? ANSI.yellow : ANSI.green);
     const names = Array.isArray(summary?.plugins) ? summary.plugins.map(name => clip(name, 24)) : [];
     if (names.length) {
       panelLine(border(width, '  ├', '┤'));
