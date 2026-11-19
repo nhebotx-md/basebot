@@ -239,7 +239,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
       const available = Math.max(8, width - visibleWidth(left));
       panelLine(edge + left + padVisible(colorize(colorEnabled, valueColor, fitVisible(clip(value, 100), available)), available) + right);
     };
-    const section = title => panelLine(edge + fitVisible('  ' + colorize(colorEnabled, ANSI.gray, title.toUpperCase(), true), width) + right);
+    const section = title => panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.gray, title.toUpperCase(), true), width), width) + right);
     const heading = '  ' + colorize(colorEnabled, ANSI.white, clip(details.name, 28).toUpperCase(), true) +
       '  ' + colorize(colorEnabled, ANSI.violet, 'v' + clip(details.version, 16), true) +
       '  ' + colorize(colorEnabled, ANSI.gray, '◆');
@@ -294,7 +294,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const names = Array.isArray(summary?.plugins) ? summary.plugins.map(name => clip(name, 24)) : [];
     if (names.length) {
       panelLine(border(width, '  ├', '┤'));
-      panelLine(edge + fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'ACTIVE MODULES', true), width) + right);
+      panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'ACTIVE MODULES', true), width), width) + right);
       let line = '';
       for (const name of names) {
         const candidate = line ? line + '   ·   ' + name : name;
