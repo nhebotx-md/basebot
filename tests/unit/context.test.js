@@ -10,12 +10,20 @@ function fixture(command, permissions = {}, category = 'test') {
   const registry = new PluginRegistry();
   registry.register({ name: command, commands: [command], category, description: 'test', usage: `.${command}`, permissions, execute: async () => {} });
   let lookups = 0;
-  const client = { user: { id: '6281234567890:5@s.whatsapp.net' }, public: true, decodeJid: value => value?.replace(/:\d+@/, '@'), sendMessage: async () => {}, groupMetadata: async () => { lookups += 1; return { participants: [{ id: '6281111111111@s.whatsapp.net', admin: 'admin' }, { id: '6281234567890@s.whatsapp.net', admin: 'superadmin' }] }; } };
+  const sent = [];
+  const client = { user: { id: '6281234567890:5@s.whatsapp.net' }, public: true, decodeJid: value => value?.replace(/:\d+@/, '@'), sendMessage: async (...args) => { sent.push(args); }, groupMetadata: async () => { lookups += 1; return { participants: [{ id: '6281111111111@s.whatsapp.net', admin: 'admin' }, { id: '6281234567890@s.whatsapp.net', admin: 'superadmin' }] }; } };
   const raw = { key: { remoteJid: '120363000000000000@g.us', participant: '6281111111111@s.whatsapp.net', id: 'id1' }, message: { conversation: `.${command}` } };
   const m = normalizeMessage(raw, client);
-  return { client, registry, m, getLookups: () => lookups };
+  return { client, registry, m, sent, getLookups: () => lookups };
 }
 const config = () => loadConfig({}, { owners: ['6281234567890'], prefix: '.', paths: { temp: '/tmp/basebot-test-temp', session: '/tmp/basebot-test-session' }, plugins: { directory: './plugins' } });
+
+test('command context adds the actual invoked prefix and command to every reply', async () => {
+  const f = fixture('ping');
+  const context = await buildContext({ ...f, config: config(), logger, store: {} });
+  await context.reply('Pong!');
+  assert.equal(f.sent[0][1].text, '> .ping\\n\\nPong!');
+});
 
 test('context fetches metadata only for admin-gated commands and grants normalized owner admin flags', async () => {
   const regular = fixture('ping');
