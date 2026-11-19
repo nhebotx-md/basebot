@@ -25,6 +25,8 @@ class ProviderManager {
     let lastError;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
       const controller = new AbortController();
+      const abortFromParent = () => controller.abort();
+      options.signal?.addEventListener('abort', abortFromParent, { once: true });
       const started = this.clock();
       let timer;
       state.attempts += 1;
@@ -36,16 +38,18 @@ class ProviderManager {
         if (options.signal?.aborted) throw makeError('Operasi provider dibatalkan.', 'ABORT_ERR');
         if (typeof options.validate === 'function' && !options.validate(result)) throw makeError('Respons provider ' + state.name + ' tidak valid.', 'PROVIDER_INVALID_RESPONSE');
         clearTimeout(timer);
+        options.signal?.removeEventListener('abort', abortFromParent);
         state.successes += 1; state.consecutiveFailures = 0; state.lastSuccessAt = new Date(this.clock()).toISOString();
         state.lastError = null; state.openUntil = 0; state.totalDurationMs += Math.max(0, this.clock() - started);
         return result;
       } catch (error) {
         clearTimeout(timer);
+        options.signal?.removeEventListener('abort', abortFromParent);
         lastError = error; state.failures += 1; state.consecutiveFailures += 1;
         state.lastFailureAt = new Date(this.clock()).toISOString(); state.lastError = String(error?.message || error).slice(0, 180);
         state.totalDurationMs += Math.max(0, this.clock() - started);
         if (state.consecutiveFailures >= threshold) state.openUntil = this.clock() + cooldownMs;
-        if (options.signal?.aborted || error?.code === 'ABORT_ERR' || attempt >= retries) break;
+        if (options.signal?.aborted || controller.signal.aborted || error?.code === 'ABORT_ERR' || state.openUntil > this.clock() || attempt >= retries) break;
       }
     }
     throw lastError || makeError('Provider ' + state.name + ' gagal.', 'PROVIDER_FAILED');
