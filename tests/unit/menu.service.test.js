@@ -298,7 +298,12 @@ test('.catmenu exposes owner-only plugins to the owner only', async () => {
   const owner = createContext({ command: 'catmenu', args: ['owner'], isOwner: true });
   await service.execute(owner.ctx);
   assert.match(owner.replies[0], /OWNER CONTROL CENTER/);
-  assert.match(owner.replies[0], /\.setmode/);
+  assert.doesNotMatch(owner.replies[0], /\.setmode/);
+
+  const ownerGuide = createContext({ command: 'owner', isOwner: true });
+  await service.execute(ownerGuide.ctx);
+  assert.match(ownerGuide.replies[0], /\.setmode/);
+  assert.match(ownerGuide.replies[0], /Mengubah mode bot/);
 });
 
 
