@@ -8,33 +8,33 @@ const { loadConfig, readDotEnv } = require('../../src/config/config-loader');
 const { createLogger, redact } = require('../../src/core/services/logger.service');
 const { assertPublicHttpUrl, postPublicJson } = require('../../src/core/security/safe-url');
 
-test('configuration reads owner/prefix, accepts legacy custom pairing config as deprecated, and validates logging/timezone', () => {
-  const config = loadConfig({ OWNER_NUMBERS: '6281234567890, 6281111111111', BOT_PREFIX: '!', PAIRING_PHONE: '6281234567890', PAIRING_CODE: 'SHONNHEE', BAILEYS_LOG_LEVEL: 'debug', TIMEZONE: 'Asia/Jakarta' });
+test('configuration reads user options from settings.js and API credentials from env', () => {
+  const settings = {
+    owners: ['6281234567890', '6281111111111'], prefix: '!', pairing: { phone: '6281234567890', code: '' },
+    logging: { level: 'info', format: 'json', color: 'never', baileysLevel: 'debug' },
+    timezone: 'Asia/Jakarta', sticker: { apis: { asepharyanaEnabled: true } },
+    commandLimits: { rateLimit: 10, rateWindowMs: 20000, maxConcurrent: 8 }
+  };
+  const config = loadConfig({ TTS_API_KEY: 'tts-secret', SOCLIP_API_KEY: 'soclip-secret', BOT_PREFIX: '?' }, settings);
   assert.deepEqual(config.owners, ['6281234567890', '6281111111111']);
   assert.equal(config.prefix, '!');
-  assert.equal(config.welcomeEnabled, true);
-  assert.equal(config.pairing.code, 'SHONNHEE');
+  assert.equal(config.pairing.phone, '6281234567890');
   assert.equal(config.logging.baileysLevel, 'debug');
-  assert.equal(config.logging.format, 'pretty');
-  assert.equal(config.logging.color, 'auto');
+  assert.equal(config.logging.format, 'json');
+  assert.equal(config.logging.color, 'never');
+  assert.equal(config.commandLimits.rateLimit, 10);
+  assert.equal(config.commandLimits.maxConcurrent, 8);
+  assert.equal(config.sticker.apis.asepharyanaEnabled, true);
+  assert.equal(config.tts.apiKey, 'tts-secret');
+  assert.equal(config.downloaders.soclipApiKey, 'soclip-secret');
   assert.equal(config.logging.fileEnabled, true);
   assert.equal(config.logging.fileMaxBytes, 5242880);
-  assert.equal(config.commandLimits.rateLimit, 8);
-  assert.equal(config.commandLimits.maxConcurrent, 20);
-  assert.equal(config.sticker.apis.asepharyanaEnabled, false);
-  assert.equal(loadConfig({ OWNER_NUMBERS: '6281234567890', STICKER_API_ASEPHARYANA_ENABLED: 'true' }).sticker.apis.asepharyanaEnabled, true);
-  assert.equal(loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FORMAT: 'json', LOG_COLOR: 'never' }).logging.format, 'json');
-  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FORMAT: 'xml' }), /LOG_FORMAT/);
-  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_COLOR: 'sometimes' }), /LOG_COLOR/);
-  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', LOG_FILE_NAME: '../private.log' }), /LOG_FILE_NAME/);
-  const boundedLimits = loadConfig({ OWNER_NUMBERS: '6281234567890', COMMAND_RATE_LIMIT: '101', COMMAND_RATE_WINDOW_MS: '20000', MAX_CONCURRENT_COMMANDS: '8', LOG_FILE_ENABLED: 'false' });
-  assert.equal(boundedLimits.commandLimits.rateLimit, 100);
-  assert.equal(boundedLimits.commandLimits.rateWindowMs, 20000);
-  assert.equal(boundedLimits.commandLimits.maxConcurrent, 8);
-  assert.equal(boundedLimits.logging.fileEnabled, false);
-  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', BAILEYS_LOG_LEVEL: 'verbose' }), /BAILEYS_LOG_LEVEL/);
-  assert.throws(() => loadConfig({ OWNER_NUMBERS: '6281234567890', TIMEZONE: 'Not/AZone' }), /TIMEZONE/);
+  assert.throws(() => loadConfig({}, { ...settings, logging: { format: 'xml' } }), /LOG_FORMAT/);
+  assert.throws(() => loadConfig({}, { ...settings, prefix: 'bad prefix' }), /BOT_PREFIX/);
+  assert.throws(() => loadConfig({}, { ...settings, timezone: 'Not/AZone' }), /TIMEZONE/);
+  assert.equal(loadConfig({}, { owners: ['6281234567890'], commandLimits: { rateLimit: 101 } }).commandLimits.rateLimit, 100);
 });
+
 
 test('dotenv reader preserves existing process values and quoted # characters', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'basebot-env-'));

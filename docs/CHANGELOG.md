@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Centralize user-facing bot configuration in root `settings.js`; `.env` is reserved for provider API keys (`TTS_API_KEY`, `SOCLIP_API_KEY`).
+
+
 ## 2.0.0 — Plugin architecture
 
 - Mengganti switch command dan scan direktori per pesan dengan plugin loader, validator, registry, permission manager, context builder, dan dispatcher.

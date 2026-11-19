@@ -15,7 +15,7 @@ function fixture(command, permissions = {}, category = 'test') {
   const m = normalizeMessage(raw, client);
   return { client, registry, m, getLookups: () => lookups };
 }
-const config = () => loadConfig({ OWNER_NUMBERS: '6281234567890', BOT_PREFIX: '.', TEMP_DIR: '/tmp/basebot-test-temp', SESSION_DIR: '/tmp/basebot-test-session', PLUGINS_DIR: './plugins' });
+const config = () => loadConfig({}, { owners: ['6281234567890'], prefix: '.', paths: { temp: '/tmp/basebot-test-temp', session: '/tmp/basebot-test-session' }, plugins: { directory: './plugins' } });
 
 test('context fetches metadata only for admin-gated commands and grants normalized owner admin flags', async () => {
   const regular = fixture('ping');
@@ -33,7 +33,7 @@ test('self-sent messages from the connected bot account do not bypass configured
   const f = fixture('ping');
   f.m.fromMe = true;
   f.m.sender = f.client.user.id;
-  const nonOwnerConfig = loadConfig({ OWNER_NUMBERS: '6289999999999', BOT_PREFIX: '.', TEMP_DIR: '/tmp/basebot-test-temp', SESSION_DIR: '/tmp/basebot-test-session', PLUGINS_DIR: './plugins' });
+  const nonOwnerConfig = loadConfig({}, { owners: ['6289999999999'], prefix: '.', paths: { temp: '/tmp/basebot-test-temp', session: '/tmp/basebot-test-session' }, plugins: { directory: './plugins' } });
   const context = await buildContext({ ...f, config: nonOwnerConfig, logger, store: {} });
   assert.equal(context.isOwner, false);
 });

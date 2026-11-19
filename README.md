@@ -67,19 +67,12 @@ git clone https://github.com/nhebotx-md/basebot.git
 cd basebot
 npm ci
 cp .env.example .env
+# settings.js sudah tersedia di root project
 ```
 
-Edit `.env`. Minimal atur:
+Edit `settings.js` untuk mengatur nomor owner, nomor pairing, prefix, mode bot, nama bot, timezone, metadata sticker, logging, limit command, direktori data, XP, dan perilaku plugin. File `.env` hanya digunakan untuk API key/provider credentials seperti `TTS_API_KEY` dan `SOCLIP_API_KEY`.
 
-```dotenv
-OWNER_NUMBERS=628xxxxxxxxxx
-PAIRING_PHONE=628xxxxxxxxxx
-BOT_PREFIX=.
-PUBLIC_MODE=true
-TIMEZONE=Asia/Jakarta
-```
-
-Gunakan nomor WhatsApp dengan kode negara, tanpa tanda `+` atau spasi. Setelah konfigurasi:
+Gunakan nomor WhatsApp dengan kode negara, tanpa tanda `+` atau spasi. Isi `owners` di `settings.js` dengan nomor owner milik sendiri. Setelah konfigurasi:
 
 ```bash
 npm start
