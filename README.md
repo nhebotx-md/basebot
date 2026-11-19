@@ -73,7 +73,7 @@ cp .env.example .env
 cp settings.example.js settings.js
 ```
 
-Edit `settings.js` lokal untuk mengatur nomor owner, nomor pairing, prefix, mode bot, nama bot, timezone, metadata sticker, logging, limit command, direktori data, XP, dan perilaku plugin. File `settings.js` sengaja diabaikan Git agar nomor owner dan konfigurasi pribadi tidak ikut terunggah. `settings.example.js` adalah template publik. File `.env` hanya digunakan untuk API key/provider credentials seperti `TTS_API_KEY` dan `SOCLIP_API_KEY`.
+Edit `settings.js` lokal untuk mengatur nomor owner, nomor pairing, prefix, mode bot, nama bot, timezone, metadata sticker, logging, limit command, direktori data, XP, dan perilaku plugin. File `settings.js` sengaja diabaikan Git agar nomor owner dan konfigurasi pribadi tidak ikut terunggah. Kapasitas antrean dapat diatur melalui `commandLimits.maxQueued` (default 100), sedangkan batas waktu, retry, ambang circuit breaker, dan cooldown provider dapat diatur melalui `downloaders.providerTimeoutMs`, `providerRetries`, `providerFailureThreshold`, dan `providerCooldownMs`. `settings.example.js` adalah template publik. File `.env` hanya digunakan untuk API key/provider credentials seperti `TTS_API_KEY` dan `SOCLIP_API_KEY`.
 
 Gunakan nomor WhatsApp dengan kode negara, tanpa tanda `+` atau spasi. Isi `owners` di `settings.js` dengan nomor owner milik sendiri. Setelah konfigurasi:
 
