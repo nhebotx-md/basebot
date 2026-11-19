@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Centralize user-facing bot configuration in root `settings.js`; `.env` is reserved for provider API keys (`TTS_API_KEY`, `SOCLIP_API_KEY`).
+- Rapikan dashboard startup agar mendeteksi Android/Termux, nama terminal, lebar layar, dan mode warna.
+- Sesuaikan panel startup/plugin/koneksi/shutdown serta log metadata dengan terminal sempit; hormati `TERM=dumb` dan lebar kolom aktual.
+- Tambahkan regression test untuk layout 40 kolom, deteksi Termux, dan mode warna monochrome.
 
 
 ## 2.0.0 — Plugin architecture
