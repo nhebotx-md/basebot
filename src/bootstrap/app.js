@@ -19,6 +19,7 @@ const { GroupService } = require('../core/database/group.service');
 const { PluginStateRepository } = require('../core/database/plugin-state.repository');
 const { HealthService } = require('../core/services/health.service');
 const { JobQueue } = require('../core/services/job-queue.service');
+const { createDownloaderService } = require('../core/services/downloader.service');
 const { SystemDoctorService } = require('../core/services/system-doctor.service');
 
 async function createApp(options = {}) {
@@ -51,6 +52,8 @@ async function createApp(options = {}) {
   const disabledPlugins = await pluginStateRepository.getDisabledPlugins();
   for (const name of disabledPlugins) registry.disable(name);
   const pluginManager = new PluginManager({ registry, directory: pluginDirectory, logger, stateRepository: pluginStateRepository });
+  const downloaderService = options.downloaderService || createDownloaderService(config.downloaders || {});
+  registry.downloaderService = downloaderService;
   const pluginWatchService = new PluginWatchService({ manager: pluginManager, directory: pluginDirectory, logger, debounceMs: config.plugins.watchDebounceMs });
   pluginManager.watchService = pluginWatchService;
   registry.userService = users;
@@ -114,7 +117,7 @@ async function createApp(options = {}) {
     async stop() {
       logger.info('Shutdown BASEBOT dimulai.');
       pluginWatchService.close();
-      jobQueue.close();
+      await jobQueue.close();
       healthService.stop();
       await connection.stop();
       await database.close();
