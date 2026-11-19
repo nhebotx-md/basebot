@@ -92,7 +92,7 @@ module.exports = {
     }
     if (action === 'providers') {
       const providers = ctx.services?.downloaders?.providerStatus?.() || [];
-      await ctx.reply(['*PROVIDER HEALTH*', ...(providers.length ? providers.map(item => item.name + ' · ' + item.circuit.toUpperCase() + ' · sukses ' + item.successes + ' · gagal ' + item.failures + ' · cooldown ' + item.cooldownRemainingMs + ' ms') : ['Belum ada provider yang dipanggil pada runtime ini.'])].join('\\n'));
+      await ctx.reply(['*PROVIDER HEALTH*', ...(providers.length ? providers.map(item => item.name + ' · ' + item.circuit.toUpperCase() + ' · sukses ' + item.successes + ' · gagal ' + item.failures + ' · cooldown ' + item.cooldownRemainingMs + ' ms') : ['Belum ada provider yang dipanggil pada runtime ini.'])].join('\n'));
       return;
     }
     const report = health.getReport();
