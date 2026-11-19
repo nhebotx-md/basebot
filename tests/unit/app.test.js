@@ -10,7 +10,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
   assert.equal(app.registry.list().length, 49);
-  assert.equal(app.config.paths.database, './data/database');
+  assert.equal(app.config.paths.database, '/tmp/basebot-test-database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
   assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 140);
