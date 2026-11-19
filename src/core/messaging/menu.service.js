@@ -82,7 +82,7 @@ function pluginLines(plugin, prefix, index, theme = 'showcase') {
   return ['│ ' + String(index + 1).padStart(2, '0') + '  ' + bullet + ' *' + prefix + primary + '*'];
 }
 
-function renderCategoryLayout(category, prefix, theme = 'showcase') {
+function renderCategoryLayout(category, prefix, theme = 'showcase', detailed = false) {
   const icon = CATEGORY_ICONS[category.slug] || '▣';
   const heading = icon + ' ' + categoryTitle(category);
   const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
@@ -109,8 +109,10 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
     const number = String(index + 1).padStart(2, '0');
     const commands = (plugin.commands || []).length ? plugin.commands : [plugin.name];
     const commandChunks = [];
-    for (let offset = 0; offset < commands.length; offset += 5) {
-      commandChunks.push(commands.slice(offset, offset + 5).map(command => prefix + command).join(', '));
+    if (detailed) {
+      for (let offset = 0; offset < commands.length; offset += 5) {
+        commandChunks.push(commands.slice(offset, offset + 5).map(command => prefix + command).join(', '));
+      }
     }
 
     if (theme === 'terminal') lines.push('│ [' + number + '] ' + cleanLabel(plugin.name));
@@ -119,12 +121,14 @@ function renderCategoryLayout(category, prefix, theme = 'showcase') {
     else if (theme === 'editorial') lines.push(number + ' / ' + cleanLabel(plugin.name).toUpperCase());
     else lines.push('│ ◈ ' + number + '  *' + cleanLabel(plugin.name) + '*');
 
-    for (let chunkIndex = 0; chunkIndex < commandChunks.length; chunkIndex += 1) {
-      const label = chunkIndex === 0 ? 'Command: ' : '         ';
-      lines.push((premium ? '║    ' : '│    ') + label + commandChunks[chunkIndex]);
+    if (detailed) {
+      for (let chunkIndex = 0; chunkIndex < commandChunks.length; chunkIndex += 1) {
+        const label = chunkIndex === 0 ? 'Command: ' : '         ';
+        lines.push((premium ? '║    ' : '│    ') + label + commandChunks[chunkIndex]);
+      }
+      if (plugin.description) lines.push((premium ? '║    ' : '│    ') + 'Fungsi : ' + cleanLabel(plugin.description));
+      if (plugin.usage) lines.push((premium ? '║    ' : '│    ') + 'Pakai  : ' + cleanLabel(plugin.usage));
     }
-    if (plugin.description) lines.push((premium ? '║    ' : '│    ') + 'Fungsi : ' + cleanLabel(plugin.description));
-    if (plugin.usage) lines.push((premium ? '║    ' : '│    ') + 'Pakai  : ' + cleanLabel(plugin.usage));
     if (index < plugins.length - 1) lines.push(premium ? '║' : '│');
   }
 
@@ -356,9 +360,9 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     ].join('\n');
   }
 
-  function renderCategory(ctx) {
+  function renderCategory(ctx, { detailed = false, categoryAlias = false } = {}) {
     const commandPrefix = typeof ctx.prefix === 'string' ? ctx.prefix : Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
-    const requested = normalizeCategory((ctx.args || [])[0]);
+    const requested = normalizeCategory((ctx.args || [])[0] || (categoryAlias ? ctx.command : ''));
     const categories = getCategories(ctx);
     const theme = preferences.categoryTheme;
     if (!requested) {
@@ -398,8 +402,9 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       if (!selectedPlugin) return 'Fitur *' + selectedCommand + '* tidak ditemukan di kategori *' + category.slug + '*.';
       return renderPluginHelp(ctx, selectedPlugin.commands[0]) || 'Panduan fitur tidak tersedia.';
     }
-    const lines = renderCategoryLayout(category, commandPrefix, theme);
-    lines.push('Ketik *' + commandPrefix + 'catmenu ' + category.slug + ' <command>* untuk memilih fitur.', 'Ketik *' + commandPrefix + 'menu* untuk kembali.');
+    const lines = renderCategoryLayout(category, commandPrefix, theme, detailed);
+    if (detailed) lines.push('Ketik *' + commandPrefix + 'menu* untuk kembali.');
+    else lines.push('Ketik *' + commandPrefix + category.slug + '* untuk melihat panduan command, fungsi, dan cara pakai.');
     return lines.join('\n').trim();
   }
 
@@ -492,14 +497,10 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       return false;
     }
     const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-    const rows = plugins.flatMap(plugin => {
-      const commands = (plugin.commands || []).length ? plugin.commands : [plugin.name];
-      return commands.map(command => ({
-        title: cleanLabel(command, 'Fitur').slice(0, 24),
-        description: cleanLabel(plugin.name + ' · ' + (plugin.description || 'Jalankan fitur ini.')),
-        id: prefix + command
-      }));
-    });
+    const rows = plugins.map(plugin => ({
+      title: cleanLabel(plugin.name, 'Fitur').slice(0, 24),
+      id: prefix + ((plugin.commands || [])[0] || plugin.name)
+    }));
     return sendInteractiveList(ctx, {
       text: '┌─ ' + categoryTitle(category) + '\n├─ FEATURE DIRECTORY\nPilih fitur untuk menjalankannya.',
       buttonText: 'Pilih fitur',
@@ -510,15 +511,22 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
   }
 
   return Object.freeze({
-    canHandle(command) { return ['menu', 'help', 'catmenu'].includes(command); },
+    canHandle(command) {
+      if (['menu', 'help', 'catmenu'].includes(command)) return true;
+      if (registry.getByCommand?.(command)) return false;
+      return registry.list({ includeDisabled: true }).some(plugin => normalizeCategory(plugin.category) === command);
+    },
     async execute(ctx) {
-      if (ctx.command === 'menu' && preferences.menuTheme === 'terminal') {
+      const categoryAlias = !['menu', 'help', 'catmenu'].includes(ctx.command);
+      if (categoryAlias) {
+        await ctx.reply(renderCategory(ctx, { detailed: true, categoryAlias: true }));
+      } else if (ctx.command === 'menu' && preferences.menuTheme === 'terminal') {
         await sendInteractiveMainMenu(ctx);
       } else if (ctx.command === 'catmenu' && preferences.categoryTheme === 'terminal' && (ctx.args || []).length < 2) {
         await sendInteractiveCategoryMenu(ctx);
       } else {
         const output = ctx.command === 'catmenu'
-          ? renderCategory(ctx)
+          ? renderCategory(ctx, { detailed: false })
           : ctx.command === 'help' && (ctx.args || []).length
             ? (renderPluginHelp(ctx, ctx.args[0]) || 'Fitur tidak ditemukan atau tidak tersedia untuk akun ini.')
             : renderMenu(ctx);

@@ -157,7 +157,7 @@ test('.menu renders an interactive category list only when main-menu theme is v2
   assert.ok(rows.some(row => row.id === '.catmenu utility'));
   assert.ok(rows.some(row => row.id === '.catmenu ai'));
   assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => row.description.length <= 72));
+  assert.ok(rows.every(row => row.description && row.description.length <= 72));
 });
 
 test('.menu falls back to its text layout when WhatsApp rejects the interactive list', async () => {
@@ -194,9 +194,9 @@ test('.catmenu renders interactive category and feature lists only when category
   assert.equal(category.sends.length, 1);
   assert.equal(category.sends[0][1].buttons[0].text, 'Pilih fitur');
   const rows = category.sends[0][1].buttons[0].sections[0].rows;
-  assert.ok(rows.some(row => row.id === '.ytmp4'));
+  assert.ok(rows.some(row => row.title === 'yt-download' && row.id === '.ytmp4'));
   assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => row.description.length <= 72));
+  assert.ok(rows.every(row => !row.description));
 });
 
 test('.setmenu and .setcatmenu remain plain theme-setting commands', async () => {
@@ -253,18 +253,29 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   assert.doesNotMatch(adminOutput, /\.catmenu owner/);
 });
 
-test('.catmenu lists plugin descriptions, aliases, and usage', async () => {
+test('.catmenu <category> is a compact plugin directory without command or help text', async () => {
   const { ctx, replies } = createContext({ command: 'catmenu', args: ['download'] });
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   await service.execute(ctx);
   assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /yt-download/);
-  assert.match(replies[0], /\.ytmp4/);
-  assert.match(replies[0], /\.ytv/);
-  assert.match(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\.ytmp4 <url>/);
+  assert.doesNotMatch(replies[0], /Command:|Fungsi\s*:|Pakai\s*:/);
+  assert.doesNotMatch(replies[0], /Unduh video dari YouTube|\.ytmp4|\.ytv/);
   assert.match(replies[0], /PLUGINS\s+1/);
   assert.match(replies[0], /COMMANDS\s+2/);
+});
+
+test('.group opens the detailed guide for every plugin in the selected category', async () => {
+  const registry = createRegistry();
+  const service = createMenuService({ registry, config, version: '2.0.0' });
+  const { ctx, replies } = createContext({ command: 'group', isGroup: true, isPrivate: false, isGroupAdmin: true });
+  assert.equal(service.canHandle('group'), true);
+  await service.execute(ctx);
+  assert.match(replies[0], /GROUP HUB/);
+  assert.match(replies[0], /Command:/);
+  assert.match(replies[0], /Fungsi\s*:/);
+  assert.match(replies[0], /Pakai\s*:/);
+  assert.match(replies[0], /\.tagall/);
 });
 
 test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
@@ -287,7 +298,12 @@ test('.catmenu exposes owner-only plugins to the owner only', async () => {
   const owner = createContext({ command: 'catmenu', args: ['owner'], isOwner: true });
   await service.execute(owner.ctx);
   assert.match(owner.replies[0], /OWNER CONTROL CENTER/);
-  assert.match(owner.replies[0], /\.setmode/);
+  assert.doesNotMatch(owner.replies[0], /\.setmode/);
+
+  const ownerGuide = createContext({ command: 'owner', isOwner: true });
+  await service.execute(ownerGuide.ctx);
+  assert.match(ownerGuide.replies[0], /\.setmode/);
+  assert.match(ownerGuide.replies[0], /Mengubah mode bot/);
 });
 
 
@@ -304,8 +320,7 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   assert.match(menu, /STATUS/);
   assert.match(menu, /FEATURE COLLECTION/);
   assert.match(category, /DOWNLOAD STUDIO/);
-  assert.match(category, /Unduh video dari YouTube/);
-  assert.match(category, /\.ytv/);
+  assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|Command:|Fungsi\s*:|Pakai\s*:/);
 });
 
 test('.catmenu category index and unknown category use the same premium frame language', () => {
@@ -364,15 +379,17 @@ test('command similarity ranks typo corrections and respects user permissions', 
   assert.equal(hidden.some(item => item.command === 'setmode'), false);
 });
 
-test('.menu keeps the overview concise while .catmenu exposes complete plugin details', () => {
+test('.menu and .catmenu keep directory views concise while .help exposes plugin details', () => {
   const service = createMenuService({ registry: createRegistry(), config });
   const menu = service.renderMenu(createContext().ctx, 'terminal');
   const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
   assert.doesNotMatch(menu, /root@basebot|catalog --|exit 0|modules loaded/i);
   assert.doesNotMatch(menu, /Unduh video dari YouTube|\\.ytv|<url>/);
-  assert.match(category, /Unduh video dari YouTube/);
-  assert.match(category, /\.ytv/);
-  assert.match(category, /\.ytmp4 <url>/);
+  assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|\.ytmp4 <url>/);
+  const help = service.renderPluginHelp(createContext().ctx, 'ytmp4');
+  assert.match(help, /Unduh video dari YouTube/);
+  assert.match(help, /\.ytv/);
+  assert.match(help, /\.ytmp4 <url>/);
 });
 
 test('.catmenu <category> <command> opens contextual plugin guidance', async () => {
