@@ -71,7 +71,7 @@ module.exports = {
   commands: ['health'],
   category: 'owner',
   description: 'Memeriksa kesehatan runtime, koneksi, database, plugin, dan resource BASEBOT.',
-  usage: '.health [detail|plugins|memory|history|alerts]',
+  usage: '.health [detail|plugins|memory|history|alerts|providers]',
   permissions: { ownerOnly: true },
   async execute(ctx) {
     if (ctx.isNewsletter || ctx.isChannel) { await ctx.reply('Health Monitor hanya dapat dijalankan melalui chat pribadi atau grup oleh owner.'); return; }
@@ -88,6 +88,11 @@ module.exports = {
     if (action === 'alerts') {
       const rows = health.getAlerts(10);
       await ctx.reply(['*RUNTIME ALERTS*', ...(rows.length ? rows.map(item => item.at + ' · ' + item.severity.toUpperCase() + ' · ' + item.message) : ['Belum ada alert runtime.'])].join('\n'));
+      return;
+    }
+    if (action === 'providers') {
+      const providers = ctx.services?.downloaders?.providerStatus?.() || [];
+      await ctx.reply(['*PROVIDER HEALTH*', ...(providers.length ? providers.map(item => item.name + ' · ' + item.circuit.toUpperCase() + ' · sukses ' + item.successes + ' · gagal ' + item.failures + ' · cooldown ' + item.cooldownRemainingMs + ' ms') : ['Belum ada provider yang dipanggil pada runtime ini.'])].join('\\n'));
       return;
     }
     const report = health.getReport();
