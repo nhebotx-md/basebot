@@ -235,17 +235,19 @@ class CommandDispatcher {
     ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, logger: this.logger, botName: ctx.config?.botName || 'ShooNhee-AI' });
     ctx.process = ctx.progress;
     if (ctx.services) ctx.services.progress = ctx.progress;
-    await this.recordCommand(ctx);
     const startedAt = Date.now();
+    const willWait = this.jobQueue.activeCount >= this.jobQueue.concurrency;
+    const jobPromise = this.jobQueue.add(async () => {
+      this.activeCommands += 1;
+      try {
+        await this.recordCommand(ctx);
+        if (ctx.progress.isStarted() && !ctx.progress.isFinished()) await ctx.progress.update('Menjalankan plugin', { detail: 'Slot proses tersedia.' });
+        await plugin.execute(ctx);
+      } finally { this.activeCommands -= 1; }
+    }, { metadata: { plugin: plugin.name, command: ctx.command, sender: ctx.sender || '', reference: ctx.traceId } });
     try {
-      await ctx.progress.start('Menunggu antrean eksekusi', { detail: 'Permintaan diterima dan menunggu slot proses tersedia.' });
-      await this.jobQueue.add(async () => {
-        this.activeCommands += 1;
-        try {
-          if (ctx.progress.isStarted() && !ctx.progress.isFinished()) await ctx.progress.update('Menjalankan plugin', { detail: 'Slot proses tersedia.' });
-          await plugin.execute(ctx);
-        } finally { this.activeCommands -= 1; }
-      }, { metadata: { plugin: plugin.name, command: ctx.command, sender: ctx.sender || '', reference: ctx.traceId } });
+      if (willWait) await ctx.progress.start('Menunggu antrean eksekusi', { detail: 'Permintaan diterima dan menunggu slot proses tersedia.' });
+      await jobPromise;
       if (ctx.progress.isStarted() && !ctx.progress.isFinished()) {
         try { await ctx.progress.complete('Plugin berhasil menyelesaikan seluruh tahap proses'); }
         catch (progressError) { this.logger.warn?.('Pesan penyelesaian progres gagal diperbarui.', { plugin: plugin.name, error: progressError.message }); }
