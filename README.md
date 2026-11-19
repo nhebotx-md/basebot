@@ -14,7 +14,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
 - **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
 - **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, dan alert heap/event-loop/antrean database melalui `.health history` dan `.health alerts`.
-- **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command, tema warna, serta format JSON terstruktur. Ringkasan aktivitas tidak menampilkan identitas pengirim atau isi pesan.
+- **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command bertimestamp dan correlation ID, output pretty/JSON, serta file JSONL berotasi. Panel pesan memakai label generik dan tidak menampilkan nama kontak, nama grup, nomor/JID, atau isi pesan.
 - **Plugin process feedback:** plugin dapat menampilkan tahapan kerja yang informatif melalui satu pesan status yang diperbarui, disertai reaksi mulai/selesai/gagal. Dispatcher otomatis menutup status saat plugin selesai atau gagal.
 - **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
 - **Grup dan pesan:** command admin untuk info/undangan, pengaturan grup, anggota dan join request; poll dengan hasil suara anonim; tindakan pesan untuk reaksi, pin/unpin, edit, dan hapus dengan pemeriksaan kepemilikan; wrapper spoiler, view-once, dan ephemeral untuk media; builder pesan kaya untuk code block, tabel, tautan, rich response, carousel, dan native-flow; manajer grup, Community, dan Channel.
@@ -112,6 +112,11 @@ CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas
 | `LOG_LEVEL` | Level log minimum. |
 | `LOG_FORMAT` | `pretty` untuk terminal atau `json` untuk log terstruktur. |
 | `LOG_COLOR` | `auto`, `always`, atau `never`. |
+| `LOG_FILE_ENABLED` | Menulis log JSONL ke disk; default `true`. Set `false` untuk mematikan file log. |
+| `LOG_FILE_NAME` | Nama file log di dalam `LOG_DIR`; tidak menerima path. Default `basebot.jsonl`. |
+| `LOG_FILE_MAX_BYTES`, `LOG_FILE_MAX_FILES` | Batas ukuran per file dan jumlah file termasuk file aktif; default 5 MiB dan 5 file. File log memakai permission privat. |
+| `COMMAND_RATE_LIMIT`, `COMMAND_RATE_WINDOW_MS` | Batas command per pengirim dan jendela waktu; default 8 command/10 detik. Nilai `0` menonaktifkan rate limit. |
+| `MAX_CONCURRENT_COMMANDS` | Batas command/plugin yang berjalan bersamaan; default 20. |
 | `SESSION_DIR`, `TEMP_DIR`, `LOG_DIR` | Lokasi data sesi, file sementara, dan log. |
 | `PLUGINS_DIR`, `PLUGIN_RELOAD` | Direktori plugin dan opsi reload saat proses pemuatan. |
 | `PLUGIN_AUTO_RELOAD`, `PLUGIN_WATCH_DEBOUNCE_MS` | Watcher file plugin JavaScript tanpa restart bot; default aktif dengan debounce 700 ms. |
@@ -157,7 +162,7 @@ ID referensi pada pesan pengguna dapat dicocokkan dengan record error di log ser
 
 ## Logger
 
-`LOG_FORMAT=pretty` adalah format terminal standar. Gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY dan variabel `NO_COLOR`; nilai `always` dan `never` dapat dipakai untuk memaksa perilaku warna. Dashboard startup menampilkan ringkasan runtime/plugin, sedangkan aktivitas command hanya memuat nama command/plugin, jenis chat, dan durasi tanpa identitas pengirim maupun isi pesan.
+`LOG_FORMAT=pretty` adalah format terminal standar. Gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY dan variabel `NO_COLOR`; nilai `always` dan `never` dapat dipakai untuk memaksa perilaku warna. File log JSONL berotasi berdasarkan ukuran dan ditutup saat shutdown. Aktivitas command menyertakan correlation ID yang sama pada log sukses/gagal dan laporan error plugin. Log dirancang tanpa nomor/JID, nama kontak/grup, atau isi pesan; simpan direktori log secara privat karena tetap berisi metadata operasional dan stack error yang sudah disanitasi.
 
 ## Struktur project
 

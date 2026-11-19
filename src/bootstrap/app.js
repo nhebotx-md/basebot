@@ -21,7 +21,7 @@ const { HealthService } = require('../core/services/health.service');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
-  const logger = options.logger || createLogger({ level: config.logging.level, format: config.logging.format, colors: config.logging.color === 'always' ? true : config.logging.color === 'never' ? false : undefined });
+  const logger = options.logger || createLogger({ level: config.logging.level, format: config.logging.format, colors: config.logging.color === 'always' ? true : config.logging.color === 'never' ? false : undefined, file: config.logging.fileEnabled ? { directory: config.paths.logs, filename: config.logging.fileName, maxBytes: config.logging.fileMaxBytes, maxFiles: config.logging.fileMaxFiles } : null });
   for (const directory of [config.paths.session, config.paths.temp, config.paths.logs, config.paths.database || './data/database']) fs.mkdirSync(path.resolve(directory), { recursive: true, mode: 0o700 });
 
   const startupDetails = {
@@ -31,7 +31,8 @@ async function createApp(options = {}) {
     prefix: config.prefix,
     timezone: config.timezone,
     baileysLogLevel: config.logging.baileysLevel || 'warn',
-    logLevel: config.logging.level || 'info'
+    logLevel: config.logging.level || 'info',
+    fileLogEnabled: config.logging.fileEnabled
   };
   if (typeof logger.startup === 'function') logger.startup({ name: config.botName, ...startupDetails });
   else logger.info('BASEBOT memulai runtime.', startupDetails);
@@ -80,7 +81,7 @@ async function createApp(options = {}) {
 
   const menuService = createMenuService({ registry, config, database, version: packageInfo.version, startedAt: Date.now() });
   registry.menuService = menuService;
-  const dispatcher = new CommandDispatcher({ registry, logger, menuService });
+  const dispatcher = new CommandDispatcher({ registry, logger, menuService, rateLimit: config.commandLimits?.rateLimit ?? 8, rateWindowMs: config.commandLimits?.rateWindowMs ?? 10000, maxConcurrentCommands: config.commandLimits?.maxConcurrent ?? 20 });
   const createClient = createClientFactory({ config, logger });
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
   const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
@@ -109,6 +110,7 @@ async function createApp(options = {}) {
       await connection.stop();
       await database.close();
       logger.info('Shutdown BASEBOT selesai.');
+      await logger.close?.();
     }
   };
 }
