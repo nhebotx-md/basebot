@@ -19,7 +19,7 @@ test('mock messages.upsert builds context, dispatches case-insensitive command, 
   await handler(client, { type: 'notify', messages: [makeMessage('cmd1', { conversation: '.PING hello there' }), makeMessage('ordinary', { conversation: 'not a command' }), makeMessage('empty', {})] }, { contacts: {} });
   assert.equal(sent.length, 1);
   assert.equal(sent[0][0], '6289999999999@s.whatsapp.net');
-  assert.equal(sent[0][1].text, 'Pong: hello there');
+  assert.equal(sent[0][1].text, '> .ping\n\nPong: hello there');
   assert.equal(sent[0][2].quoted.key.remoteJid, '13135550002@s.whatsapp.net');
   assert.equal(sent[0][2].quoted.message.contactMessage.displayName, '✅ ShooNhee-AI');
 });
