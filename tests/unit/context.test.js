@@ -22,7 +22,7 @@ test('command context adds the actual invoked prefix and command to every reply'
   const f = fixture('ping');
   const context = await buildContext({ ...f, config: config(), logger, store: {} });
   await context.reply('Pong!');
-  assert.equal(f.sent[0][1].text, '> .ping\\n\\nPong!');
+  assert.equal(f.sent[0][1].text, '> .ping\n\nPong!');
 });
 
 test('context fetches metadata only for admin-gated commands and grants normalized owner admin flags', async () => {
