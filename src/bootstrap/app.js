@@ -93,7 +93,7 @@ async function createApp(options = {}) {
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
   const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, jobQueue, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
   registry.healthService = healthService;
-  const doctorService = new SystemDoctorService({ config, database, registry, connection, pluginManager });
+  const doctorService = new SystemDoctorService({ config, database, registry, connection, pluginManager, downloaderService });
   registry.doctorService = doctorService;
   return {
     config,
