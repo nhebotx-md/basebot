@@ -147,7 +147,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
           colorize(colorEnabled, ANSI.gray, humanizeKey(key)) + colorize(colorEnabled, ANSI.gray, '=') +
           colorize(colorEnabled, ANSI.white, formatMetaValue(value))
         );
-        writeLine('                                  ' + colorize(colorEnabled, ANSI.border, '·') + ' ' + fields.join(colorize(colorEnabled, ANSI.border, '  │  ')));
+        writeLine('                                    ' + colorize(colorEnabled, ANSI.border, '·') + ' ' + fields.join(colorize(colorEnabled, ANSI.border, '  │  ')));
       }
       if (entries.length > shown.length) {
         writeLine('                                  ' + colorize(colorEnabled, ANSI.gray, '· +' + (entries.length - shown.length) + ' metadata fields'));
@@ -282,9 +282,10 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     if (threshold > LEVELS.info) return;
     const styles = { success: [ANSI.green, '✓', 'SUCCESS'], running: [ANSI.yellow, '◌', 'RUNNING'], warn: [ANSI.yellow, '!', 'WARNING'], error: [ANSI.red, '×', 'FAILED'], info: [ANSI.teal, '›', 'INFO'] };
     const [color, icon, state] = styles[String(status).toLowerCase()] || styles.info;
-    record(status === 'error' ? 'error' : status === 'warn' ? 'warn' : 'system',
-      clip(label, 48) + (detail ? ' · ' + clip(detail, 110) : ''),
-      { stage: clip(label, 48), status: state });
+    const levelName = status === 'error' ? 'error' : status === 'warn' ? 'warn' : 'system';
+    const message = clip(label, 48) + (detail ? ' · ' + clip(detail, 110) : '');
+    if (!pretty) return record(levelName, message, { stage: clip(label, 48), status: state });
+    persistRecord(levelName, message, { stage: clip(label, 48), status: state });
     panelLine('  ' + colorize(colorEnabled, color, icon, true) + ' ' +
       colorize(colorEnabled, ANSI.white, clip(label, 30), true) +
       (detail ? '  ' + colorize(colorEnabled, ANSI.gray, clip(detail, 90)) : '') +
@@ -292,6 +293,10 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   };
   logger.shutdown = (details = {}) => {
     if (threshold > LEVELS.info) return;
+    const message = 'BASEBOT shutdown completed.';
+    const metadata = { signal: details.signal || 'MANUAL', status: details.status || 'CLEAN EXIT', durationMs: details.durationMs };
+    if (!pretty) return record('system', message, metadata);
+    persistRecord('system', message, metadata);
     const width = Math.max(38, Math.min(72, terminalWidth() - 6));
     const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
     const right = colorize(colorEnabled, ANSI.teal, '│', true);
@@ -300,8 +305,8 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.white, 'BASEBOT SHUTDOWN', true) + '  ' + colorize(colorEnabled, ANSI.gray, 'CONTROLLED EXIT'), width), width) + right);
     panelLine(border(width, '  ├', '┤'));
     const rows = [
-      ['SIGNAL', details.signal || 'MANUAL'],
-      ['STATUS', details.status || 'CLEAN EXIT'],
+      ['SIGNAL', metadata.signal],
+      ['STATUS', metadata.status],
       ['DURATION', Number.isFinite(details.durationMs) ? details.durationMs + ' ms' : '—']
     ];
     for (const [label, value] of rows) {
