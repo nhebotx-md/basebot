@@ -28,3 +28,6 @@ auth.json
 
 # Runtime JSON database contains user and group data.
 /data/database/
+
+# Local-only bot configuration; never commit personal owner numbers.
+/settings.js
