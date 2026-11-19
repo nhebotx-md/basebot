@@ -157,7 +157,7 @@ test('.menu renders an interactive category list only when main-menu theme is v2
   assert.ok(rows.some(row => row.id === '.catmenu utility'));
   assert.ok(rows.some(row => row.id === '.catmenu ai'));
   assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => !row.description));
+  assert.ok(rows.every(row => row.description && row.description.length <= 72));
 });
 
 test('.menu falls back to its text layout when WhatsApp rejects the interactive list', async () => {
@@ -268,7 +268,7 @@ test('.catmenu <category> is a compact plugin directory without command or help 
 test('.group opens the detailed guide for every plugin in the selected category', async () => {
   const registry = createRegistry();
   const service = createMenuService({ registry, config, version: '2.0.0' });
-  const { ctx, replies } = createContext({ command: 'group' });
+  const { ctx, replies } = createContext({ command: 'group', isGroup: true, isPrivate: false, isGroupAdmin: true });
   assert.equal(service.canHandle('group'), true);
   await service.execute(ctx);
   assert.match(replies[0], /GROUP HUB/);
