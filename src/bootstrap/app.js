@@ -113,8 +113,15 @@ async function createApp(options = {}) {
     doctorService,
     pluginWatchService,
     async start() {
-      if (config.plugins.autoReload !== false) pluginWatchService.start();
+      if (config.plugins.autoReload !== false) {
+        pluginWatchService.start();
+        logger.stage?.('PLUGIN WATCHER', 'Hot-reload monitor enabled', 'success');
+      } else {
+        logger.stage?.('PLUGIN WATCHER', 'Hot-reload monitor disabled by settings', 'info');
+      }
+      logger.stage?.('RUNTIME', 'Starting WhatsApp connection manager', 'running');
       await connection.start();
+      logger.stage?.('RUNTIME', 'Connection manager initialized; awaiting WhatsApp session', 'success');
       logger.info('Runtime BASEBOT aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
     },
     async stop(options = {}) {
@@ -135,7 +142,7 @@ async function startApp(options) {
   const app = await createApp(options);
   const shutdown = signal => {
     app.logger.info('Shutdown terkontrol dimulai.', { signal });
-    app.stop().then(() => process.exit(0)).catch(error => { app.logger.error('Shutdown gagal.', { error }); process.exit(1); });
+    app.stop({ signal }).then(() => process.exit(0)).catch(error => { app.logger.error('Shutdown gagal.', { error }); process.exit(1); });
   };
   process.once('SIGINT', () => shutdown('SIGINT'));
   process.once('SIGTERM', () => shutdown('SIGTERM'));

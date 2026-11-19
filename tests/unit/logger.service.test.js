@@ -63,16 +63,20 @@ test('startup dashboard renders one consolidated runtime panel', () => {
   assert.equal(lines.filter(line => line.includes('╭')).length, 1);
 });
 
-test('plugin dashboard lists every active module across wrapped lines', () => {
+test('plugin dashboard bounds its module preview as the ecosystem grows', () => {
   const { createLogger } = require('../../src/core/services/logger.service');
   const lines = [];
   const sink = { log(line) { lines.push(String(line)); }, info(line) { lines.push(String(line)); }, warn(line) { lines.push(String(line)); }, error(line) { lines.push(String(line)); } };
   const logger = createLogger({ format: 'pretty', colors: false, sink });
-  const plugins = Array.from({ length: 18 }, (_, index) => 'plugin-' + String(index + 1).padStart(2, '0'));
-  logger.plugins({ loaded: 18, discovered: 18, skipped: 0, commands: 42, plugins });
+  const plugins = Array.from({ length: 120 }, (_, index) => 'plugin-' + String(index + 1).padStart(3, '0'));
+  for (const plugin of plugins) logger.plugin(plugin, plugin.includes('001') ? 'owner' : 'general');
+  assert.equal(lines.length, 0, 'individual discovery events must not flood the terminal');
+  logger.plugins({ loaded: 120, discovered: 120, skipped: 0, commands: 342, plugins });
   const output = lines.join(' ');
-  assert.ok(output.includes('plugin-01'));
-  assert.ok(output.includes('plugin-18'));
-  assert.ok(output.includes('42 registered'));
+  assert.ok(output.includes('plugin-001'));
+  assert.ok(output.includes('plugin-120'));
+  assert.ok(output.includes('+110 additional modules hidden'));
+  assert.ok(output.includes('342 registered'));
   assert.ok(output.includes('ALL READY'));
+  assert.ok(output.includes('CATEGORIES'));
 });
