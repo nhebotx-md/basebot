@@ -253,18 +253,29 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   assert.doesNotMatch(adminOutput, /\.catmenu owner/);
 });
 
-test('.catmenu lists plugin descriptions, aliases, and usage', async () => {
+test('.catmenu <category> is a compact plugin directory without command or help text', async () => {
   const { ctx, replies } = createContext({ command: 'catmenu', args: ['download'] });
   const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
   await service.execute(ctx);
   assert.match(replies[0], /DOWNLOAD STUDIO/);
   assert.match(replies[0], /yt-download/);
-  assert.match(replies[0], /\.ytmp4/);
-  assert.match(replies[0], /\.ytv/);
-  assert.match(replies[0], /Unduh video dari YouTube/);
-  assert.match(replies[0], /\.ytmp4 <url>/);
+  assert.doesNotMatch(replies[0], /Command:|Fungsi\s*:|Pakai\s*:/);
+  assert.doesNotMatch(replies[0], /Unduh video dari YouTube|\.ytmp4|\.ytv/);
   assert.match(replies[0], /PLUGINS\s+1/);
   assert.match(replies[0], /COMMANDS\s+2/);
+});
+
+test('.group opens the detailed guide for every plugin in the selected category', async () => {
+  const registry = createRegistry();
+  const service = createMenuService({ registry, config, version: '2.0.0' });
+  const { ctx, replies } = createContext({ command: 'group' });
+  assert.equal(service.canHandle('group'), true);
+  await service.execute(ctx);
+  assert.match(replies[0], /GROUP HUB/);
+  assert.match(replies[0], /Command:/);
+  assert.match(replies[0], /Fungsi\s*:/);
+  assert.match(replies[0], /Pakai\s*:/);
+  assert.match(replies[0], /\.tagall/);
 });
 
 test('.catmenu selects distinct layouts for assistant, community, and utility categories', () => {
