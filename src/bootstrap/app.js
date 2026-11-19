@@ -18,6 +18,7 @@ const { UserService } = require('../core/database/user.service');
 const { GroupService } = require('../core/database/group.service');
 const { PluginStateRepository } = require('../core/database/plugin-state.repository');
 const { HealthService } = require('../core/services/health.service');
+const { SystemDoctorService } = require('../core/services/system-doctor.service');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
@@ -86,6 +87,8 @@ async function createApp(options = {}) {
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
   const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
   registry.healthService = healthService;
+  const doctorService = new SystemDoctorService({ config, database, registry, connection, pluginManager });
+  registry.doctorService = doctorService;
   return {
     config,
     logger,
@@ -97,6 +100,7 @@ async function createApp(options = {}) {
     dispatcher,
     connection,
     healthService,
+    doctorService,
     pluginWatchService,
     async start() {
       if (config.plugins.autoReload !== false) pluginWatchService.start();
