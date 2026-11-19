@@ -44,3 +44,11 @@
 - Reload plugin menggunakan registry kandidat; kegagalan validasi atau direktori kosong tidak menghapus registry aktif.
 - Satukan `.menu` dan `.help` pada menu service core.
 - Bersihkan dan batasi cache warning rate-limit agar identitas pengirim tidak menumpuk tanpa batas.
+
+
+## Unreleased — Terminal observability and command tracing
+
+- Menambahkan file log JSONL dengan rotasi berbasis ukuran, antrean tulis terbatas, permission file privat, dan flush saat shutdown tanpa dependency tambahan.
+- Menambahkan correlation ID per command pada aktivitas sukses, error plugin, dan menu bawaan untuk memudahkan pencarian log.
+- Menghapus nama kontak dan nama grup dari panel pesan terminal; label pesan sekarang generik dan metadata file log mengikuti redaksi logger.
+- Menambahkan konfigurasi file logging, batas ukuran/retensi, rate limit command, jendela rate limit, dan concurrency melalui environment.

@@ -180,6 +180,7 @@ class CommandDispatcher {
       this.seen.set(id, Date.now());
     }
     if (!ctx.command) return { handled: false, reason: 'not-command' };
+    ctx.traceId = ctx.traceId || randomBytes(4).toString('hex').toUpperCase();
     if (ctx.isGroup && !ctx.isOwner && !ctx.profile?.registered && ctx.command !== 'daftar') {
       await ctx.reply('Kamu belum terdaftar. Daftar dulu dengan format: *' + (ctx.prefix || '.') + 'daftar nama*');
       return { handled: true, reason: 'registration' };
@@ -192,10 +193,12 @@ class CommandDispatcher {
       }
       try {
         await this.recordCommand(ctx);
+        const startedAt = Date.now();
         await this.menuService.execute(ctx);
-        return { handled: true, command: ctx.command, builtin: true };
+        if (typeof this.logger.activity === 'function') this.logger.activity({ plugin: 'builtin-menu', command: ctx.command, category: 'system', scope: ctx.isGroup ? 'group' : 'private', durationMs: Date.now() - startedAt, reference: ctx.traceId });
+        return { handled: true, command: ctx.command, builtin: true, reference: ctx.traceId };
       } catch (error) {
-        this.logger.error('Menu bawaan gagal ditampilkan.', { command: ctx.command, error });
+        this.logger.error('Menu bawaan gagal ditampilkan.', { command: ctx.command, reference: ctx.traceId, error });
         try { await ctx.reply('Menu gagal ditampilkan. Coba lagi sebentar.'); } catch { /* chat mungkin sudah tidak tersedia */ }
         return { handled: true, command: ctx.command, error };
       }
@@ -239,12 +242,12 @@ class CommandDispatcher {
         try { await ctx.progress.complete('Plugin berhasil menyelesaikan seluruh tahap proses'); }
         catch (progressError) { this.logger.warn?.('Pesan penyelesaian progres gagal diperbarui.', { plugin: plugin.name, error: progressError.message }); }
       }
-      const activity = { plugin: plugin.name, command: ctx.command, category: plugin.category, scope: ctx.isGroup ? 'group' : 'private', durationMs: Date.now() - startedAt };
+      const activity = { plugin: plugin.name, command: ctx.command, category: plugin.category, scope: ctx.isGroup ? 'group' : 'private', durationMs: Date.now() - startedAt, reference: ctx.traceId };
       if (typeof this.logger.activity === 'function') this.logger.activity(activity);
       else this.logger.info('Plugin berhasil dijalankan.', { plugin: plugin.name, command: ctx.command });
-      return { handled: true, plugin: plugin.name };
+      return { handled: true, plugin: plugin.name, reference: ctx.traceId };
     } catch (error) {
-      const reference = randomBytes(4).toString('hex').toUpperCase();
+      const reference = ctx.traceId;
       this.logger.error('Plugin gagal saat dieksekusi.', {
         plugin: plugin.name, command: ctx.command, stage: 'execute', reference, error
       });

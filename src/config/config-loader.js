@@ -8,6 +8,12 @@ function parseBoolean(value, fallback) {
   return /^(1|true|yes|on)$/i.test(String(value));
 }
 
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(minimum, Math.min(maximum, Math.floor(parsed)));
+}
+
 function readDotEnv(file = '.env', target = process.env) {
   if (!fs.existsSync(file)) return target;
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
@@ -38,7 +44,8 @@ function loadConfig(env = readDotEnv()) {
     sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '', apis: { asepharyanaEnabled: parseBoolean(env.STICKER_API_ASEPHARYANA_ENABLED, false) } },
     tts: { apiKey: env.TTS_API_KEY || '', voiceId: env.TTS_VOICE_ID || '' },
     downloaders: { fallbackEnabled: parseBoolean(env.DOWNLOADER_FALLBACK, true), soclipApiKey: env.SOCLIP_API_KEY || '', ytDlpEnabled: parseBoolean(env.YTDLP_ENABLED, true), ytDlpPath: env.YTDLP_PATH || 'yt-dlp', tempDir: env.TEMP_DIR || './storage/temp' },
-    logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn' },
+    logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn', fileEnabled: parseBoolean(env.LOG_FILE_ENABLED, true), fileName: env.LOG_FILE_NAME || 'basebot.jsonl', fileMaxBytes: boundedInteger(env.LOG_FILE_MAX_BYTES, 5242880, 65536, 104857600), fileMaxFiles: boundedInteger(env.LOG_FILE_MAX_FILES, 5, 2, 20) },
+    commandLimits: { rateLimit: boundedInteger(env.COMMAND_RATE_LIMIT, 8, 0, 100), rateWindowMs: boundedInteger(env.COMMAND_RATE_WINDOW_MS, 10000, 1000, 600000), maxConcurrent: boundedInteger(env.MAX_CONCURRENT_COMMANDS, 20, 1, 100) },
     paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs', database: env.DATABASE_DIR || './data/database' },
     profile: { expPerMessage: Math.max(0, Number(env.EXP_PER_MESSAGE ?? 5) || 0), expCooldownMs: Math.max(0, Number(env.EXP_COOLDOWN_MS ?? 60000) || 0) },
     plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false), autoReload: parseBoolean(env.PLUGIN_AUTO_RELOAD, true), watchDebounceMs: Math.max(150, Math.min(5000, Number(env.PLUGIN_WATCH_DEBOUNCE_MS) || 700)) }
