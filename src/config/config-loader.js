@@ -1,10 +1,12 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 const { validateConfig } = require('./config-validator');
 
 function parseBoolean(value, fallback) {
   if (value === undefined || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
   return /^(1|true|yes|on)$/i.test(String(value));
 }
 
@@ -32,23 +34,65 @@ function readDotEnv(file = '.env', target = process.env) {
   return target;
 }
 
-function loadConfig(env = readDotEnv()) {
+function loadConfig(env = readDotEnv(), settings = require(path.resolve(process.cwd(), 'settings.js'))) {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+    throw new TypeError('settings.js harus mengekspor object konfigurasi.');
+  }
+  const source = settings;
   const config = {
-    botName: env.BOT_NAME || 'BASEBOT', ownerName: env.OWNER_NAME || 'Owner',
-    owners: String(env.OWNER_NUMBERS || '').split(/[\s,]+/).filter(Boolean),
-    prefix: String(env.BOT_PREFIX || '.'), publicMode: parseBoolean(env.PUBLIC_MODE, true),
-    pairing: { phone: env.PAIRING_PHONE || '', code: env.PAIRING_CODE || '' },
-    welcomeEnabled: parseBoolean(env.WELCOME_ENABLED, true),
-    newsletter: { name: env.NEWSLETTER_NAME || '', id: env.NEWSLETTER_ID || '', url: env.NEWSLETTER_URL || '' },
-    timezone: env.TIMEZONE || 'Asia/Jakarta',
-    sticker: { packname: env.STICKER_PACK_NAME || 'BASEBOT', author: env.STICKER_PACK_AUTHOR || '', apis: { asepharyanaEnabled: parseBoolean(env.STICKER_API_ASEPHARYANA_ENABLED, false) } },
-    tts: { apiKey: env.TTS_API_KEY || '', voiceId: env.TTS_VOICE_ID || '' },
-    downloaders: { fallbackEnabled: parseBoolean(env.DOWNLOADER_FALLBACK, true), soclipApiKey: env.SOCLIP_API_KEY || '', ytDlpEnabled: parseBoolean(env.YTDLP_ENABLED, true), ytDlpPath: env.YTDLP_PATH || 'yt-dlp', tempDir: env.TEMP_DIR || './storage/temp' },
-    logging: { level: env.LOG_LEVEL || 'info', format: env.LOG_FORMAT || 'pretty', color: env.LOG_COLOR || 'auto', baileysLevel: env.BAILEYS_LOG_LEVEL || 'warn', fileEnabled: parseBoolean(env.LOG_FILE_ENABLED, true), fileName: env.LOG_FILE_NAME || 'basebot.jsonl', fileMaxBytes: boundedInteger(env.LOG_FILE_MAX_BYTES, 5242880, 65536, 104857600), fileMaxFiles: boundedInteger(env.LOG_FILE_MAX_FILES, 5, 2, 20) },
-    commandLimits: { rateLimit: boundedInteger(env.COMMAND_RATE_LIMIT, 8, 0, 100), rateWindowMs: boundedInteger(env.COMMAND_RATE_WINDOW_MS, 10000, 1000, 600000), maxConcurrent: boundedInteger(env.MAX_CONCURRENT_COMMANDS, 20, 1, 100) },
-    paths: { session: env.SESSION_DIR || './session', temp: env.TEMP_DIR || './storage/temp', logs: env.LOG_DIR || './logs', database: env.DATABASE_DIR || './data/database' },
-    profile: { expPerMessage: Math.max(0, Number(env.EXP_PER_MESSAGE ?? 5) || 0), expCooldownMs: Math.max(0, Number(env.EXP_COOLDOWN_MS ?? 60000) || 0) },
-    plugins: { directory: env.PLUGINS_DIR || './plugins', reload: parseBoolean(env.PLUGIN_RELOAD, false), autoReload: parseBoolean(env.PLUGIN_AUTO_RELOAD, true), watchDebounceMs: Math.max(150, Math.min(5000, Number(env.PLUGIN_WATCH_DEBOUNCE_MS) || 700)) }
+    botName: source.botName || 'BASEBOT',
+    ownerName: source.ownerName || 'Owner',
+    owners: Array.isArray(source.owners) ? source.owners.map(value => String(value).replace(/\D/g, '')).filter(Boolean) : [],
+    prefix: String(source.prefix ?? '.'),
+    publicMode: parseBoolean(source.publicMode, true),
+    pairing: { phone: String(source.pairing?.phone || ''), code: String(source.pairing?.code || '') },
+    welcomeEnabled: parseBoolean(source.welcomeEnabled, true),
+    newsletter: { name: source.newsletter?.name || '', id: source.newsletter?.id || '', url: source.newsletter?.url || '' },
+    timezone: source.timezone || 'Asia/Jakarta',
+    sticker: {
+      packname: source.sticker?.packname || 'BASEBOT',
+      author: source.sticker?.author || '',
+      apis: { asepharyanaEnabled: parseBoolean(source.sticker?.apis?.asepharyanaEnabled, false) }
+    },
+    tts: { apiKey: env.TTS_API_KEY || '', voiceId: source.tts?.voiceId || '' },
+    downloaders: {
+      fallbackEnabled: parseBoolean(source.downloaders?.fallbackEnabled, true),
+      soclipApiKey: env.SOCLIP_API_KEY || '',
+      ytDlpEnabled: parseBoolean(source.downloaders?.ytDlpEnabled, true),
+      ytDlpPath: source.downloaders?.ytDlpPath || 'yt-dlp',
+      tempDir: source.downloaders?.tempDir || './storage/temp'
+    },
+    logging: {
+      level: source.logging?.level || 'info',
+      format: source.logging?.format || 'pretty',
+      color: source.logging?.color || 'auto',
+      baileysLevel: source.logging?.baileysLevel || 'warn',
+      fileEnabled: parseBoolean(source.logging?.fileEnabled, true),
+      fileName: source.logging?.fileName || 'basebot.jsonl',
+      fileMaxBytes: boundedInteger(source.logging?.fileMaxBytes, 5242880, 65536, 104857600),
+      fileMaxFiles: boundedInteger(source.logging?.fileMaxFiles, 5, 2, 20)
+    },
+    commandLimits: {
+      rateLimit: boundedInteger(source.commandLimits?.rateLimit, 8, 0, 100),
+      rateWindowMs: boundedInteger(source.commandLimits?.rateWindowMs, 10000, 1000, 600000),
+      maxConcurrent: boundedInteger(source.commandLimits?.maxConcurrent, 20, 1, 100)
+    },
+    paths: {
+      session: source.paths?.session || './session',
+      temp: source.paths?.temp || './storage/temp',
+      logs: source.paths?.logs || './logs',
+      database: source.paths?.database || './data/database'
+    },
+    profile: {
+      expPerMessage: Math.max(0, Number(source.profile?.expPerMessage ?? 5) || 0),
+      expCooldownMs: Math.max(0, Number(source.profile?.expCooldownMs ?? 60000) || 0)
+    },
+    plugins: {
+      directory: source.plugins?.directory || './plugins',
+      reload: parseBoolean(source.plugins?.reload, false),
+      autoReload: parseBoolean(source.plugins?.autoReload, true),
+      watchDebounceMs: Math.max(150, Math.min(5000, Number(source.plugins?.watchDebounceMs) || 700))
+    }
   };
   validateConfig(config);
   return config;
