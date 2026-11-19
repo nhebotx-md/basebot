@@ -3,6 +3,7 @@
 const { randomBytes } = require('node:crypto');
 const { validatePermission } = require('../security/permission-manager');
 const { createPluginProgress } = require('../services/plugin-progress.service');
+const { JobQueue } = require('../services/job-queue.service');
 
 function editDistance(left, right) {
   const a = String(left || '').toLowerCase();
@@ -119,7 +120,7 @@ function formatPluginFailure({ plugin, command, error, stage = 'execute', refere
 }
 
 class CommandDispatcher {
-  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, rateWarningTtlMs = rateWindowMs, maxRateWarningEntries = 1000, maxConcurrentCommands = 20 }) {
+  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, rateWarningTtlMs = rateWindowMs, maxRateWarningEntries = 1000, maxConcurrentCommands = 20, maxQueuedCommands = 100, jobQueue = null }) {
     this.registry = registry;
     this.logger = logger;
     this.menuService = menuService;
@@ -130,6 +131,7 @@ class CommandDispatcher {
     this.rateWarningTtlMs = rateWarningTtlMs;
     this.maxRateWarningEntries = maxRateWarningEntries;
     this.maxConcurrentCommands = maxConcurrentCommands;
+    this.jobQueue = jobQueue || new JobQueue({ concurrency: maxConcurrentCommands, maxQueued: maxQueuedCommands });
     this.activeCommands = 0;
     this.seen = new Map();
     this.rateEvents = new Map();
@@ -226,18 +228,24 @@ class CommandDispatcher {
       await ctx.reply(messages[permission.reason] || 'Akses ditolak.');
       return { handled: true, plugin: plugin.name, reason: permission.reason };
     }
-    if (this.activeCommands >= this.maxConcurrentCommands) {
-      await ctx.reply('Bot sedang sibuk. Coba lagi sebentar.');
+    if (this.jobQueue.isFull()) {
+      await ctx.reply('Antrean bot sedang penuh. Tunggu pekerjaan selesai lalu coba lagi.');
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
-    this.activeCommands += 1;
     ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, logger: this.logger, botName: ctx.config?.botName || 'ShooNhee-AI' });
     ctx.process = ctx.progress;
     if (ctx.services) ctx.services.progress = ctx.progress;
     await this.recordCommand(ctx);
     const startedAt = Date.now();
     try {
-      await plugin.execute(ctx);
+      await ctx.progress.start('Menunggu antrean eksekusi', { detail: 'Permintaan diterima dan menunggu slot proses tersedia.' });
+      await this.jobQueue.add(async () => {
+        this.activeCommands += 1;
+        try {
+          if (ctx.progress.isStarted() && !ctx.progress.isFinished()) await ctx.progress.update('Menjalankan plugin', { detail: 'Slot proses tersedia.' });
+          await plugin.execute(ctx);
+        } finally { this.activeCommands -= 1; }
+      }, { metadata: { plugin: plugin.name, command: ctx.command, sender: ctx.sender || '', reference: ctx.traceId } });
       if (ctx.progress.isStarted() && !ctx.progress.isFinished()) {
         try { await ctx.progress.complete('Plugin berhasil menyelesaikan seluruh tahap proses'); }
         catch (progressError) { this.logger.warn?.('Pesan penyelesaian progres gagal diperbarui.', { plugin: plugin.name, error: progressError.message }); }
@@ -265,8 +273,6 @@ class CommandDispatcher {
         });
       }
       return { handled: true, plugin: plugin.name, error, reference };
-    } finally {
-      this.activeCommands -= 1;
     }
   }
 
