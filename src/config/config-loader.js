@@ -34,7 +34,19 @@ function readDotEnv(file = '.env', target = process.env) {
   return target;
 }
 
-function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirname, '../../settings.js'))) {
+function resolveSettingsPath(root = path.resolve(__dirname, '../..')) {
+  const local = path.join(root, 'settings.js');
+  const example = path.join(root, 'settings.example.js');
+  if (fs.existsSync(local)) return local;
+  if (fs.existsSync(example)) return example;
+  throw new Error('Konfigurasi tidak ditemukan. Salin settings.example.js menjadi settings.js lalu sesuaikan konfigurasi bot.');
+}
+
+function getSettingsSource(root = path.resolve(__dirname, '../..')) {
+  return path.basename(resolveSettingsPath(root)) === 'settings.js' ? 'local' : 'template';
+}
+
+function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath())) {
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
     throw new TypeError('settings.js harus mengekspor object konfigurasi.');
   }
@@ -75,7 +87,8 @@ function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirnam
     commandLimits: {
       rateLimit: boundedInteger(source.commandLimits?.rateLimit, 8, 0, 100),
       rateWindowMs: boundedInteger(source.commandLimits?.rateWindowMs, 10000, 1000, 600000),
-      maxConcurrent: boundedInteger(source.commandLimits?.maxConcurrent, 20, 1, 100)
+      maxConcurrent: boundedInteger(source.commandLimits?.maxConcurrent, 20, 1, 100),
+      maxQueued: boundedInteger(source.commandLimits?.maxQueued, 100, 0, 1000)
     },
     paths: {
       session: source.paths?.session || './session',
@@ -98,4 +111,4 @@ function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirnam
   return config;
 }
 
-module.exports = { loadConfig, readDotEnv };
+module.exports = { loadConfig, readDotEnv, resolveSettingsPath, getSettingsSource };
