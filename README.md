@@ -158,7 +158,7 @@ ID referensi pada pesan pengguna dapat dicocokkan dengan record error di log ser
 
 ## Logger
 
-`LOG_FORMAT=pretty` adalah format terminal standar dengan level berwarna, komponen log, metadata key-value yang dirapikan, dashboard startup, tahapan boot, dan ringkasan shutdown. Gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY dan variabel `NO_COLOR`; nilai `always` dan `never` dapat dipakai untuk memaksa perilaku warna. File log JSONL berotasi berdasarkan ukuran dan ditutup saat shutdown. Aktivitas command menyertakan correlation ID yang sama pada log sukses/gagal dan laporan error plugin. Log dirancang tanpa nomor/JID, nama kontak/grup, atau isi pesan; simpan direktori log secara privat karena tetap berisi metadata operasional dan stack error yang sudah disanitasi.
+`LOG_FORMAT=pretty` adalah format terminal standar dengan level berwarna, komponen log, metadata key-value yang dirapikan, dashboard startup, tahapan boot, dan ringkasan shutdown. Dashboard mendeteksi Termux/Android, menunjukkan lebar layar dan mode warna, lalu menyesuaikan panel serta baris log untuk terminal sempit. Gunakan `LOG_FORMAT=json` untuk record JSON terstruktur. `LOG_COLOR=auto` mengikuti TTY, `TERM=dumb`, dan variabel `NO_COLOR`; nilai `always` dan `never` dapat dipakai untuk memaksa perilaku warna. File log JSONL berotasi berdasarkan ukuran dan ditutup saat shutdown. Aktivitas command menyertakan correlation ID yang sama pada log sukses/gagal dan laporan error plugin. Log dirancang tanpa nomor/JID, nama kontak/grup, atau isi pesan; simpan direktori log secara privat karena tetap berisi metadata operasional dan stack error yang sudah disanitasi.
 
 ## Struktur project
 

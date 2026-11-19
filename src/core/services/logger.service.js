@@ -62,9 +62,28 @@ function visibleWidth(value) {
   return Array.from(stripAnsi(value)).reduce((width, char) => width + (/[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE10-\uFE6F\uFF00-\uFF60\uFFE0-\uFFE6]/u.test(char) ? 2 : 1), 0);
 }
 function padVisible(value, width) { const text = String(value); return text + ' '.repeat(Math.max(0, width - visibleWidth(text))); }
-function terminalWidth() {
-  const columns = Number(process.stdout.columns);
-  return Number.isFinite(columns) && columns >= 48 ? Math.min(columns, 100) : 80;
+function terminalWidth(input = process.stdout.columns) {
+  const columns = Number(input);
+  if (!Number.isFinite(columns) || columns <= 0) return 80;
+  return Math.min(100, Math.max(1, columns));
+}
+function getPanelWidth(maximum = 72, padding = 4, columns = process.stdout.columns) {
+  return Math.max(1, Math.min(maximum, terminalWidth(columns) - padding));
+}
+function autoColorEnabled(isTerminal = process.stdout.isTTY, env = process.env) {
+  const noColor = env.NO_COLOR !== undefined && String(env.NO_COLOR) !== '';
+  return Boolean(isTerminal && !noColor && String(env.TERM || '').toLowerCase() !== 'dumb');
+}
+function terminalEnvironment(env = process.env, platform = process.platform, arch = process.arch) {
+  const termux = Boolean(env.TERMUX_VERSION || /(?:^|\/)com\.termux\/files\/usr\/?$/i.test(String(env.PREFIX || '')));
+  const terminalName = termux ? 'Termux' : (env.TERM_PROGRAM || env.TERM || 'Terminal');
+  const color = !autoColorEnabled(true, env) ? 'MONOCHROME' : termux ? '24-BIT COLOR' : 'ANSI COLOR';
+  return {
+    termux,
+    platform: termux ? 'Android / Termux' : platform + ' / ' + arch,
+    terminal: sanitizeText(terminalName).slice(0, 30),
+    color
+  };
 }
 function fitVisible(value, width) {
   const text = String(value);
@@ -103,7 +122,7 @@ function safeStringify(value) {
 function createLogger({ level = 'info', sink = console, component = 'BASEBOT', format = 'json', colors, clock = () => new Date(), timezone = 'Asia/Jakarta', file = null } = {}) {
   const threshold = LEVELS[level] ?? LEVELS.info;
   const pretty = format === 'pretty';
-  const colorEnabled = colors === undefined ? Boolean(sink === console && process.stdout.isTTY && !process.env.NO_COLOR) : Boolean(colors);
+  const colorEnabled = colors === undefined ? autoColorEnabled(sink === console) : Boolean(colors);
   const fileTransport = file ? new RotatingFileLog(file) : null;
   const logger = {};
 
@@ -134,26 +153,33 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const [label, color] = LEVEL_STYLE[name] || LEVEL_STYLE.info;
     const time = colorize(colorEnabled, ANSI.gray, shortTime(new Date(entry.timestamp), timezone));
     const levelLabel = colorize(colorEnabled, color, padVisible(label, 7), true);
-    const source = colorize(colorEnabled, ANSI.violet, clip(entry.component.toUpperCase(), 10).padEnd(10), true);
-    const messageText = colorize(colorEnabled, ANSI.white, clip(entry.message, Math.max(40, Math.min(116, terminalWidth() - 34))));
-    writeLine('  ' + time + '  ' + levelLabel + '  ' + source + '  ' + colorize(colorEnabled, ANSI.violet, '›') + '  ' + messageText, name === 'success' || name === 'system' ? 'info' : name);
+    const compact = terminalWidth() < 68;
+    const source = compact ? '' : '  ' + colorize(colorEnabled, ANSI.violet, clip(entry.component.toUpperCase(), 10).padEnd(10), true);
+    const prefix = '  ' + time + '  ' + levelLabel + source + '  ' + colorize(colorEnabled, ANSI.violet, '›') + '  ';
+    const messageWidth = Math.max(8, terminalWidth() - visibleWidth(prefix) - 2);
+    const messageText = colorize(colorEnabled, ANSI.white, fitVisible(clip(entry.message, messageWidth), messageWidth));
+    writeLine(prefix + messageText, name === 'success' || name === 'system' ? 'info' : name);
     if (entry.data && typeof entry.data === 'object' && !Array.isArray(entry.data)) {
       const entries = Object.entries(entry.data);
       const maxLines = 4;
-      const maxPerLine = terminalWidth() >= 88 ? 4 : 2;
+      const maxPerLine = terminalWidth() >= 112 ? 4 : terminalWidth() >= 96 ? 2 : 1;
       const shown = entries.slice(0, maxLines * maxPerLine);
+      const indentWidth = Math.min(36, Math.max(2, terminalWidth() - 30));
+      const metadataWidth = Math.max(8, terminalWidth() - indentWidth - 2);
       for (let index = 0; index < shown.length; index += maxPerLine) {
         const fields = shown.slice(index, index + maxPerLine).map(([key, value]) =>
           colorize(colorEnabled, ANSI.gray, humanizeKey(key)) + colorize(colorEnabled, ANSI.gray, '=') +
           colorize(colorEnabled, ANSI.white, formatMetaValue(value))
         );
-        writeLine('                                    ' + colorize(colorEnabled, ANSI.border, '·') + ' ' + fields.join(colorize(colorEnabled, ANSI.border, '  │  ')));
+        writeLine(' '.repeat(indentWidth) + fitVisible(colorize(colorEnabled, ANSI.border, '·') + ' ' + fields.join(colorize(colorEnabled, ANSI.border, '  │  ')), metadataWidth));
       }
       if (entries.length > shown.length) {
-        writeLine('                                  ' + colorize(colorEnabled, ANSI.gray, '· +' + (entries.length - shown.length) + ' metadata fields'));
+        const summary = colorize(colorEnabled, ANSI.gray, '· +' + (entries.length - shown.length) + ' metadata fields');
+        writeLine(' '.repeat(indentWidth) + fitVisible(summary, metadataWidth));
       }
     } else if (entry.data !== undefined) {
-      writeLine('                                  ' + colorize(colorEnabled, ANSI.border, '·') + ' ' + colorize(colorEnabled, ANSI.gray, formatMetaValue(entry.data)));
+      const indentWidth = Math.min(36, Math.max(2, terminalWidth() - 30));
+      writeLine(' '.repeat(indentWidth) + fitVisible(colorize(colorEnabled, ANSI.border, '·') + ' ' + colorize(colorEnabled, ANSI.gray, formatMetaValue(entry.data)), Math.max(8, terminalWidth() - indentWidth - 2)));
     }
   }
   function panelLine(text) { writeLine(text); }
@@ -178,7 +204,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     if (LEVELS.info < threshold) return;
     record('info', '[' + clip(label, 24) + '] ' + message + (detail ? ' ' + detail : ''));
   };
-  logger.divider = () => panelLine(colorize(colorEnabled, ANSI.border, '  ' + '─'.repeat(Math.max(32, Math.min(terminalWidth() - 4, 76)))));
+  logger.divider = () => panelLine(colorize(colorEnabled, ANSI.border, '  ' + '─'.repeat(Math.max(12, Math.min(terminalWidth() - 4, 76)))));
   logger.banner = info => {
     if (threshold > LEVELS.info) return;
     const name = clip(info?.name || 'BASEBOT', 32).toUpperCase();
@@ -186,7 +212,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const mode = clip(String(info?.mode || 'public').toUpperCase(), 16);
     const node = clip(info?.node || process.version, 20);
     const prefix = clip(info?.prefix || '.', 8);
-    const width = Math.max(42, Math.min(64, terminalWidth() - 6));
+    const width = getPanelWidth(64, 6);
     const title = fitVisible('  ' + name + '  ' + colorize(colorEnabled, ANSI.violet, 'v' + version) + '  ' + colorize(colorEnabled, ANSI.gray, '·') + '  ' + colorize(colorEnabled, ANSI.white, 'PLUGIN WHATSAPP FRAMEWORK', true), width);
     const details = fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'NODE') + ' ' + node + '   ' + colorize(colorEnabled, ANSI.gray, 'MODE') + ' ' + colorize(colorEnabled, info?.mode === 'public' ? ANSI.green : ANSI.yellow, mode, true) + '   ' + colorize(colorEnabled, ANSI.gray, 'PREFIX') + ' ' + prefix, width);
     panelLine('');
@@ -197,6 +223,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   };
   logger.startup = info => {
     if (threshold > LEVELS.info) return;
+    const terminal = terminalEnvironment();
     const details = {
       name: info?.name || 'BASEBOT', version: info?.version || '0.0.0',
       node: info?.node || process.version, mode: info?.mode || 'public',
@@ -204,7 +231,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
       logLevel: info?.logLevel || level, fileLogEnabled: Boolean(fileTransport)
     };
     persistRecord('system', 'Runtime startup.', details);
-    const width = Math.max(38, Math.min(72, terminalWidth() - 6));
+    const width = getPanelWidth(72, 6);
     const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
     const right = colorize(colorEnabled, ANSI.teal, '│', true);
     const row = (label, value, valueColor = ANSI.white) => {
@@ -224,7 +251,10 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(border(width, '  ├', '┤'));
     section('Runtime environment');
     row('ENGINE', 'Node.js ' + details.node, ANSI.teal);
-    row('PLATFORM', process.platform + ' / ' + process.arch, ANSI.teal);
+    row('PLATFORM', terminal.platform, ANSI.teal);
+    row('TERMINAL', terminal.terminal + (terminal.termux ? ' · Android shell' : ''), ANSI.teal);
+    const colorMode = colorEnabled ? (terminal.color === 'MONOCHROME' ? 'ANSI FORCED' : terminal.color) : 'MONOCHROME';
+    row('DISPLAY', terminalWidth() + ' columns · ' + colorMode, ANSI.teal);
     row('MODE', String(details.mode).toUpperCase(), details.mode === 'public' ? ANSI.green : ANSI.yellow);
     row('PREFIX', details.prefix);
     row('TIMEZONE', details.timezone);
@@ -234,9 +264,9 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     row('FILE LOG', details.fileLogEnabled ? 'JSONL  /  ROTATION ENABLED' : 'DISABLED', details.fileLogEnabled ? ANSI.green : ANSI.yellow);
     row('PROCESS', 'PID ' + process.pid + '  /  ' + (process.env.TERM_PROGRAM || process.env.TERM || 'TERM'));
     panelLine(border(width, '  ╰', '╯'));
-    panelLine('  ' + colorize(colorEnabled, ANSI.teal, '◆', true) + ' ' +
+    panelLine(fitVisible('  ' + colorize(colorEnabled, ANSI.teal, '◆', true) + ' ' +
       colorize(colorEnabled, ANSI.white, 'BOOT SEQUENCE', true) + ' ' +
-      colorize(colorEnabled, ANSI.gray, '· INITIALIZING CORE SERVICES'));
+      colorize(colorEnabled, ANSI.gray, '· INITIALIZING CORE SERVICES'), Math.max(20, terminalWidth() - 2)));
   };
   logger.plugins = summary => {
     if (threshold > LEVELS.info) return;
@@ -246,12 +276,12 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const discovered = Number(summary?.discovered || 0);
     const commands = Number(summary?.commands || 0);
     const skipped = Number(summary?.skipped || 0);
-    const width = Math.max(38, Math.min(72, terminalWidth() - 6));
+    const width = getPanelWidth(72, 6);
     const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
     const right = colorize(colorEnabled, ANSI.teal, '│', true);
     const row = (label, value, valueColor = ANSI.white) => {
       const left = '  ' + colorize(colorEnabled, ANSI.gray, label.padEnd(10)) + ' ';
-      const available = Math.max(8, width - visibleWidth(left));
+      const available = Math.max(0, width - visibleWidth(left));
       panelLine(edge + left + padVisible(colorize(colorEnabled, valueColor, fitVisible(value, available)), available) + right);
     };
     panelLine('');
@@ -277,7 +307,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     }
     panelLine(border(width, '  ╰', '╯'));
     if (skipped) record('warn', 'Sebagian plugin tidak aktif.', { skipped, discovered, loaded });
-    else panelLine('  ' + colorize(colorEnabled, ANSI.green, '✓', true) + ' ' + colorize(colorEnabled, ANSI.gray, 'Plugin registry initialized successfully.'));
+    else panelLine(fitVisible('  ' + colorize(colorEnabled, ANSI.green, '✓', true) + ' ' + colorize(colorEnabled, ANSI.gray, 'Plugin registry initialized successfully.'), Math.max(1, terminalWidth() - 2)));
   };
   logger.stage = (label, detail = '', status = 'success') => {
     if (threshold > LEVELS.info) return;
@@ -287,10 +317,10 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const message = clip(label, 48) + (detail ? ' · ' + clip(detail, 110) : '');
     if (!pretty) return record(levelName, message, { stage: clip(label, 48), status: state });
     persistRecord(levelName, message, { stage: clip(label, 48), status: state });
-    panelLine('  ' + colorize(colorEnabled, color, icon, true) + ' ' +
+    panelLine(fitVisible('  ' + colorize(colorEnabled, color, icon, true) + ' ' +
       colorize(colorEnabled, ANSI.white, clip(label, 30), true) +
       (detail ? '  ' + colorize(colorEnabled, ANSI.gray, clip(detail, 90)) : '') +
-      '  ' + colorize(colorEnabled, color, state, true));
+      '  ' + colorize(colorEnabled, color, state, true), Math.max(1, terminalWidth() - 2)));
   };
   logger.shutdown = (details = {}) => {
     if (threshold > LEVELS.info) return;
@@ -298,7 +328,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const metadata = { signal: details.signal || 'MANUAL', status: details.status || 'CLEAN EXIT', durationMs: details.durationMs };
     if (!pretty) return record('system', message, metadata);
     persistRecord('system', message, metadata);
-    const width = Math.max(38, Math.min(72, terminalWidth() - 6));
+    const width = getPanelWidth(72, 6);
     const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
     const right = colorize(colorEnabled, ANSI.teal, '│', true);
     panelLine('');
@@ -312,7 +342,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     ];
     for (const [label, value] of rows) {
       const left = '  ' + colorize(colorEnabled, ANSI.gray, label.padEnd(10)) + ' ';
-      const available = Math.max(8, width - visibleWidth(left));
+      const available = Math.max(0, width - visibleWidth(left));
       panelLine(edge + left + padVisible(colorize(colorEnabled, ANSI.green, fitVisible(String(value), available)), available) + right);
     }
     panelLine(border(width, '  ╰', '╯'));
@@ -335,12 +365,14 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     if (!pretty) return record(status === 'close' ? 'warn' : 'info', 'WhatsApp ' + label.toLowerCase() + '.', { status, ...details });
     persistRecord(status === 'close' || status === 'disconnected' ? 'warn' : 'info', 'WhatsApp ' + label.toLowerCase() + '.', { status, ...details });
     const safeDetails = redact(details);
-    const panelWidth = Math.max(38, Math.min(58, terminalWidth() - 8));
+    const panelWidth = getPanelWidth(58, 8);
     panelLine('');
     panelLine('  ' + colorize(colorEnabled, ANSI.teal, '╭─', true) + ' ' + colorize(colorEnabled, color, icon + ' ' + label, true) + ' ' + colorize(colorEnabled, ANSI.gray, '─'.repeat(Math.max(8, panelWidth - 12))));
     for (const [key, value] of Object.entries(safeDetails || {})) {
       if (value === undefined || value === false || value === '') continue;
-      const line = '  ' + colorize(colorEnabled, ANSI.teal, '│') + ' ' + colorize(colorEnabled, ANSI.gray, padVisible(clip(key, 26) + ':', 28)) + ' ' + colorize(colorEnabled, ANSI.white, clip(typeof value === 'object' ? safeStringify(value) : value, 70));
+      const labelWidth = terminalWidth() < 56 ? 12 : 28;
+      const valueWidth = Math.max(0, panelWidth - labelWidth - 5);
+      const line = '  ' + colorize(colorEnabled, ANSI.teal, '│') + ' ' + colorize(colorEnabled, ANSI.gray, padVisible(clip(key, labelWidth - 1) + ':', labelWidth)) + ' ' + colorize(colorEnabled, ANSI.white, clip(typeof value === 'object' ? safeStringify(value) : value, valueWidth));
       panelLine(line);
     }
     panelLine('  ' + colorize(colorEnabled, ANSI.teal, '╰' + '─'.repeat(panelWidth), true));
@@ -357,7 +389,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const elapsed = Number.isFinite(data.durationMs) ? Math.max(0, data.durationMs) + 'ms' : '';
     const reference = data.reference ? ' #' + clip(data.reference, 12) : '';
     const timestamp = colorize(colorEnabled, ANSI.gray, shortTime(clock(), timezone));
-    panelLine('  ' + timestamp + ' ' + colorize(colorEnabled, ANSI.violet, '↳', true) + ' ' + colorize(colorEnabled, ANSI.white, '.' + command, true) + ' ' + colorize(colorEnabled, ANSI.gray, '→') + ' ' + colorize(colorEnabled, ANSI.teal, plugin) + category + ' ' + colorize(colorEnabled, ANSI.gray, '[' + scope + '] ' + elapsed + reference));
+    panelLine(fitVisible('  ' + timestamp + ' ' + colorize(colorEnabled, ANSI.violet, '↳', true) + ' ' + colorize(colorEnabled, ANSI.white, '.' + command, true) + ' ' + colorize(colorEnabled, ANSI.gray, '→') + ' ' + colorize(colorEnabled, ANSI.teal, plugin) + category + ' ' + colorize(colorEnabled, ANSI.gray, '[' + scope + '] ' + elapsed + reference), Math.max(1, terminalWidth() - 2)));
   };
   logger.message = info => {
     if (LEVELS.info < threshold) return;
@@ -367,7 +399,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const title = channel ? 'Channel update' : group ? 'Group message' : 'Private message';
     const type = TYPE_MAP[data.messageType || data.mtype] || ['MESSAGE', ANSI.gray];
     const role = data.isOwner ? ['OWNER', ANSI.red] : data.isPartner ? ['PARTNER', ANSI.orange] : data.isPremium ? ['PREMIUM', ANSI.yellow] : data.isAdmin ? ['ADMIN', ANSI.blue] : ['MEMBER', ANSI.gray];
-    const width = Math.max(38, Math.min(58, terminalWidth() - 8));
+    const width = getPanelWidth(58, 8);
     const messageMeta = { chatType: channel ? 'newsletter' : group ? 'group' : 'private', messageType: data.messageType || data.mtype || 'unknown', hasText: Boolean(data.hasText), role: role[0] };
     if (!pretty) return record('info', 'Pesan WhatsApp diterima.', messageMeta);
     persistRecord('info', 'Pesan WhatsApp diterima.', messageMeta);
@@ -388,7 +420,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   logger.errorBox = (title, message) => {
     if (LEVELS.error < threshold) return;
     persistRecord('error', title, { detail: message });
-    const width = Math.max(38, Math.min(58, terminalWidth() - 8));
+    const width = getPanelWidth(58, 8);
     panelLine('');
     panelLine(border(width, '  ╭', '╮'));
     const heading = ' ' + colorize(colorEnabled, ANSI.red, 'ERROR', true) + ' ' + colorize(colorEnabled, ANSI.white, clip(title, width - 10), true);
@@ -420,7 +452,7 @@ function createBanner(lines) {
 function getTimestamp(timezone = 'Asia/Jakarta', date = new Date()) { return shortTime(date, timezone); }
 function divider(sink = console) {
   const writer = typeof sink.log === 'function' ? sink.log : () => {};
-  writer.call(sink, colorize(Boolean(sink === console && process.stdout.isTTY && !process.env.NO_COLOR), ANSI.border, '  ' + '─'.repeat(Math.max(32, Math.min(terminalWidth() - 4, 76)))));
+  writer.call(sink, colorize(autoColorEnabled(sink === console), ANSI.border, '  ' + '─'.repeat(Math.max(12, Math.min(terminalWidth() - 4, 76)))));
 }
 const theme = Object.freeze({
   primary: ANSI.violet, secondary: ANSI.teal, accent: ANSI.yellow, text: ANSI.white, dim: ANSI.gray,
@@ -430,6 +462,6 @@ const theme = Object.freeze({
 const c = Object.freeze(Object.fromEntries(Object.entries({
   green: ANSI.green, purple: ANSI.violet, white: ANSI.white, gray: ANSI.gray, red: ANSI.red,
   yellow: ANSI.yellow, cyan: ANSI.teal, blue: ANSI.blue, magenta: ANSI.pink, orange: ANSI.orange, lime: ANSI.lime
-}).map(([name, code]) => [name, value => colorize(Boolean(process.stdout.isTTY && !process.env.NO_COLOR), code, value)])));
+}).map(([name, code]) => [name, value => colorize(autoColorEnabled(), code, value)])));
 
-module.exports = { createLogger, redact, sanitizeText, stripAnsi, visibleWidth, terminalWidth, fitVisible, clip, createBanner, getTimestamp, divider, theme, c };
+module.exports = { createLogger, redact, sanitizeText, stripAnsi, visibleWidth, terminalWidth, getPanelWidth, terminalEnvironment, autoColorEnabled, fitVisible, clip, createBanner, getTimestamp, divider, theme, c };
