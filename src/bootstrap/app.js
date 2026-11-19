@@ -126,7 +126,6 @@ async function createApp(options = {}) {
       await connection.stop();
       await database.close();
       logger.shutdown?.({ status: 'CLEAN EXIT', durationMs: Date.now() - shutdownStartedAt });
-      logger.info('Shutdown BASEBOT selesai.');
       await logger.close?.();
     }
   };
