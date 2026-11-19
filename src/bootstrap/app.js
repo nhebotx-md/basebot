@@ -41,6 +41,7 @@ async function createApp(options = {}) {
   else logger.info('BASEBOT memulai runtime.', startupDetails);
 
   const database = options.database || await new DatabaseService({ directory: config.paths.database || './data/database', logger }).init();
+  logger.stage?.('DATABASE', 'Persistent JSON storage initialized', 'success');
   const users = options.users || new UserService({ database, expPerMessage: config.profile?.expPerMessage ?? 5, expCooldownMs: config.profile?.expCooldownMs ?? 60000 });
   const groups = options.groups || new GroupService({ database });
   const pluginStateRepository = options.pluginStateRepository || new PluginStateRepository({ database });
@@ -61,6 +62,7 @@ async function createApp(options = {}) {
   registry.databaseService = database;
   registry.pluginManager = pluginManager;
   const activePlugins = registry.list({ includeDisabled: false });
+  logger.stage?.('PLUGIN REGISTRY', activePlugins.length + ' active modules discovered', loaded.length === pluginFiles.length ? 'success' : 'warn');
   const commandCount = activePlugins.reduce((total, plugin) => total + plugin.commands.length, 0);
   const skippedFiles = Math.max(0, pluginFiles.length - loaded.length);
   if (typeof logger.plugins === 'function') logger.plugins({ discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount, plugins: activePlugins.map(plugin => plugin.name).sort() });
@@ -87,6 +89,7 @@ async function createApp(options = {}) {
   const menuService = createMenuService({ registry, config, database, version: packageInfo.version, startedAt: Date.now() });
   registry.menuService = menuService;
   const jobQueue = new JobQueue({ concurrency: config.commandLimits?.maxConcurrent ?? 20, maxQueued: config.commandLimits?.maxQueued ?? 100 });
+  logger.stage?.('JOB QUEUE', 'Concurrency ' + jobQueue.concurrency + ' · capacity ' + jobQueue.maxQueued, 'success');
   registry.jobQueue = jobQueue;
   const dispatcher = new CommandDispatcher({ registry, logger, menuService, jobQueue, rateLimit: config.commandLimits?.rateLimit ?? 8, rateWindowMs: config.commandLimits?.rateWindowMs ?? 10000, maxConcurrentCommands: config.commandLimits?.maxConcurrent ?? 20, maxQueuedCommands: config.commandLimits?.maxQueued ?? 100 });
   const createClient = createClientFactory({ config, logger });
@@ -115,12 +118,14 @@ async function createApp(options = {}) {
       logger.info('Runtime BASEBOT aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
     },
     async stop() {
+      const shutdownStartedAt = Date.now();
       logger.info('Shutdown BASEBOT dimulai.');
       pluginWatchService.close();
       await jobQueue.close();
       healthService.stop();
       await connection.stop();
       await database.close();
+      logger.shutdown?.({ status: 'CLEAN EXIT', durationMs: Date.now() - shutdownStartedAt });
       logger.info('Shutdown BASEBOT selesai.');
       await logger.close?.();
     }
