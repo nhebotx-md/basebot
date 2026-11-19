@@ -228,7 +228,7 @@ class CommandDispatcher {
       await ctx.reply(messages[permission.reason] || 'Akses ditolak.');
       return { handled: true, plugin: plugin.name, reason: permission.reason };
     }
-    if (this.jobQueue.isFull()) {
+    if (this.activeCommands >= this.maxConcurrentCommands && this.jobQueue.isFull()) {
       await ctx.reply('Antrean bot sedang penuh. Tunggu pekerjaan selesai lalu coba lagi.');
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
@@ -282,10 +282,18 @@ class CommandDispatcher {
       ? this.registry.getByEvent(eventName)
       : this.registry.list({ includeDisabled: false }).filter(plugin => plugin.events?.includes(eventName));
     for (const plugin of eventPlugins) {
-      if (this.activeCommands >= this.maxConcurrentCommands) { results.push({ plugin: plugin.name, ok: false, reason: 'busy' }); continue; }
-      this.activeCommands += 1;
-      try { await plugin.onEvent(ctx, event); results.push({ plugin: plugin.name, ok: true }); }
-      catch (error) {
+      try {
+        await this.jobQueue.add(async () => {
+          this.activeCommands += 1;
+          try { await plugin.onEvent(ctx, event); }
+          finally { this.activeCommands -= 1; }
+        }, { metadata: { plugin: plugin.name, eventName, type: 'event' } });
+        results.push({ plugin: plugin.name, ok: true });
+      } catch (error) {
+        if (error?.code === 'JOB_QUEUE_FULL') {
+          results.push({ plugin: plugin.name, ok: false, reason: 'busy' });
+          continue;
+        }
         const reference = randomBytes(4).toString('hex').toUpperCase();
         this.logger.error('Plugin event gagal.', {
           plugin: plugin.name, eventName, stage: 'event', reference, error,
@@ -293,7 +301,6 @@ class CommandDispatcher {
         });
         results.push({ plugin: plugin.name, ok: false, reference });
       }
-      finally { this.activeCommands -= 1; }
     }
     return results;
   }
