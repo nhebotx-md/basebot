@@ -236,7 +236,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(border(width, '  ╰', '╯'));
     panelLine('  ' + colorize(colorEnabled, ANSI.teal, '◆', true) + ' ' +
       colorize(colorEnabled, ANSI.white, 'BOOT SEQUENCE', true) + ' ' +
-      colorize(colorEnabled, ANSI.gray, '· preparing core services'));
+      colorize(colorEnabled, ANSI.gray, '· INITIALIZING CORE SERVICES'));
   };
   logger.plugins = summary => {
     if (threshold > LEVELS.info) return;
@@ -260,7 +260,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(border(width, '  ├', '┤'));
     row('PLUGINS', loaded + ' / ' + discovered + ' loaded', skipped ? ANSI.yellow : ANSI.green);
     row('COMMANDS', String(commands) + ' registered', ANSI.teal);
-    row('HEALTH', skipped ? skipped + ' MODULE(S) NEED ATTENTION' : 'ALL READY', skipped ? ANSI.yellow : ANSI.green);
+    row('HEALTH', skipped ? skipped + ' MODULE(S) NEED ATTENTION' : 'ALL READY · ALL SYSTEMS OPERATIONAL', skipped ? ANSI.yellow : ANSI.green);
     const names = Array.isArray(summary?.plugins) ? summary.plugins.map(name => clip(name, 24)) : [];
     if (names.length) {
       panelLine(border(width, '  ├', '┤'));
