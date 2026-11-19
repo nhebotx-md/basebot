@@ -16,12 +16,13 @@ function versionAtLeast(actual, minimum) {
 }
 
 class SystemDoctorService {
-  constructor({ config, database, registry, connection, pluginManager, cwd = process.cwd(), nodeVersion = process.version } = {}) {
+  constructor({ config, database, registry, connection, pluginManager, downloaderService = null, cwd = process.cwd(), nodeVersion = process.version } = {}) {
     this.config = config;
     this.database = database;
     this.registry = registry;
     this.connection = connection;
     this.pluginManager = pluginManager;
+    this.downloaderService = downloaderService;
     this.cwd = cwd;
     this.nodeVersion = nodeVersion;
   }
@@ -63,6 +64,12 @@ class SystemDoctorService {
     add('Plugin registry', stats && stats.total > 0 && stats.enabled > 0 ? 'pass' : 'warn',
       stats ? stats.enabled + '/' + stats.total + ' plugin aktif.' : 'Statistik plugin tidak tersedia.',
       'Periksa log startup untuk plugin yang gagal dimuat.');
+
+    const providerStats = this.downloaderService?.providerStatus?.() || [];
+    const openCircuits = providerStats.filter(item => item.circuit === 'open').length;
+    add('Provider manager', providerStats.length === 0 ? 'pass' : openCircuits ? 'warn' : 'pass',
+      providerStats.length === 0 ? 'Belum ada request provider pada runtime ini.' : providerStats.length + ' provider terpantau; ' + openCircuits + ' circuit terbuka.',
+      openCircuits ? 'Periksa provider yang sedang cooldown dan status layanan eksternal.' : '');
 
     const failures = checks.filter(item => item.status === 'fail').length;
     const warnings = checks.filter(item => item.status === 'warn').length;
