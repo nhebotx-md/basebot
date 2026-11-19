@@ -13,7 +13,7 @@ test('queue enforces concurrency and completes jobs', async () => {
   assert.deepEqual(await Promise.all(jobs), Array(6).fill(true));
   assert.equal(peak, 2);
   assert.equal(queue.stats().completed, 6);
-  queue.close();
+  await queue.close();
 });
 
 test('queue rejects when running and waiting capacity are full', async () => {
@@ -26,7 +26,7 @@ test('queue rejects when running and waiting capacity are full', async () => {
   release('done');
   assert.equal(await blocker, 'done');
   assert.equal(await waiting, 'queued');
-  queue.close();
+  await queue.close();
 });
 
 test('queue orders priority and supports queued cancellation', async () => {
