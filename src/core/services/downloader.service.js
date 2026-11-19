@@ -9,6 +9,7 @@ const { remini } = require('../../integrations/providers/image-enhancer');
 const { ytmp3: legacyYtmp3 } = require('../../integrations/providers/youtube');
 const { soclipResolve } = require('../../integrations/providers/soclip');
 const axios = require('axios');
+const { ProviderManager } = require('./provider-manager.service');
 const execFileAsync = promisify(execFile);
 
 function validateSource(input, allowedHosts, label) {
@@ -51,6 +52,7 @@ function createDownloaderService(config = {}, adapters = {}) {
   const ytDlpAudio = adapters.ytdlpAudio || (url => downloadWithYtDlp(url, {
     binary: config.ytDlpPath || 'yt-dlp', tempDir: config.tempDir || './storage/temp'
   }));
+  const providerManager = adapters.providerManager || new ProviderManager(config.providerOptions || {});
   const tikTokProvider = adapters.tiktok || (async url => {
     const response = await axios.get('https://www.laurine.site/api/downloader/tiktok', {
       params: { url }, timeout: 15000, maxRedirects: 0, maxContentLength: 1024 * 1024
@@ -70,8 +72,13 @@ function createDownloaderService(config = {}, adapters = {}) {
     for (let index = 0; index < providers.length; index += 1) {
       if (index > 0 && !config.fallbackEnabled) break;
       const [name, run] = providers[index];
-      try { return await run(); }
-      catch (error) { errors.push(`${name}: ${String(error?.message || error).slice(0, 180)}`); }
+      try {
+        return await providerManager.run(name, run, {
+          timeoutMs: config.providerTimeoutMs || 30000,
+          retries: config.providerRetries ?? 0,
+          cooldownMs: config.providerCooldownMs || 30000
+        });
+      } catch (error) { errors.push(`${name}: ${String(error?.message || error).slice(0, 180)}`); }
     }
     const error = new Error(`${label} gagal. ${errors.join(' | ') || 'Tidak ada provider aktif.'}`);
     error.providerErrors = errors;
@@ -86,6 +93,7 @@ function createDownloaderService(config = {}, adapters = {}) {
 
   return Object.freeze({
     remini,
+    providerStatus() { return providerManager.status(); },
     async igdl(input) {
       validateSource(input, ['instagram.com'], 'Instagram');
       return providerChain('Instagram downloader', [
