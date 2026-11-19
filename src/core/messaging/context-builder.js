@@ -110,12 +110,14 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     richMessage: createRichMessageService(messageService.sendMessage),
     pluginManager: registry.pluginManager || null,
     health: registry.healthService || null,
+    jobs: registry.jobQueue || null,
+    doctor: registry.doctorService || null,
     database: registry.databaseService || null,
     users: registry.userService || null,
     groups: registry.groupService || null,
     storage: createStorageService(config.paths.temp),
     media: { downloadBuffer },
-    downloaders: createDownloaderService(config.downloaders || {}),
+    downloaders: registry.downloaderService || createDownloaderService(config.downloaders || {}),
     http: { postJsonPublic: postPublicJson },
     fetchJson: async url => {
       const response = await fetchPublic(url, { timeoutMs: 15000, maxBytes: 512 * 1024 });

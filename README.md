@@ -13,7 +13,10 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 - **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
 - **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
-- **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, dan alert heap/event-loop/antrean database melalui `.health history` dan `.health alerts`.
+- **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, alert heap/event-loop/antrean database, serta statistik job queue melalui `.health history`, `.health alerts`, dan `.health detail`.
+- **System Doctor:** `.doctor` memeriksa versi Node.js, konfigurasi lokal/template, dependency penting, akses direktori, database, koneksi WhatsApp, dan plugin tanpa menampilkan nilai API key.
+- **Provider Manager:** provider downloader memakai timeout, retry terbatas, circuit breaker/cooldown, fallback berurutan, dan statistik sukses/gagal yang bertahan selama runtime.
+- **Job Queue:** command plugin dijalankan melalui antrean FIFO berbobot prioritas dengan batas concurrency, kapasitas antrean, pembatalan job, dan shutdown terkontrol.
 - **Logger terminal:** dashboard startup, ringkasan plugin, status koneksi, aktivitas command bertimestamp dan correlation ID, output pretty/JSON, serta file JSONL berotasi. Panel pesan memakai label generik dan tidak menampilkan nama kontak, nama grup, nomor/JID, atau isi pesan.
 - **Plugin process feedback:** plugin dapat menampilkan tahapan kerja yang informatif melalui satu pesan status yang diperbarui, disertai reaksi mulai/selesai/gagal. Dispatcher otomatis menutup status saat plugin selesai atau gagal.
 - **Plugin error diagnostics:** jika eksekusi command plugin gagal, bot mengirim laporan berisi nama plugin, command, tahap, ID referensi, detail error yang disamarkan, kemungkinan penyebab, dan langkah perbaikan. Kegagalan plugin event dicatat dengan ID referensi pada log server.
@@ -67,10 +70,10 @@ git clone https://github.com/nhebotx-md/basebot.git
 cd basebot
 npm ci
 cp .env.example .env
-# settings.js sudah tersedia di root project
+cp settings.example.js settings.js
 ```
 
-Edit `settings.js` untuk mengatur nomor owner, nomor pairing, prefix, mode bot, nama bot, timezone, metadata sticker, logging, limit command, direktori data, XP, dan perilaku plugin. File `.env` hanya digunakan untuk API key/provider credentials seperti `TTS_API_KEY` dan `SOCLIP_API_KEY`.
+Edit `settings.js` lokal untuk mengatur nomor owner, nomor pairing, prefix, mode bot, nama bot, timezone, metadata sticker, logging, limit command, direktori data, XP, dan perilaku plugin. File `settings.js` sengaja diabaikan Git agar nomor owner dan konfigurasi pribadi tidak ikut terunggah. Kapasitas antrean dapat diatur melalui `commandLimits.maxQueued` (default 100), sedangkan batas waktu, retry, ambang circuit breaker, dan cooldown provider dapat diatur melalui `downloaders.providerTimeoutMs`, `providerRetries`, `providerFailureThreshold`, dan `providerCooldownMs`. `settings.example.js` adalah template publik. File `.env` hanya digunakan untuk API key/provider credentials seperti `TTS_API_KEY` dan `SOCLIP_API_KEY`.
 
 Gunakan nomor WhatsApp dengan kode negara, tanpa tanda `+` atau spasi. Isi `owners` di `settings.js` dengan nomor owner milik sendiri. Setelah konfigurasi:
 
@@ -109,7 +112,7 @@ CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas
 | `LOG_FILE_NAME` | Nama file log di dalam `LOG_DIR`; tidak menerima path. Default `basebot.jsonl`. |
 | `LOG_FILE_MAX_BYTES`, `LOG_FILE_MAX_FILES` | Batas ukuran per file dan jumlah file termasuk file aktif; default 5 MiB dan 5 file. File log memakai permission privat. |
 | `COMMAND_RATE_LIMIT`, `COMMAND_RATE_WINDOW_MS` | Batas command per pengirim dan jendela waktu; default 8 command/10 detik. Nilai `0` menonaktifkan rate limit. |
-| `MAX_CONCURRENT_COMMANDS` | Batas command/plugin yang berjalan bersamaan; default 20. |
+| `MAX_CONCURRENT_COMMANDS` | Batas pekerjaan plugin yang berjalan bersamaan; default 20. |
 | `SESSION_DIR`, `TEMP_DIR`, `LOG_DIR` | Lokasi data sesi, file sementara, dan log. |
 | `PLUGINS_DIR`, `PLUGIN_RELOAD` | Direktori plugin dan opsi reload saat proses pemuatan. |
 | `PLUGIN_AUTO_RELOAD`, `PLUGIN_WATCH_DEBOUNCE_MS` | Watcher file plugin JavaScript tanpa restart bot; default aktif dengan debounce 700 ms. |

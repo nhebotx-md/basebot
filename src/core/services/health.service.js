@@ -8,12 +8,13 @@ function round(value, digits = 1) { const factor = 10 ** digits; return Math.rou
 function bytesToMb(value) { return round(finite(value) / (1024 * 1024), 1); }
 
 class HealthService {
-  constructor({ registry, connection, database, pluginManager, pluginWatchService = null, startupStats = {}, startedAt = Date.now(), processInfo = process, osInfo = os, clock = Date.now, eventLoopMonitor = monitorEventLoopDelay, sampleIntervalMs = 30000, historyLimit = 120, alertLimit = 100 } = {}) {
+  constructor({ registry, connection, database, pluginManager, pluginWatchService = null, jobQueue = null, startupStats = {}, startedAt = Date.now(), processInfo = process, osInfo = os, clock = Date.now, eventLoopMonitor = monitorEventLoopDelay, sampleIntervalMs = 30000, historyLimit = 120, alertLimit = 100 } = {}) {
     this.registry = registry;
     this.connection = connection;
     this.database = database;
     this.pluginManager = pluginManager;
     this.pluginWatchService = pluginWatchService;
+    this.jobQueue = jobQueue;
     this.historyLimit = Math.max(10, Number(historyLimit) || 120);
     this.alertLimit = Math.max(10, Number(alertLimit) || 100);
     this.history = [];
@@ -113,6 +114,7 @@ class HealthService {
       runtime: { node: this.processInfo.version, platform: this.processInfo.platform, arch: this.processInfo.arch, pid: this.processInfo.pid, processUptimeSeconds: Math.floor(this.processInfo.uptime()), loadAverage },
       whatsapp: { state: whatsappState, connected: whatsappState === 'open', reconnectAttempts: Math.max(0, Number(connection.reconnectAttempts) || 0), lastConnectedAt: connection.lastConnectedAt ? new Date(connection.lastConnectedAt).toISOString() : null },
       database: { ready: databaseReady, schemaVersion: databaseStatus.schemaVersion ?? null, collections: Array.isArray(databaseStatus.collections) ? [...databaseStatus.collections] : [], pendingWrites: Math.max(0, Number(this.database?.pendingWrites) || 0) },
+      jobs: this.jobQueue?.stats?.() || { active: 0, queued: 0, concurrency: 0, maxQueued: 0 },
       plugins: { ...pluginStats, skippedAtStartup: skippedPlugins, discoveredAtStartup: Math.max(0, Number(this.startupStats.discovered) || 0), loadedAtStartup: Math.max(0, Number(this.startupStats.loaded) || 0), autoReload: pluginWatch },
       memory: { ...memory, heapUsagePercent },
       eventLoopDelay,

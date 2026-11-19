@@ -26,7 +26,11 @@ module.exports = {
     fallbackEnabled: true,
     ytDlpEnabled: true,
     ytDlpPath: 'yt-dlp',
-    tempDir: './storage/temp'
+    tempDir: './storage/temp',
+    providerTimeoutMs: 30000,
+    providerRetries: 0,
+    providerFailureThreshold: 2,
+    providerCooldownMs: 30000
   },
 
   logging: {
@@ -42,7 +46,8 @@ module.exports = {
   commandLimits: {
     rateLimit: 8,
     rateWindowMs: 10000,
-    maxConcurrent: 20
+    maxConcurrent: 20,
+    maxQueued: 100
   },
   paths: {
     session: './session',

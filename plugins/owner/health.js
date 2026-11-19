@@ -18,6 +18,7 @@ function summary(report, prefix) {
     'Memory RSS: ' + formatMb(report.memory.rssMb) + ' · Heap: ' + report.memory.heapUsagePercent + '%',
     'Event loop p95: ' + report.eventLoopDelay.p95Ms + ' ms',
     'Auto reload: ' + (report.plugins.autoReload?.enabled ? 'ON' : 'OFF'),
+    'Job queue: ' + (report.jobs?.active ?? 0) + ' aktif · ' + (report.jobs?.queued ?? 0) + ' antre · limit ' + (report.jobs?.concurrency ?? 0),
     '',
     'Detail: ' + prefix + 'health detail'
   ].join('\n');
@@ -41,6 +42,7 @@ function details(report) {
     'Schema: ' + (report.database.schemaVersion ?? 'unknown'),
     'Collections: ' + report.database.collections.join(', '),
     'Pending writes: ' + report.database.pendingWrites,
+    'Job queue active/queued: ' + (report.jobs?.active ?? 0) + '/' + (report.jobs?.queued ?? 0) + ' · capacity ' + (report.jobs?.concurrency ?? 0) + '/' + (report.jobs?.maxQueued ?? 0),
     '',
     '*PLUGINS*',
     'Total: ' + report.plugins.total,
@@ -69,7 +71,7 @@ module.exports = {
   commands: ['health'],
   category: 'owner',
   description: 'Memeriksa kesehatan runtime, koneksi, database, plugin, dan resource BASEBOT.',
-  usage: '.health [detail|plugins|memory|history|alerts]',
+  usage: '.health [detail|plugins|memory|history|alerts|providers]',
   permissions: { ownerOnly: true },
   async execute(ctx) {
     if (ctx.isNewsletter || ctx.isChannel) { await ctx.reply('Health Monitor hanya dapat dijalankan melalui chat pribadi atau grup oleh owner.'); return; }
@@ -86,6 +88,11 @@ module.exports = {
     if (action === 'alerts') {
       const rows = health.getAlerts(10);
       await ctx.reply(['*RUNTIME ALERTS*', ...(rows.length ? rows.map(item => item.at + ' · ' + item.severity.toUpperCase() + ' · ' + item.message) : ['Belum ada alert runtime.'])].join('\n'));
+      return;
+    }
+    if (action === 'providers') {
+      const providers = ctx.services?.downloaders?.providerStatus?.() || [];
+      await ctx.reply(['*PROVIDER HEALTH*', ...(providers.length ? providers.map(item => item.name + ' · ' + item.circuit.toUpperCase() + ' · sukses ' + item.successes + ' · gagal ' + item.failures + ' · cooldown ' + item.cooldownRemainingMs + ' ms') : ['Belum ada provider yang dipanggil pada runtime ini.'])].join('\n'));
       return;
     }
     const report = health.getReport();

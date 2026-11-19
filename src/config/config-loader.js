@@ -34,7 +34,19 @@ function readDotEnv(file = '.env', target = process.env) {
   return target;
 }
 
-function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirname, '../../settings.js'))) {
+function resolveSettingsPath(root = path.resolve(__dirname, '../..')) {
+  const local = path.join(root, 'settings.js');
+  const example = path.join(root, 'settings.example.js');
+  if (fs.existsSync(local)) return local;
+  if (fs.existsSync(example)) return example;
+  throw new Error('Konfigurasi tidak ditemukan. Salin settings.example.js menjadi settings.js lalu sesuaikan konfigurasi bot.');
+}
+
+function getSettingsSource(root = path.resolve(__dirname, '../..')) {
+  return path.basename(resolveSettingsPath(root)) === 'settings.js' ? 'local' : 'template';
+}
+
+function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath())) {
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
     throw new TypeError('settings.js harus mengekspor object konfigurasi.');
   }
@@ -60,7 +72,11 @@ function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirnam
       soclipApiKey: env.SOCLIP_API_KEY || '',
       ytDlpEnabled: parseBoolean(source.downloaders?.ytDlpEnabled, true),
       ytDlpPath: source.downloaders?.ytDlpPath || 'yt-dlp',
-      tempDir: source.downloaders?.tempDir || './storage/temp'
+      tempDir: source.downloaders?.tempDir || './storage/temp',
+      providerTimeoutMs: boundedInteger(source.downloaders?.providerTimeoutMs, 30000, 1000, 120000),
+      providerRetries: boundedInteger(source.downloaders?.providerRetries, 0, 0, 3),
+      providerFailureThreshold: boundedInteger(source.downloaders?.providerFailureThreshold, 2, 1, 10),
+      providerCooldownMs: boundedInteger(source.downloaders?.providerCooldownMs, 30000, 1000, 600000)
     },
     logging: {
       level: source.logging?.level || 'info',
@@ -75,7 +91,8 @@ function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirnam
     commandLimits: {
       rateLimit: boundedInteger(source.commandLimits?.rateLimit, 8, 0, 100),
       rateWindowMs: boundedInteger(source.commandLimits?.rateWindowMs, 10000, 1000, 600000),
-      maxConcurrent: boundedInteger(source.commandLimits?.maxConcurrent, 20, 1, 100)
+      maxConcurrent: boundedInteger(source.commandLimits?.maxConcurrent, 20, 1, 100),
+      maxQueued: boundedInteger(source.commandLimits?.maxQueued, 100, 0, 1000)
     },
     paths: {
       session: source.paths?.session || './session',
@@ -98,4 +115,4 @@ function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirnam
   return config;
 }
 
-module.exports = { loadConfig, readDotEnv };
+module.exports = { loadConfig, readDotEnv, resolveSettingsPath, getSettingsSource };

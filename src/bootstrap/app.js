@@ -18,6 +18,9 @@ const { UserService } = require('../core/database/user.service');
 const { GroupService } = require('../core/database/group.service');
 const { PluginStateRepository } = require('../core/database/plugin-state.repository');
 const { HealthService } = require('../core/services/health.service');
+const { JobQueue } = require('../core/services/job-queue.service');
+const { createDownloaderService } = require('../core/services/downloader.service');
+const { SystemDoctorService } = require('../core/services/system-doctor.service');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
@@ -49,6 +52,8 @@ async function createApp(options = {}) {
   const disabledPlugins = await pluginStateRepository.getDisabledPlugins();
   for (const name of disabledPlugins) registry.disable(name);
   const pluginManager = new PluginManager({ registry, directory: pluginDirectory, logger, stateRepository: pluginStateRepository });
+  const downloaderService = options.downloaderService || createDownloaderService(config.downloaders || {});
+  registry.downloaderService = downloaderService;
   const pluginWatchService = new PluginWatchService({ manager: pluginManager, directory: pluginDirectory, logger, debounceMs: config.plugins.watchDebounceMs });
   pluginManager.watchService = pluginWatchService;
   registry.userService = users;
@@ -81,11 +86,15 @@ async function createApp(options = {}) {
 
   const menuService = createMenuService({ registry, config, database, version: packageInfo.version, startedAt: Date.now() });
   registry.menuService = menuService;
-  const dispatcher = new CommandDispatcher({ registry, logger, menuService, rateLimit: config.commandLimits?.rateLimit ?? 8, rateWindowMs: config.commandLimits?.rateWindowMs ?? 10000, maxConcurrentCommands: config.commandLimits?.maxConcurrent ?? 20 });
+  const jobQueue = new JobQueue({ concurrency: config.commandLimits?.maxConcurrent ?? 20, maxQueued: config.commandLimits?.maxQueued ?? 100 });
+  registry.jobQueue = jobQueue;
+  const dispatcher = new CommandDispatcher({ registry, logger, menuService, jobQueue, rateLimit: config.commandLimits?.rateLimit ?? 8, rateWindowMs: config.commandLimits?.rateWindowMs ?? 10000, maxConcurrentCommands: config.commandLimits?.maxConcurrent ?? 20, maxQueuedCommands: config.commandLimits?.maxQueued ?? 100 });
   const createClient = createClientFactory({ config, logger });
   const connection = createConnectionManager({ config, registry, dispatcher, logger, createClient, userService: users, groupService: groups });
-  const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
+  const healthService = new HealthService({ registry, connection, database, pluginManager, pluginWatchService, jobQueue, startupStats: { discovered: pluginFiles.length, loaded: loaded.length, skipped: skippedFiles, commands: commandCount } });
   registry.healthService = healthService;
+  const doctorService = new SystemDoctorService({ config, database, registry, connection, pluginManager, downloaderService });
+  registry.doctorService = doctorService;
   return {
     config,
     logger,
@@ -97,6 +106,8 @@ async function createApp(options = {}) {
     dispatcher,
     connection,
     healthService,
+    jobQueue,
+    doctorService,
     pluginWatchService,
     async start() {
       if (config.plugins.autoReload !== false) pluginWatchService.start();
@@ -106,6 +117,7 @@ async function createApp(options = {}) {
     async stop() {
       logger.info('Shutdown BASEBOT dimulai.');
       pluginWatchService.close();
+      await jobQueue.close();
       healthService.stop();
       await connection.stop();
       await database.close();
