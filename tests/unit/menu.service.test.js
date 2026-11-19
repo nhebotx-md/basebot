@@ -157,7 +157,7 @@ test('.menu renders an interactive category list only when main-menu theme is v2
   assert.ok(rows.some(row => row.id === '.catmenu utility'));
   assert.ok(rows.some(row => row.id === '.catmenu ai'));
   assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => row.description.length <= 72));
+  assert.ok(rows.every(row => !row.description));
 });
 
 test('.menu falls back to its text layout when WhatsApp rejects the interactive list', async () => {
@@ -194,7 +194,7 @@ test('.catmenu renders interactive category and feature lists only when category
   assert.equal(category.sends.length, 1);
   assert.equal(category.sends[0][1].buttons[0].text, 'Pilih fitur');
   const rows = category.sends[0][1].buttons[0].sections[0].rows;
-  assert.ok(rows.some(row => row.id === '.ytmp4'));
+  assert.ok(rows.some(row => row.title === 'yt-download' && row.id === '.ytmp4'));
   assert.ok(rows.every(row => row.title.length <= 24));
   assert.ok(rows.every(row => row.description.length <= 72));
 });
@@ -315,8 +315,7 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   assert.match(menu, /STATUS/);
   assert.match(menu, /FEATURE COLLECTION/);
   assert.match(category, /DOWNLOAD STUDIO/);
-  assert.match(category, /Unduh video dari YouTube/);
-  assert.match(category, /\.ytv/);
+  assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|Command:|Fungsi\s*:|Pakai\s*:/);
 });
 
 test('.catmenu category index and unknown category use the same premium frame language', () => {
@@ -375,15 +374,17 @@ test('command similarity ranks typo corrections and respects user permissions', 
   assert.equal(hidden.some(item => item.command === 'setmode'), false);
 });
 
-test('.menu keeps the overview concise while .catmenu exposes complete plugin details', () => {
+test('.menu and .catmenu keep directory views concise while .help exposes plugin details', () => {
   const service = createMenuService({ registry: createRegistry(), config });
   const menu = service.renderMenu(createContext().ctx, 'terminal');
   const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
   assert.doesNotMatch(menu, /root@basebot|catalog --|exit 0|modules loaded/i);
   assert.doesNotMatch(menu, /Unduh video dari YouTube|\\.ytv|<url>/);
-  assert.match(category, /Unduh video dari YouTube/);
-  assert.match(category, /\.ytv/);
-  assert.match(category, /\.ytmp4 <url>/);
+  assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|\.ytmp4 <url>/);
+  const help = service.renderPluginHelp(createContext().ctx, 'ytmp4');
+  assert.match(help, /Unduh video dari YouTube/);
+  assert.match(help, /\.ytv/);
+  assert.match(help, /\.ytmp4 <url>/);
 });
 
 test('.catmenu <category> <command> opens contextual plugin guidance', async () => {
