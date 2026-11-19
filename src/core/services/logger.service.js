@@ -124,6 +124,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   const pretty = format === 'pretty';
   const colorEnabled = colors === undefined ? autoColorEnabled(sink === console) : Boolean(colors);
   const fileTransport = file ? new RotatingFileLog(file) : null;
+  const pluginDiscovery = new Map();
   const logger = {};
 
   function writeLine(line, method = 'log') {
@@ -294,9 +295,14 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const names = Array.isArray(summary?.plugins) ? summary.plugins.map(name => clip(name, 24)) : [];
     if (names.length) {
       panelLine(border(width, '  ├', '┤'));
-      panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'ACTIVE MODULES', true), width), width) + right);
+      panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'MODULE SNAPSHOT', true), width), width) + right);
+      const previewLimit = 10;
+      const headCount = names.length > previewLimit ? 8 : previewLimit;
+      const visibleNames = names.length > previewLimit
+        ? [...names.slice(0, headCount), ...names.slice(-2)]
+        : names;
       let line = '';
-      for (const name of names) {
+      for (const name of visibleNames) {
         const candidate = line ? line + '   ·   ' + name : name;
         if (visibleWidth(candidate) > width - 4 && line) {
           panelLine(edge + padVisible(fitVisible('  ' + line, width), width) + right);
@@ -304,6 +310,19 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
         } else line = candidate;
       }
       if (line) panelLine(edge + padVisible(fitVisible('  ' + line, width), width) + right);
+      if (names.length > visibleNames.length) {
+        const omitted = names.length - visibleNames.length;
+        panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.yellow, '+' + omitted + ' additional modules hidden to keep the dashboard compact'), width), width) + right);
+      }
+    }
+    const categoryCounts = new Map();
+    for (const item of pluginDiscovery.values()) {
+      const category = clip(item.category || 'general', 16);
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+    }
+    if (categoryCounts.size > 0) {
+      const categorySummary = [...categoryCounts.entries()].map(([name, count]) => name + ':' + count).join('  ·  ');
+      panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'CATEGORIES', true) + '  ' + categorySummary, width), width) + right);
     }
     panelLine(border(width, '  ╰', '╯'));
     if (skipped) record('warn', 'Sebagian plugin tidak aktif.', { skipped, discovered, loaded });
@@ -348,10 +367,13 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     panelLine(border(width, '  ╰', '╯'));
   };
   logger.plugin = (name, category = 'general') => {
-    if (LEVELS.info < threshold) return;
-    if (!pretty) return record('info', 'Plugin terdaftar.', { plugin: name, category });
-    persistRecord('info', 'Plugin terdaftar.', { plugin: name, category });
-    panelLine('  ' + colorize(colorEnabled, ANSI.green, '●') + ' ' + colorize(colorEnabled, ANSI.white, clip(name, 28)) + ' ' + colorize(colorEnabled, ANSI.gray, '[' + clip(category, 20) + ']'));
+    const safeName = clip(name, 48);
+    const safeCategory = clip(category || 'general', 24);
+    if (!safeName) return;
+    pluginDiscovery.set(safeName, { name: safeName, category: safeCategory });
+    // Keep per-plugin discovery out of the live terminal stream. The consolidated
+    // registry panel reports totals and a bounded preview after loading completes.
+    if (fileTransport) persistRecord('info', 'Plugin discovered.', { plugin: safeName, category: safeCategory });
   };
   logger.connection = (status, details = {}) => {
     const map = {
