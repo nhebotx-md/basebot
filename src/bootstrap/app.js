@@ -117,7 +117,7 @@ async function createApp(options = {}) {
       await connection.start();
       logger.info('Runtime BASEBOT aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
     },
-    async stop() {
+    async stop(options = {}) {
       const shutdownStartedAt = Date.now();
       logger.info('Shutdown BASEBOT dimulai.');
       pluginWatchService.close();
@@ -125,7 +125,7 @@ async function createApp(options = {}) {
       healthService.stop();
       await connection.stop();
       await database.close();
-      logger.shutdown?.({ status: 'CLEAN EXIT', durationMs: Date.now() - shutdownStartedAt });
+      logger.shutdown?.({ signal: options.signal || 'MANUAL', status: 'CLEAN EXIT', durationMs: Date.now() - shutdownStartedAt });
       await logger.close?.();
     }
   };
