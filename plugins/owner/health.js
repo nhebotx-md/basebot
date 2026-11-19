@@ -42,7 +42,7 @@ function details(report) {
     'Schema: ' + (report.database.schemaVersion ?? 'unknown'),
     'Collections: ' + report.database.collections.join(', '),
     'Pending writes: ' + report.database.pendingWrites,
-    'Job queue active/queued: ' + report.jobs.active + '/' + report.jobs.queued + ' · capacity ' + report.jobs.concurrency + '/' + (report.jobs?.maxQueued ?? 0),
+    'Job queue active/queued: ' + (report.jobs?.active ?? 0) + '/' + (report.jobs?.queued ?? 0) + ' · capacity ' + (report.jobs?.concurrency ?? 0) + '/' + (report.jobs?.maxQueued ?? 0),
     '',
     '*PLUGINS*',
     'Total: ' + report.plugins.total,
