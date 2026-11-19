@@ -5,7 +5,7 @@ const { loadConfig } = require('../../src/config/config-loader');
 const { createApp } = require('../../src/app');
 
 test('app loads all bundled plugins without opening a WhatsApp socket', async () => {
-  const config = loadConfig({ OWNER_NUMBERS: '6281234567890', PLUGINS_DIR: './plugins', SESSION_DIR: '/tmp/basebot-test-session', TEMP_DIR: '/tmp/basebot-test-temp', LOG_DIR: '/tmp/basebot-test-logs' });
+  const config = loadConfig({}, { owners: ['6281234567890'], plugins: { directory: './plugins', autoReload: false }, paths: { session: '/tmp/basebot-test-session', temp: '/tmp/basebot-test-temp', logs: '/tmp/basebot-test-logs', database: '/tmp/basebot-test-database' } });
   const messages = [];
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
