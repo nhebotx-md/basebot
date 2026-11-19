@@ -67,6 +67,7 @@ git clone https://github.com/nhebotx-md/basebot.git
 cd basebot
 npm ci
 cp .env.example .env
+# settings.js sudah tersedia di root project
 ```
 
 Edit `.env`. Minimal atur:
