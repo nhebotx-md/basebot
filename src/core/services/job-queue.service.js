@@ -21,7 +21,15 @@ class JobQueue {
   }
   get activeCount() { return this.active.size; }
   get pendingCount() { return this.queue.length; }
-  isFull() { return this.queue.length >= this.maxQueued && this.active.size >= this.concurrency; }
+  isFull() { return this.closed || (this.queue.length >= this.maxQueued && this.active.size >= this.concurrency); }
+
+  async _waitForRunning(running, timeoutMs) {
+    if (!running.length) return;
+    let timer;
+    try {
+      await Promise.race([Promise.allSettled(running), new Promise(resolve => { timer = setTimeout(resolve, Math.max(0, timeoutMs)); })]);
+    } finally { if (timer) clearTimeout(timer); }
+  }
 
   add(task, { priority = 0, metadata = {}, signal } = {}) {
     if (typeof task !== 'function') return Promise.reject(new TypeError('Job harus berupa function.'));
@@ -119,7 +127,7 @@ class JobQueue {
   async close({ timeoutMs = 5000 } = {}) {
     if (this.closed) {
       const running = [...this.active.values()].map(job => job.done).filter(Boolean);
-      if (running.length) await Promise.race([Promise.allSettled(running), new Promise(resolve => setTimeout(resolve, Math.max(0, timeoutMs)))]);
+      await this._waitForRunning(running, timeoutMs);
       return;
     }
     this.closed = true;
@@ -133,7 +141,7 @@ class JobQueue {
     const running = [...this.active.values()];
     for (const job of running) job.controller.abort();
     const pending = running.map(job => job.done).filter(Boolean);
-    if (pending.length) await Promise.race([Promise.allSettled(pending), new Promise(resolve => setTimeout(resolve, Math.max(0, timeoutMs)))]);
+    await this._waitForRunning(pending, timeoutMs);
   }
 }
 
