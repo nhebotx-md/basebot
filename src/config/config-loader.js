@@ -72,7 +72,11 @@ function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath()
       soclipApiKey: env.SOCLIP_API_KEY || '',
       ytDlpEnabled: parseBoolean(source.downloaders?.ytDlpEnabled, true),
       ytDlpPath: source.downloaders?.ytDlpPath || 'yt-dlp',
-      tempDir: source.downloaders?.tempDir || './storage/temp'
+      tempDir: source.downloaders?.tempDir || './storage/temp',
+      providerTimeoutMs: boundedInteger(source.downloaders?.providerTimeoutMs, 30000, 1000, 120000),
+      providerRetries: boundedInteger(source.downloaders?.providerRetries, 0, 0, 3),
+      providerFailureThreshold: boundedInteger(source.downloaders?.providerFailureThreshold, 2, 1, 10),
+      providerCooldownMs: boundedInteger(source.downloaders?.providerCooldownMs, 30000, 1000, 600000)
     },
     logging: {
       level: source.logging?.level || 'info',
