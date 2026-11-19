@@ -64,14 +64,15 @@ function createFixture() {
   return { service, ctx };
 }
 
-test('category directory shows plugin names, every command, and descriptions', () => {
+test('category directory shows plugin names without command aliases or descriptions', () => {
   const { service, ctx } = createFixture();
   ctx.args = ['maker'];
   const output = service.renderCategory(ctx);
 
   assert.match(output, /ai-image-transform/);
   assert.match(output, /Mengubah foto menjadi berbagai gaya visual/);
-  for (const command of commands) assert.ok(output.includes('.' + command), 'missing command: ' + command);
+  for (const command of commands) assert.ok(!output.includes('.' + command), 'unexpected command in compact directory: ' + command);
+  assert.doesNotMatch(output, /Fungsi\s*:|Pakai\s*:|Command:/);
   assert.match(output, /Plugin\s+: 1/);
   assert.match(output, /Command\s+: 12/);
 });
@@ -86,7 +87,7 @@ test('main menu shows plugin and command counts for new categories', () => {
   assert.match(output, /catmenu downloader/);
 });
 
-test('interactive category falls back to a complete text directory when over ten commands', async () => {
+test('interactive category lists each plugin once without command explanations', async () => {
   const { service, ctx } = createFixture();
   const sent = [];
   const replies = [];
@@ -97,7 +98,11 @@ test('interactive category falls back to a complete text directory when over ten
 
   await service.execute(ctx);
 
-  assert.equal(sent.length, 0, 'must not send a truncated interactive list');
-  assert.equal(replies.length, 1);
-  for (const command of commands) assert.ok(replies[0].includes('.' + command), 'missing command in fallback: ' + command);
+  assert.equal(sent.length, 1);
+  assert.equal(replies.length, 0);
+  const rows = sent[0][1].buttons[0].sections[0].rows;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].title, 'ai-image-transform');
+  assert.equal(rows[0].id, '.tobotak');
+  assert.equal(rows[0].description, undefined);
 });
