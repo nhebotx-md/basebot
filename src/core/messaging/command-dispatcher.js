@@ -120,7 +120,7 @@ function formatPluginFailure({ plugin, command, error, stage = 'execute', refere
 }
 
 class CommandDispatcher {
-  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, rateWarningTtlMs = rateWindowMs, maxRateWarningEntries = 1000, maxConcurrentCommands = 20, maxQueuedCommands = 100, jobQueue = null }) {
+  constructor({ registry, logger = console, menuService = null, dedupeTtlMs = 10 * 60 * 1000, maxDedupeEntries = 5000, rateLimit = 8, rateWindowMs = 10000, rateWarningTtlMs = rateWindowMs, maxRateWarningEntries = 1000, maxConcurrentCommands = 20, maxQueuedCommands = 0, jobQueue = null }) {
     this.registry = registry;
     this.logger = logger;
     this.menuService = menuService;
