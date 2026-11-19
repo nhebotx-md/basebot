@@ -117,6 +117,14 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     fileTransport?.write(entry);
     return entry;
   }
+  function humanizeKey(key) {
+    return String(key).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toUpperCase();
+  }
+  function formatMetaValue(value) {
+    if (value === null) return 'null';
+    if (typeof value === 'object') return clip(safeStringify(value), 72);
+    return clip(String(value), 72);
+  }
   function record(name, message, meta, forcePretty = false) {
     const entry = persistRecord(name, message, meta);
     if (!pretty && !forcePretty) {
@@ -124,12 +132,29 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
       return;
     }
     const [label, color] = LEVEL_STYLE[name] || LEVEL_STYLE.info;
-    const prefix = colorize(colorEnabled, ANSI.gray, shortTime(new Date(entry.timestamp), timezone)) + ' ' +
-      colorize(colorEnabled, color, padVisible(label, 7), true) + ' ' +
-      colorize(colorEnabled, ANSI.violet, '›') + ' ' +
-      colorize(colorEnabled, ANSI.white, clip(entry.message, 150));
-    const suffix = entry.data === undefined ? '' : ' ' + colorize(colorEnabled, ANSI.gray, clip(safeStringify(entry.data), 900));
-    writeLine(prefix + suffix, name === 'success' || name === 'system' ? 'info' : name);
+    const time = colorize(colorEnabled, ANSI.gray, shortTime(new Date(entry.timestamp), timezone));
+    const levelLabel = colorize(colorEnabled, color, padVisible(label, 7), true);
+    const source = colorize(colorEnabled, ANSI.violet, clip(entry.component.toUpperCase(), 10).padEnd(10), true);
+    const messageText = colorize(colorEnabled, ANSI.white, clip(entry.message, Math.max(40, Math.min(116, terminalWidth() - 34))));
+    writeLine('  ' + time + '  ' + levelLabel + '  ' + source + '  ' + colorize(colorEnabled, ANSI.violet, '›') + '  ' + messageText, name === 'success' || name === 'system' ? 'info' : name);
+    if (entry.data && typeof entry.data === 'object' && !Array.isArray(entry.data)) {
+      const entries = Object.entries(entry.data);
+      const maxLines = 4;
+      const maxPerLine = terminalWidth() >= 88 ? 4 : 2;
+      const shown = entries.slice(0, maxLines * maxPerLine);
+      for (let index = 0; index < shown.length; index += maxPerLine) {
+        const fields = shown.slice(index, index + maxPerLine).map(([key, value]) =>
+          colorize(colorEnabled, ANSI.gray, humanizeKey(key)) + colorize(colorEnabled, ANSI.gray, '=') +
+          colorize(colorEnabled, ANSI.white, formatMetaValue(value))
+        );
+        writeLine('                                  ' + colorize(colorEnabled, ANSI.border, '·') + ' ' + fields.join(colorize(colorEnabled, ANSI.border, '  │  ')));
+      }
+      if (entries.length > shown.length) {
+        writeLine('                                  ' + colorize(colorEnabled, ANSI.gray, '· +' + (entries.length - shown.length) + ' metadata fields'));
+      }
+    } else if (entry.data !== undefined) {
+      writeLine('                                  ' + colorize(colorEnabled, ANSI.border, '·') + ' ' + colorize(colorEnabled, ANSI.gray, formatMetaValue(entry.data)));
+    }
   }
   function panelLine(text) { writeLine(text); }
   function border(width, left, right) {
@@ -172,35 +197,45 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   };
   logger.startup = info => {
     if (threshold > LEVELS.info) return;
-    persistRecord('system', 'Runtime startup.', { name: info?.name || 'BASEBOT', version: info?.version || '0.0.0', node: info?.node || process.version, mode: info?.mode || 'public', prefix: info?.prefix || '.', timezone: info?.timezone || timezone, logLevel: info?.logLevel || level, fileLogEnabled: Boolean(fileTransport) });
-    const width = Math.max(42, Math.min(68, terminalWidth() - 4));
-    const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
-    const row = (label, value, valueColor = ANSI.white) => {
-      const prefix = ' ' + colorize(colorEnabled, ANSI.gray, label.padEnd(11)) + ' ';
-      const available = Math.max(8, width - visibleWidth(prefix));
-      const content = prefix + padVisible(colorize(colorEnabled, valueColor, fitVisible(clip(value, 120), available)), available);
-      panelLine(edge + content + colorize(colorEnabled, ANSI.teal, '│', true));
+    const details = {
+      name: info?.name || 'BASEBOT', version: info?.version || '0.0.0',
+      node: info?.node || process.version, mode: info?.mode || 'public',
+      prefix: info?.prefix || '.', timezone: info?.timezone || timezone,
+      logLevel: info?.logLevel || level, fileLogEnabled: Boolean(fileTransport)
     };
-    const title = ' ' + colorize(colorEnabled, ANSI.white, clip(info?.name || 'BASEBOT', 28).toUpperCase(), true) +
-      ' ' + colorize(colorEnabled, ANSI.violet, 'v' + clip(info?.version || '0.0.0', 16), true);
-    const subtitle = ' ' + colorize(colorEnabled, ANSI.gray, 'PLUGIN WHATSAPP FRAMEWORK');
+    persistRecord('system', 'Runtime startup.', details);
+    const width = Math.max(38, Math.min(72, terminalWidth() - 6));
+    const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
+    const right = colorize(colorEnabled, ANSI.teal, '│', true);
+    const row = (label, value, valueColor = ANSI.white) => {
+      const left = '  ' + colorize(colorEnabled, ANSI.gray, label.padEnd(10)) + ' ';
+      const available = Math.max(8, width - visibleWidth(left));
+      panelLine(edge + left + padVisible(colorize(colorEnabled, valueColor, fitVisible(clip(value, 100), available)), available) + right);
+    };
+    const section = title => panelLine(edge + fitVisible('  ' + colorize(colorEnabled, ANSI.gray, title.toUpperCase(), true), width) + right);
+    const heading = '  ' + colorize(colorEnabled, ANSI.white, clip(details.name, 28).toUpperCase(), true) +
+      '  ' + colorize(colorEnabled, ANSI.violet, 'v' + clip(details.version, 16), true) +
+      '  ' + colorize(colorEnabled, ANSI.gray, '◆');
+    const subtitle = '  ' + colorize(colorEnabled, ANSI.gray, 'WHATSAPP AUTOMATION  /  PLUGIN FRAMEWORK');
     panelLine('');
     panelLine(border(width, '  ╭', '╮'));
-    panelLine(edge + fitVisible(title, width) + colorize(colorEnabled, ANSI.teal, '│', true));
-    panelLine(edge + fitVisible(subtitle, width) + colorize(colorEnabled, ANSI.teal, '│', true));
+    panelLine(edge + padVisible(fitVisible(heading, width), width) + right);
+    panelLine(edge + padVisible(fitVisible(subtitle, width), width) + right);
     panelLine(border(width, '  ├', '┤'));
-    row('RUNTIME', 'Node.js ' + (info?.node || process.version));
-    row('PLATFORM', (info?.platform || process.platform) + ' / ' + (info?.arch || process.arch));
-    row('MODE', String(info?.mode || 'public').toUpperCase(), info?.mode === 'public' ? ANSI.green : ANSI.yellow);
-    row('PREFIX', info?.prefix || '.');
-    row('TIMEZONE', info?.timezone || timezone);
-    row('LOG LEVEL', String(info?.logLevel || level).toUpperCase(), ANSI.teal);
-    row('FILE LOG', fileTransport ? 'JSONL ROTATION ENABLED' : 'DISABLED', fileTransport ? ANSI.green : ANSI.gray);
-    row('PROCESS', 'PID ' + process.pid);
+    section('Runtime environment');
+    row('ENGINE', 'Node.js ' + details.node + '  /  ' + process.platform + ' ' + process.arch, ANSI.teal);
+    row('MODE', String(details.mode).toUpperCase(), details.mode === 'public' ? ANSI.green : ANSI.yellow);
+    row('PREFIX', details.prefix);
+    row('TIMEZONE', details.timezone);
+    panelLine(border(width, '  ├', '┤'));
+    section('Observability');
+    row('LOG LEVEL', String(details.logLevel).toUpperCase(), ANSI.teal);
+    row('FILE LOG', details.fileLogEnabled ? 'JSONL  /  ROTATION ENABLED' : 'DISABLED', details.fileLogEnabled ? ANSI.green : ANSI.yellow);
+    row('PROCESS', 'PID ' + process.pid + '  /  ' + (process.env.TERM_PROGRAM || process.env.TERM || 'TERM'));
     panelLine(border(width, '  ╰', '╯'));
     panelLine('  ' + colorize(colorEnabled, ANSI.teal, '◆', true) + ' ' +
-      colorize(colorEnabled, ANSI.white, 'INITIALIZING', true) + ' ' +
-      colorize(colorEnabled, ANSI.gray, 'CORE SERVICES'));
+      colorize(colorEnabled, ANSI.white, 'BOOT SEQUENCE', true) + ' ' +
+      colorize(colorEnabled, ANSI.gray, '· preparing core services'));
   };
   logger.plugins = summary => {
     if (threshold > LEVELS.info) return;
@@ -210,34 +245,69 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const discovered = Number(summary?.discovered || 0);
     const commands = Number(summary?.commands || 0);
     const skipped = Number(summary?.skipped || 0);
-    const status = skipped ? skipped + ' FAILED' : 'ALL READY';
-    const statusColor = skipped ? ANSI.yellow : ANSI.green;
-    const width = Math.max(42, Math.min(68, terminalWidth() - 4));
+    const width = Math.max(38, Math.min(72, terminalWidth() - 6));
     const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
+    const right = colorize(colorEnabled, ANSI.teal, '│', true);
     const row = (label, value, valueColor = ANSI.white) => {
-      const prefix = ' ' + colorize(colorEnabled, ANSI.gray, label.padEnd(11)) + ' ';
-      const available = Math.max(8, width - visibleWidth(prefix));
-      panelLine(edge + prefix + padVisible(colorize(colorEnabled, valueColor, fitVisible(value, available)), available) + colorize(colorEnabled, ANSI.teal, '│', true));
+      const left = '  ' + colorize(colorEnabled, ANSI.gray, label.padEnd(10)) + ' ';
+      const available = Math.max(8, width - visibleWidth(left));
+      panelLine(edge + left + padVisible(colorize(colorEnabled, valueColor, fitVisible(value, available)), available) + right);
     };
     panelLine('');
     panelLine(border(width, '  ╭', '╮'));
-    panelLine(edge + fitVisible(' ' + colorize(colorEnabled, ANSI.white, 'PLUGIN ECOSYSTEM', true), width) + colorize(colorEnabled, ANSI.teal, '│', true));
+    panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.white, 'PLUGIN ECOSYSTEM', true) + '  ' + colorize(colorEnabled, ANSI.gray, 'REGISTRY OVERVIEW'), width), width) + right);
     panelLine(border(width, '  ├', '┤'));
     row('PLUGINS', loaded + ' / ' + discovered + ' loaded', skipped ? ANSI.yellow : ANSI.green);
     row('COMMANDS', String(commands) + ' registered', ANSI.teal);
-    row('HEALTH', status, statusColor);
+    row('HEALTH', skipped ? skipped + ' MODULE(S) NEED ATTENTION' : 'ALL SYSTEMS OPERATIONAL', skipped ? ANSI.yellow : ANSI.green);
     const names = Array.isArray(summary?.plugins) ? summary.plugins.map(name => clip(name, 24)) : [];
     if (names.length) {
-      panelLine(edge + fitVisible(' ' + colorize(colorEnabled, ANSI.gray, 'ACTIVE MODULES'), width) + colorize(colorEnabled, ANSI.teal, '│', true));
+      panelLine(border(width, '  ├', '┤'));
+      panelLine(edge + fitVisible('  ' + colorize(colorEnabled, ANSI.gray, 'ACTIVE MODULES', true), width) + right);
       let line = '';
       for (const name of names) {
-        const candidate = line ? line + '  ·  ' + name : name;
-        if (visibleWidth(candidate) > width - 3 && line) {
-          panelLine(edge + fitVisible(' ' + line, width) + colorize(colorEnabled, ANSI.teal, '│', true));
+        const candidate = line ? line + '   ·   ' + name : name;
+        if (visibleWidth(candidate) > width - 4 && line) {
+          panelLine(edge + padVisible(fitVisible('  ' + line, width), width) + right);
           line = name;
         } else line = candidate;
       }
-      if (line) panelLine(edge + fitVisible(' ' + line, width) + colorize(colorEnabled, ANSI.teal, '│', true));
+      if (line) panelLine(edge + padVisible(fitVisible('  ' + line, width), width) + right);
+    }
+    panelLine(border(width, '  ╰', '╯'));
+    if (skipped) record('warn', 'Sebagian plugin tidak aktif.', { skipped, discovered, loaded });
+    else panelLine('  ' + colorize(colorEnabled, ANSI.green, '✓', true) + ' ' + colorize(colorEnabled, ANSI.gray, 'Plugin registry initialized successfully.'));
+  };
+  logger.stage = (label, detail = '', status = 'success') => {
+    if (threshold > LEVELS.info) return;
+    const styles = { success: [ANSI.green, '✓', 'SUCCESS'], running: [ANSI.yellow, '◌', 'RUNNING'], warn: [ANSI.yellow, '!', 'WARNING'], error: [ANSI.red, '×', 'FAILED'], info: [ANSI.teal, '›', 'INFO'] };
+    const [color, icon, state] = styles[String(status).toLowerCase()] || styles.info;
+    record(status === 'error' ? 'error' : status === 'warn' ? 'warn' : 'system',
+      clip(label, 48) + (detail ? ' · ' + clip(detail, 110) : ''),
+      { stage: clip(label, 48), status: state });
+    panelLine('  ' + colorize(colorEnabled, color, icon, true) + ' ' +
+      colorize(colorEnabled, ANSI.white, clip(label, 30), true) +
+      (detail ? '  ' + colorize(colorEnabled, ANSI.gray, clip(detail, 90)) : '') +
+      '  ' + colorize(colorEnabled, color, state, true));
+  };
+  logger.shutdown = (details = {}) => {
+    if (threshold > LEVELS.info) return;
+    const width = Math.max(38, Math.min(72, terminalWidth() - 6));
+    const edge = colorize(colorEnabled, ANSI.teal, '  │', true);
+    const right = colorize(colorEnabled, ANSI.teal, '│', true);
+    panelLine('');
+    panelLine(border(width, '  ╭', '╮'));
+    panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.white, 'BASEBOT SHUTDOWN', true) + '  ' + colorize(colorEnabled, ANSI.gray, 'CONTROLLED EXIT'), width), width) + right);
+    panelLine(border(width, '  ├', '┤'));
+    const rows = [
+      ['SIGNAL', details.signal || 'MANUAL'],
+      ['STATUS', details.status || 'CLEAN EXIT'],
+      ['DURATION', Number.isFinite(details.durationMs) ? details.durationMs + ' ms' : '—']
+    ];
+    for (const [label, value] of rows) {
+      const left = '  ' + colorize(colorEnabled, ANSI.gray, label.padEnd(10)) + ' ';
+      const available = Math.max(8, width - visibleWidth(left));
+      panelLine(edge + left + padVisible(colorize(colorEnabled, ANSI.green, fitVisible(String(value), available)), available) + right);
     }
     panelLine(border(width, '  ╰', '╯'));
   };
