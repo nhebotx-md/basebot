@@ -3,14 +3,14 @@
 const { createFakeQuoted } = require('../messaging/fake-quoted');
 
 function createMessageService(client, { botName = 'ShooNhee-AI', verified = true, commandQuote = '' } = {}) {
-  const commandHeader = commandQuote ? '> ' + String(commandQuote).replace(/[\\r\\n]/g, '').trim() : '';
+  const commandHeader = commandQuote ? '> ' + String(commandQuote).replace(/[\r\n]/g, '').trim() : '';
 
   function formatCommandContent(content) {
     if (!commandHeader || !content || typeof content !== 'object' || Array.isArray(content)) return content;
     const formatted = { ...content };
     for (const field of ['text', 'caption']) {
       if (typeof formatted[field] === 'string' && !formatted[field].startsWith(commandHeader)) {
-        formatted[field] = commandHeader + '\\n\\n' + formatted[field];
+        formatted[field] = commandHeader + '\n\n' + formatted[field];
       }
     }
     return formatted;
