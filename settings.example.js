@@ -26,7 +26,11 @@ module.exports = {
     fallbackEnabled: true,
     ytDlpEnabled: true,
     ytDlpPath: 'yt-dlp',
-    tempDir: './storage/temp'
+    tempDir: './storage/temp',
+    providerTimeoutMs: 30000,
+    providerRetries: 0,
+    providerFailureThreshold: 2,
+    providerCooldownMs: 30000
   },
 
   logging: {
