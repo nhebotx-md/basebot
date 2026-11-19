@@ -196,7 +196,7 @@ test('.catmenu renders interactive category and feature lists only when category
   const rows = category.sends[0][1].buttons[0].sections[0].rows;
   assert.ok(rows.some(row => row.title === 'yt-download' && row.id === '.ytmp4'));
   assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => row.description.length <= 72));
+  assert.ok(rows.every(row => !row.description));
 });
 
 test('.setmenu and .setcatmenu remain plain theme-setting commands', async () => {
