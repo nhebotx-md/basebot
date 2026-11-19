@@ -34,7 +34,7 @@ function readDotEnv(file = '.env', target = process.env) {
   return target;
 }
 
-function loadConfig(env = readDotEnv(), settings = require(path.resolve(process.cwd(), 'settings.js'))) {
+function loadConfig(env = readDotEnv(), settings = require(path.resolve(__dirname, '../../settings.js'))) {
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
     throw new TypeError('settings.js harus mengekspor object konfigurasi.');
   }
