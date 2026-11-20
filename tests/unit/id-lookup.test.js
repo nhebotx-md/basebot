@@ -56,7 +56,7 @@ test('IDCH uses metadata from the active Channel chat', async () => {
 });
 
 test('IDCH handles invalid input and unavailable metadata API', async () => {
-  const invalid = context({ text: 'not-a-channel-link' });
+  const invalid = context({ text: 'bad' });
   await idch.execute(invalid);
   assert.match(invalid.replies[0], /Format tidak valid/);
   const unavailable = context({ text: '0029Vb8vySGAYlUMLcZVFT3d' });
@@ -103,7 +103,7 @@ test('IDGC handles help, malformed targets, and unavailable metadata API', async
   const help = context();
   await idgc.execute(help);
   assert.match(help.replies[0], /CEK ID GRUP/);
-  const invalid = context({ text: 'not-a-group-link' });
+  const invalid = context({ text: 'bad' });
   await idgc.execute(invalid);
   assert.match(invalid.replies[0], /Format tidak valid/);
   const unavailable = context({ text: 'AbCdEfGh12345678' });
