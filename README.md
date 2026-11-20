@@ -35,7 +35,7 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 | Maker | AI image transform dari arsip PatrickMD: `.tobotak`, `.tochibi`, `.tofunk`, `.tofigura`/`tofigurav2`/`tofigurav3`, `.bratfoto` untuk gambar Brat; `.toghibli`, `.tohijab`, `.tojapanese`, `.tojepang`, `.tokacamata`, `.tokamboja`, `.tolego`, `.toliquor`, `.tomaid`, `.tomirror`, `.tomoai`, `.tomonyet`, `.topacar`, `.topeci`, `.topiramida`, `.toputih`, `.toreal`, `.toroblox`, `.toroh`, `.totato`, `.totua`, `.toviking`, `.tozombie`, `.tounderground`, dan `.tohitam`. Gambar diunggah ke layanan pemrosesan pihak ketiga; batas sumber 8 MB dan hasil 15 MB. |\n| Sticker | Sticker maker (`sticker`/`s`), Brat statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui REST API, serta sticker watermark (`wm` dan alias). |\n| Media processing | Image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`) dan voice changer berbasis FFmpeg. |
 | Message | `.richmsg` untuk code block, tabel, inline links, rich response, carousel, dan native-flow melalui satu builder; `.poll [--multi] pertanyaan \\| opsi1 \\| opsi2` untuk membuat poll; `.pollhasil` (balas pesan poll bot) untuk melihat jumlah suara anonim; `.react`, `.pin`, `.unpin`, `.edit`, dan `.del` untuk tindakan terhadap pesan yang dibalas; `.spoiler`, `.viewonce`, dan `.ephemeral` untuk mengirim ulang gambar/video dengan wrapper pesan Baileys. Edit dibatasi ke pesan bot sendiri; hapus hanya pesan bot sendiri atau oleh admin grup. |
 | Owner | `.setbio`, `.setname`, `.setthumb`, `.block`, `.unblock`, dan `.listgc` untuk pengaturan profil bot, blokir kontak, dan daftar grup; `.newsletter` untuk follow/unfollow, mute/unmute, info, subscriber, pembuatan Channel, perubahan metadata, dan foto; pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
-| User / Utility | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik; `.menui` untuk memilih kategori lewat tombol interaktif di chat pribadi, dengan command teks sebagai fallback. |
+| User / Utility | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik; `.menui` untuk memilih kategori lewat tombol interaktif di chat pribadi, dengan command teks sebagai fallback; `.idch`/`.cekidch` untuk mengambil ID dan metadata Channel dari tautan, kode invite, JID, atau Channel aktif; `.idgc`/`.cekidgc` untuk mengambil ID dan metadata grup dari grup aktif, tautan invite, kode undangan, atau JID. |
 
 Catatan: `viewonce` tidak mencegah penerima mengambil tangkapan layar atau merekam layar. Jangan gunakan sebagai jaminan kerahasiaan.
 
@@ -142,6 +142,13 @@ Permission plugin dapat memakai:
 Kategori `owner` otomatis diperlakukan sebagai owner-only dan kategori `group` memiliki pembatasan grup/admin sesuai permission manager. Jika metadata grup tidak dapat diambil, status admin dianggap tidak valid (fail-closed).
 
 Pengguna biasa di grup harus registrasi dengan `.daftar nama`. Role aplikasi yang dapat diberikan adalah `user`, `premium`, dan `moderator`; role owner tidak dapat diberikan melalui database. Owner dapat menggunakan `.setrole`, `.grantakses`, dan `.cabutakses` untuk pengelolaan akses.
+
+## Pemeriksaan ID WhatsApp Channel dan Group
+
+- `.idch <link_channel|kode_invite|channelJid>` atau `.cekidch ...`: memeriksa metadata Channel melalui API `newsletterMetadata`. Jika dijalankan tanpa argumen dari chat Channel, plugin menggunakan metadata Channel aktif yang tersedia pada context.
+- `.idgc` atau `.cekidgc`: dari dalam grup, menampilkan ID dan metadata grup aktif. Untuk pemeriksaan dari chat pribadi, gunakan `.idgc <link_grup|kode_invite|groupJid>`; tautan undangan diperiksa melalui `groupGetInviteInfo`, sedangkan JID diperiksa melalui `groupMetadata`.
+- Informasi yang ditampilkan meliputi nama, ID/JID, deskripsi, jumlah subscriber/anggota bila disediakan, status/verifikasi Channel, owner grup bila tersedia, waktu pembuatan, pengaturan grup, dan kode invite yang diperiksa. Field yang tidak dikirim WhatsApp ditandai tidak tersedia, tidak ditebak sebagai nilai nol.
+- Pemeriksaan hanya membaca metadata. Plugin tidak otomatis follow Channel, join grup, mengubah pengaturan, atau membagikan ulang tautan undangan.
 
 ## Laporan error plugin
 
