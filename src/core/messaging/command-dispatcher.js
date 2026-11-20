@@ -232,7 +232,7 @@ class CommandDispatcher {
       await ctx.reply('Antrean bot sedang penuh. Tunggu pekerjaan selesai lalu coba lagi.');
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
-    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, logger: this.logger, botName: ctx.config?.botName || 'ShooNhee-AI' });
+    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, commandLabel: (ctx.prefix || '.') + ctx.command, logger: this.logger, botName: ctx.config?.botName || 'ShooNhee-AI' });
     ctx.process = ctx.progress;
     if (ctx.services) ctx.services.progress = ctx.progress;
     const startedAt = Date.now();

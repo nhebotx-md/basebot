@@ -18,6 +18,15 @@ function createClient({ fail = false } = {}) {
 
 const message = { chat: '628000000000@s.whatsapp.net', key: { remoteJid: '628000000000@s.whatsapp.net', id: 'incoming' }, raw: { key: { id: 'incoming' } } };
 
+test('plugin progress begins with the invoked command as a WhatsApp blockquote', async () => {
+  const client = createClient();
+  const progress = createPluginProgress({
+    client, message, plugin: { name: 'tiktok' }, command: 'tt', commandLabel: '.tt'
+  });
+  await progress.start('Memvalidasi tautan');
+  assert.match(client.calls[0].content.text, /^> \.tt\n\n╭─〔 BASEBOT PROCESS 〕/);
+});
+
 test('plugin progress edits one informative status message through processing stages', async () => {
   const client = createClient();
   const progress = createPluginProgress({ client, message, plugin: { name: 'tiktok' }, command: 'tt' });
