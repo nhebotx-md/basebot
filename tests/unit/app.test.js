@@ -9,11 +9,11 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   const messages = [];
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
-  assert.equal(app.registry.list().length, 50);
+  assert.equal(app.registry.list().length, 52);
   assert.equal(app.config.paths.database, '/tmp/basebot-test-database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
-  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 141);
+  assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 145);
   assert.ok(app.registry.list().some(plugin => plugin.name === 'profile'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'health'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'doctor'));
@@ -43,10 +43,10 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(typeof app.stop, 'function');
   const summary = messages.find(([message]) => message === 'Plugin registry siap.');
   assert.ok(summary);
-  assert.equal(summary[1].discovered, 50);
-  assert.equal(summary[1].loaded, 50);
+  assert.equal(summary[1].discovered, 52);
+  assert.equal(summary[1].loaded, 52);
   assert.equal(summary[1].skipped, 0);
-  assert.equal(summary[1].commands, 141);
+  assert.equal(summary[1].commands, 145);
   await app.stop();
 });
 
