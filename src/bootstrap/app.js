@@ -21,6 +21,7 @@ const { HealthService } = require('../core/services/health.service');
 const { JobQueue } = require('../core/services/job-queue.service');
 const { createDownloaderService } = require('../core/services/downloader.service');
 const { SystemDoctorService } = require('../core/services/system-doctor.service');
+const { createBackupService } = require('../core/services/backup.service');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
@@ -41,6 +42,7 @@ async function createApp(options = {}) {
   else logger.info('BASEBOT memulai runtime.', startupDetails);
 
   const database = options.database || await new DatabaseService({ directory: config.paths.database || './data/database', logger }).init();
+  const backupService = options.backupService || createBackupService({ database, logger });
   logger.stage?.('DATABASE', 'Persistent JSON storage initialized', 'success');
   const users = options.users || new UserService({ database, expPerMessage: config.profile?.expPerMessage ?? 5, expCooldownMs: config.profile?.expCooldownMs ?? 60000 });
   const groups = options.groups || new GroupService({ database });
@@ -60,6 +62,7 @@ async function createApp(options = {}) {
   registry.userService = users;
   registry.groupService = groups;
   registry.databaseService = database;
+  registry.backupService = backupService;
   registry.pluginManager = pluginManager;
   const activePlugins = registry.list({ includeDisabled: false });
   logger.stage?.('PLUGIN REGISTRY', activePlugins.length + ' active modules discovered', loaded.length === pluginFiles.length ? 'success' : 'warn');
@@ -111,8 +114,10 @@ async function createApp(options = {}) {
     healthService,
     jobQueue,
     doctorService,
+    backupService,
     pluginWatchService,
     async start() {
+      backupService.start();
       if (config.plugins.autoReload !== false) {
         pluginWatchService.start();
         logger.stage?.('PLUGIN WATCHER', 'Hot-reload monitor enabled', 'success');
@@ -130,6 +135,7 @@ async function createApp(options = {}) {
       pluginWatchService.close();
       await jobQueue.close();
       healthService.stop();
+      backupService.stop();
       await connection.stop();
       await database.close();
       logger.shutdown?.({ signal: options.signal || 'MANUAL', status: 'CLEAN EXIT', durationMs: Date.now() - shutdownStartedAt });
