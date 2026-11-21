@@ -108,7 +108,9 @@ module.exports = {
 
     if (action === 'status') {
       const status = backups.status();
-      await ctx.reply(['*BACKUP SERVICE*', 'Direktori: ' + status.directory, 'Retensi: ' + status.retention + ' backup', 'Backup otomatis: ' + (status.automatic ? 'aktif' : 'belum berjalan')].join('\n'));
+      const recovery = status.recovery?.recovered ? 'Pemulihan terakhir: berhasil (' + status.recovery.snapshotId + ')' : status.recovery?.freshInstall ? 'Status database: instalasi baru' : status.recovery?.healthy ? 'Status database: sehat' : 'Status database: belum diperiksa';
+      const lastBackup = status.lastAutoBackupAt ? safeDate(status.lastAutoBackupAt) : 'belum ada';
+      await ctx.reply(['*BACKUP & DISASTER RECOVERY*', 'Direktori: ' + status.directory, 'Retensi: ' + status.retention + ' snapshot', 'Interval otomatis: ' + Math.round(status.intervalMs / 3600000) + ' jam', 'Scheduler: ' + (status.automatic ? 'aktif' : 'belum berjalan'), 'Backup otomatis terakhir: ' + lastBackup, recovery, 'Error terakhir: ' + (status.lastBackupError || 'tidak ada')].join('\n'));
       return;
     }
 
