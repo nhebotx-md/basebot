@@ -17,7 +17,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 | Plugin | **53 file plugin** |
 | Command terdaftar | **146 command dan alias** |
 | Kategori direktori plugin | 9 direktori |
-| Unit test | 48 file test |
+| Unit test | 49 file test |
 | Baileys | `@itsliaaa/baileys@0.5.6` |
 | CI | Lulus pada Node.js 22 dan 24 untuk commit baseline |
 
