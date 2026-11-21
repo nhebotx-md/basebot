@@ -121,6 +121,7 @@ function createConnectionManager({ config, registry, dispatcher, logger = consol
       const details = { credentialsRegistered: Boolean(client.authState?.creds?.registered), pendingNotifications: update.receivedPendingNotifications === true };
       if (typeof logger.connection === 'function') logger.connection('open', details);
       else logger.info('Koneksi WhatsApp aktif.', details);
+      Promise.resolve(registry.backupService?.notifyOwner?.(client)).catch(error => logger.error('Notifikasi disaster recovery gagal dikirim.', errorContext(error)));
       return;
     }
     if (update.connection !== 'close' || closedClients.has(client)) return;

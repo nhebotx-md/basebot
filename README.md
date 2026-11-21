@@ -7,27 +7,27 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 
 ## Snapshot repository
 
-> Data diverifikasi dari branch `main` pada 21 November 2026. Baseline kode: `244c82b9ea39a621e27c4b404b1344839846cae7`.
+> Snapshot ini menggambarkan branch `feat/database-backup-restore` untuk PR #52 per 21 November 2026. Base branch `main`: `da8713be42b987f96275a379771203e0eb8c3478`.
 
 | Komponen | Kondisi terbaru |
 |---|---|
 | Versi aplikasi | `2.0.0` |
 | Runtime | Node.js `>=22.13.0` |
 | Arsitektur | CommonJS, core modular, plugin registry |
-| Plugin | **52 file plugin** |
-| Command terdaftar | **145 command dan alias** |
+| Plugin | **53 file plugin** |
+| Command terdaftar | **146 command dan alias** |
 | Kategori direktori plugin | 9 direktori |
-| Unit test | 48 file test |
+| Unit test | 49 file test |
 | Baileys | `@itsliaaa/baileys@0.5.6` |
-| CI | Lulus pada Node.js 22 dan 24 untuk commit baseline |
+| CI PR #52 | Lulus pada Node.js 22 dan 24 |
 
-Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (16), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
+Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (17), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
 
 Perubahan terbaru yang sudah masuk ke `main`:
 - **PR #49:** format balasan command dengan blockquote WhatsApp, misalnya `> .ping`, termasuk caption media dan pesan progres.
 - **PR #50:** pemeriksaan ID dan metadata WhatsApp Channel melalui `.idch` / `.cekidch`, serta Group melalui `.idgc` / `.cekidgc`.
 
-Tautan: [commit baseline](https://github.com/nhebotx-md/basebot/commit/244c82b9ea39a621e27c4b404b1344839846cae7) · [CI](https://github.com/nhebotx-md/basebot/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/basebot/pull/49) · [PR #50](https://github.com/nhebotx-md/basebot/pull/50)
+Tautan: [base commit](https://github.com/nhebotx-md/basebot/commit/da8713be42b987f96275a379771203e0eb8c3478) · [CI](https://github.com/nhebotx-md/basebot/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/basebot/pull/49) · [PR #50](https://github.com/nhebotx-md/basebot/pull/50)
 
 
 ## Fitur utama
@@ -38,7 +38,7 @@ Tautan: [commit baseline](https://github.com/nhebotx-md/basebot/commit/244c82b9e
 - **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, reload manual, dan auto reload saat file plugin JavaScript berubah. Registry kandidat divalidasi dahulu; reload gagal tidak mengganti registry aktif.
 - **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
-- **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
+- **Database JSON & Disaster Recovery:** collection users, groups, dan plugins; penulisan atomik; baseline backup otomatis saat startup dan snapshot berkala default setiap 6 jam; manifest SHA-256; retensi terkonfigurasi; preflight integritas sebelum init; pemulihan otomatis dari snapshot lengkap yang diverifikasi; quarantine file sebelum recovery; fail-closed jika tidak ada recovery point; notifikasi owner setelah koneksi WhatsApp tersedia; serta restore manual dua langkah dengan safety backup. Panduan: `docs/JSON_DATABASE.md`.
 - **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, alert heap/event-loop/antrean database, serta statistik job queue melalui `.health history`, `.health alerts`, dan `.health detail`.
 - **System Doctor:** `.doctor` memeriksa versi Node.js, konfigurasi lokal/template, dependency penting, akses direktori, database, koneksi WhatsApp, dan plugin tanpa menampilkan nilai API key.
 - **Provider Manager:** provider downloader memakai timeout, retry terbatas, circuit breaker/cooldown, fallback berurutan, dan statistik sukses/gagal yang bertahan selama runtime.

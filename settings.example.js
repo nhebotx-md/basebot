@@ -55,6 +55,10 @@ module.exports = {
     logs: './logs',
     database: './data/database'
   },
+  backups: {
+    retention: 14,
+    intervalHours: 6
+  },
   profile: { expPerMessage: 5, expCooldownMs: 60000 },
   plugins: {
     directory: './plugins',

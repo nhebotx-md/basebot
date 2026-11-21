@@ -123,6 +123,92 @@ class DatabaseService {
     }
   }
 
+  exportSnapshot() {
+    this._assertReady();
+    const operation = this.writeQueue.then(async () => {
+      const files = {};
+      for (const name of ['meta.json', ...[...COLLECTIONS].map(collection => collection + '.json')].sort()) {
+        files[name] = await fs.readFile(path.join(this.directory, name), 'utf8');
+      }
+      return files;
+    });
+    this.writeQueue = operation.catch(error => {
+      this.logger.error?.('Ekspor snapshot database gagal.', { error });
+    });
+    return operation;
+  }
+
+  restoreSnapshot(files) {
+    this._assertReady();
+    if (!isRecord(files) || !['meta.json', ...[...COLLECTIONS].map(name => name + '.json')].every(name => typeof files[name] === 'string')) {
+      throw new TypeError('Snapshot database tidak lengkap.');
+    }
+    const parsed = {};
+    for (const name of COLLECTIONS) {
+      const envelope = JSON.parse(files[name + '.json']);
+      const data = isRecord(envelope) && Object.hasOwn(envelope, 'data') ? envelope.data : envelope;
+      if (!isRecord(data) || (Number(envelope.schemaVersion || 0) > CURRENT_SCHEMA_VERSION)) {
+        throw new Error('Snapshot collection "' + name + '" tidak valid atau memakai skema lebih baru.');
+      }
+      parsed[name] = clone(data);
+    }
+    const meta = JSON.parse(files['meta.json']);
+    if (!isRecord(meta) || Number(meta.schemaVersion || 0) > CURRENT_SCHEMA_VERSION) {
+      throw new Error('Metadata snapshot tidak valid atau memakai skema lebih baru.');
+    }
+
+    const operation = this.writeQueue.then(async () => {
+      const names = ['meta.json', ...[...COLLECTIONS].map(name => name + '.json')];
+      const originals = new Map();
+      const staged = new Map();
+      const replaced = [];
+      const nonce = process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2);
+      try {
+        for (const name of names) {
+          const target = path.join(this.directory, name);
+          originals.set(name, await fs.readFile(target));
+          const temporary = target + '.' + nonce + '.restore.tmp';
+          const handle = await fs.open(temporary, 'wx', 0o600);
+          try {
+            await handle.writeFile(files[name], 'utf8');
+            await handle.sync();
+          } finally {
+            await handle.close();
+          }
+          staged.set(name, temporary);
+        }
+        for (const name of names) {
+          await fs.rename(staged.get(name), path.join(this.directory, name));
+          replaced.push(name);
+        }
+        for (const name of COLLECTIONS) this.collections.set(name, parsed[name]);
+        this.logger.warn?.('Database berhasil dipulihkan dari snapshot.', { collections: [...COLLECTIONS] });
+        return true;
+      } catch (error) {
+        for (const name of replaced.reverse()) {
+          const target = path.join(this.directory, name);
+          const rollback = target + '.' + nonce + '.rollback.tmp';
+          try {
+            const handle = await fs.open(rollback, 'wx', 0o600);
+            try { await handle.writeFile(originals.get(name)); await handle.sync(); }
+            finally { await handle.close(); }
+            await fs.rename(rollback, target);
+          } catch (rollbackError) {
+            this.logger.error?.('Rollback database gagal; periksa file database secara manual.', { file: name, error: rollbackError });
+            throw new Error('Restore gagal dan rollback file "' + name + '" juga gagal.', { cause: rollbackError });
+          }
+        }
+        throw error;
+      } finally {
+        for (const temporary of staged.values()) await fs.rm(temporary, { force: true }).catch(() => {});
+      }
+    });
+    this.writeQueue = operation.catch(error => {
+      this.logger.error?.('Restore database gagal.', { error });
+    });
+    return operation;
+  }
+
   read(collection) {
     this._assertReady();
     if (!COLLECTIONS.has(collection)) throw new Error('Collection database tidak dikenal: ' + collection);

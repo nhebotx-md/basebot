@@ -100,6 +100,10 @@ function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath()
       logs: source.paths?.logs || './logs',
       database: source.paths?.database || './data/database'
     },
+    backups: {
+      retention: boundedInteger(source.backups?.retention, 14, 2, 100),
+      intervalMs: boundedInteger(source.backups?.intervalHours, 6, 1, 168) * 60 * 60 * 1000
+    },
     profile: {
       expPerMessage: Math.max(0, Number(source.profile?.expPerMessage ?? 5) || 0),
       expCooldownMs: Math.max(0, Number(source.profile?.expCooldownMs ?? 60000) || 0)

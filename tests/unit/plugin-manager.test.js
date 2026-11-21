@@ -157,3 +157,25 @@ test('plugin enabled state is restored from JSON database after manager recreati
   assert.equal((await secondManager.enable('alpha')).success, true);
   await database.close();
 });
+
+
+test('plugin manager restore reconciles both enabled and disabled states from the database', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-restore-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const database = await new DatabaseService({ directory: path.join(directory, 'database'), logger }).init();
+  const stateRepository = new PluginStateRepository({ database });
+  const pluginsDirectory = path.join(directory, 'plugins');
+  await fs.mkdir(pluginsDirectory);
+  await fs.writeFile(path.join(pluginsDirectory, 'alpha.js'), source('alpha', 'alpha'));
+  await fs.writeFile(path.join(pluginsDirectory, 'beta.js'), source('beta', 'beta'));
+  await stateRepository.setEnabled('alpha', false);
+
+  const registry = new PluginRegistry({ logger });
+  loadPlugins({ directory: pluginsDirectory, registry, logger });
+  registry.disable('beta');
+  const manager = new PluginManager({ registry, directory: pluginsDirectory, logger, stateRepository });
+  assert.deepEqual(await manager.restore(), ['alpha']);
+  assert.equal(registry.isEnabled('alpha'), false);
+  assert.equal(registry.isEnabled('beta'), true);
+  await database.close();
+});
