@@ -4,6 +4,32 @@ BASEBOT adalah framework bot WhatsApp berbasis **Node.js, CommonJS, dan Baileys*
 
 Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat startup, command dan alias didaftarkan ke registry, lalu dieksekusi melalui dispatcher terpusat. Menu dibangun dari registry aktif, bukan daftar command statis.
 
+
+## Snapshot repository
+
+> Data diverifikasi dari branch `main` pada 21 November 2026. Baseline kode: `244c82b9ea39a621e27c4b404b1344839846cae7`.
+
+| Komponen | Kondisi terbaru |
+|---|---|
+| Versi aplikasi | `2.0.0` |
+| Runtime | Node.js `>=22.13.0` |
+| Arsitektur | CommonJS, core modular, plugin registry |
+| Plugin | **52 file plugin** |
+| Command terdaftar | **145 command dan alias** |
+| Kategori direktori plugin | 9 direktori |
+| Unit test | 48 file test |
+| Baileys | `@itsliaaa/baileys@0.5.6` |
+| CI | Lulus pada Node.js 22 dan 24 untuk commit baseline |
+
+Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (16), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
+
+Perubahan terbaru yang sudah masuk ke `main`:
+- **PR #49:** format balasan command dengan blockquote WhatsApp, misalnya `> .ping`, termasuk caption media dan pesan progres.
+- **PR #50:** pemeriksaan ID dan metadata WhatsApp Channel melalui `.idch` / `.cekidch`, serta Group melalui `.idgc` / `.cekidgc`.
+
+Tautan: [commit baseline](https://github.com/nhebotx-md/basebot/commit/244c82b9ea39a621e27c4b404b1344839846cae7) · [CI](https://github.com/nhebotx-md/basebot/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/basebot/pull/49) · [PR #50](https://github.com/nhebotx-md/basebot/pull/50)
+
+
 ## Fitur utama
 
 - **WhatsApp runtime:** pairing code Baileys, manajemen koneksi, reconnect, event dispatcher terpusat untuk reaction, presence, group join request, perubahan grup, newsletter, pembaruan suara poll, dan shutdown terkontrol.
@@ -32,7 +58,9 @@ Daftar berikut berasal dari file plugin yang tersedia pada branch dokumentasi in
 | AI | `bocchi` (alias `.bocci`/`.bocchi`) untuk percakapan dengan asisten Bocchi; `jeslyn` untuk asisten AI. |
 | Downloader | `.fb`/`.facebook` untuk video dan foto Facebook melalui Soclip; `.play`/`.musik`/`.music`/`.song` untuk pencarian audio; `.igdl` untuk Reels/foto/carousel Instagram yang dikirim sebagai album native; `.tt`/`.tiktok` untuk video, slideshow foto sebagai album native, dan audio TikTok; `.ytmp3` untuk audio YouTube. Soclip menjadi provider utama dengan fallback provider lama dan yt-dlp lokal untuk audio YouTube. |
 | Group | `.antilink on|off|status` untuk menghapus tautan dari anggota non-admin; `.antiswgc`/`.antitagsw` untuk mengatur penghapusan status yang menandai grup; `.totag` untuk mengirim ulang pesan teks yang dibalas dengan mention seluruh anggota; `.groupadmin` untuk pembuatan grup, ubah nama/deskripsi, undangan, pemeriksaan link, dan keluar grup dengan kontrol owner/admin; `.community` untuk Community, subgrup, tautan, undangan, dan persetujuan; `hidetag`/`h` untuk mention anggota grup; `tagall` untuk menyebut seluruh anggota; `welcome on|off|status` untuk mengatur pesan sambutan per grup dan event anggota masuk/keluar; `groupinfo`/`grupinfo` untuk info dan tautan undangan; `grupset` untuk izin grup dan pesan sementara; `anggota` untuk add/remove/promote/demote dengan mention; `joinrequests`/`permintaanmasuk` untuk permintaan pending; `joinrequest`/`permintaan` untuk approve/reject yang sudah diverifikasi pending. Operasi mutasi memerlukan bot sebagai admin. |
-| Maker | AI image transform dari arsip PatrickMD: `.tobotak`, `.tochibi`, `.tofunk`, `.tofigura`/`tofigurav2`/`tofigurav3`, `.bratfoto` untuk gambar Brat; `.toghibli`, `.tohijab`, `.tojapanese`, `.tojepang`, `.tokacamata`, `.tokamboja`, `.tolego`, `.toliquor`, `.tomaid`, `.tomirror`, `.tomoai`, `.tomonyet`, `.topacar`, `.topeci`, `.topiramida`, `.toputih`, `.toreal`, `.toroblox`, `.toroh`, `.totato`, `.totua`, `.toviking`, `.tozombie`, `.tounderground`, dan `.tohitam`. Gambar diunggah ke layanan pemrosesan pihak ketiga; batas sumber 8 MB dan hasil 15 MB. |\n| Sticker | Sticker maker (`sticker`/`s`), Brat statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui REST API, serta sticker watermark (`wm` dan alias). |\n| Media processing | Image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`) dan voice changer berbasis FFmpeg. |
+| Maker | AI image transform dari arsip PatrickMD: `.tobotak`, `.tochibi`, `.tofunk`, `.tofigura`/`tofigurav2`/`tofigurav3`, `.bratfoto` untuk gambar Brat; `.toghibli`, `.tohijab`, `.tojapanese`, `.tojepang`, `.tokacamata`, `.tokamboja`, `.tolego`, `.toliquor`, `.tomaid`, `.tomirror`, `.tomoai`, `.tomonyet`, `.topacar`, `.topeci`, `.topiramida`, `.toputih`, `.toreal`, `.toroblox`, `.toroh`, `.totato`, `.totua`, `.toviking`, `.tozombie`, `.tounderground`, dan `.tohitam`. Gambar diunggah ke layanan pemrosesan pihak ketiga; batas sumber 8 MB dan hasil 15 MB. |
+| Sticker | Sticker maker (`sticker`/`s`), Brat statis (`brat`) dan animasi (`bratvid`/`bratvideo`) melalui REST API, serta sticker watermark (`wm` dan alias). |
+| Media processing | Image enhancer (`enhancer`, `unblur`, `enhance`, `hdr`, `hd`, `remini`) dan voice changer berbasis FFmpeg. |
 | Message | `.richmsg` untuk code block, tabel, inline links, rich response, carousel, dan native-flow melalui satu builder; `.poll [--multi] pertanyaan \\| opsi1 \\| opsi2` untuk membuat poll; `.pollhasil` (balas pesan poll bot) untuk melihat jumlah suara anonim; `.react`, `.pin`, `.unpin`, `.edit`, dan `.del` untuk tindakan terhadap pesan yang dibalas; `.spoiler`, `.viewonce`, dan `.ephemeral` untuk mengirim ulang gambar/video dengan wrapper pesan Baileys. Edit dibatasi ke pesan bot sendiri; hapus hanya pesan bot sendiri atau oleh admin grup. |
 | Owner | `.setbio`, `.setname`, `.setthumb`, `.block`, `.unblock`, dan `.listgc` untuk pengaturan profil bot, blokir kontak, dan daftar grup; `.newsletter` untuk follow/unfollow, mute/unmute, info, subscriber, pembuatan Channel, perubahan metadata, dan foto; pengaturan mode `public`/`self`, plugin manager, pengaturan role dan grant akses, pengambilan URL publik tervalidasi, publikasi WhatsApp Status, reaksi Channel, pengaturan tema menu melalui `.setmenu`/`.setcatmenu`, serta pengelolaan file sementara dan sesi. |
 | User / Utility | `daftar` untuk registrasi; `profile`/`me` untuk melihat profil dan statistik; `.menui` untuk memilih kategori lewat tombol interaktif di chat pribadi, dengan command teks sebagai fallback; `.idch`/`.cekidch` untuk mengambil ID dan metadata Channel dari tautan, kode invite, JID, atau Channel aktif; `.idgc`/`.cekidgc` untuk mengambil ID dan metadata grup dari grup aktif, tautan invite, kode undangan, atau JID. |
@@ -50,7 +78,14 @@ Voice changer menyediakan preset audio seperti `bass`, `blown`, `deep`, `earrape
 - `.setmenu v1` sampai `.setmenu v5`: memilih tema menu utama melalui plugin owner mandiri (`plugins/owner/setmenu.js`).
 - `.setcatmenu v1` sampai `.setcatmenu v5`: memilih tema category menu melalui plugin owner mandiri (`plugins/owner/setcatmenu.js`), terpisah dari menu utama.
 
-Pilihan tema setelah redesign dashboard:\n- `v1` Showcase: panel sistem dan direktori fitur dengan bingkai ringkas.\n- `v2` Terminal: format dashboard terminal yang mengikuti referensi Nhebotx, menampilkan identitas pengguna, status, mode, tiga zona waktu Indonesia, tanggal, uptime, OS, RAM, dan total command. Pada tema ini `.menu` dan `.catmenu` tetap menyediakan daftar interaktif WhatsApp dengan fallback teks.\n- `v3` Minimal: hierarki informasi padat, tanpa ornamen berlebihan, tetap memuat laporan sistem dan direktori fitur.\n- `v4` Premium: panel profil, monitor sistem, dan direktori fitur dengan pemisah visual yang konsisten.\n- `v5` Editorial: indeks sistem dan daftar fitur bergaya publikasi teknis yang mudah dipindai.\n\nNama bot mempertahankan kapitalisasi sesuai konfigurasi. Kelima tema menggunakan sumber data runtime yang sama, sehingga identitas pengguna, permission, kategori, jumlah command, versi, prefix, dan status sistem tidak berbeda antar-layout. Tema menu utama dan category menu tetap independen serta tersimpan pada collection `plugins` setelah restart. Pemilihan tema hanya mengubah presentasi; tidak mengubah command, registry, atau permission. Plugin pengaturan tema hanya dapat dijalankan owner bot yang terverifikasi.
+Pilihan tema setelah redesign dashboard:
+- `v1` Showcase: panel sistem dan direktori fitur dengan bingkai ringkas.
+- `v2` Terminal: format dashboard terminal yang mengikuti referensi Nhebotx, menampilkan identitas pengguna, status, mode, tiga zona waktu Indonesia, tanggal, uptime, OS, RAM, dan total command. Pada tema ini `.menu` dan `.catmenu` tetap menyediakan daftar interaktif WhatsApp dengan fallback teks.
+- `v3` Minimal: hierarki informasi padat, tanpa ornamen berlebihan, tetap memuat laporan sistem dan direktori fitur.
+- `v4` Premium: panel profil, monitor sistem, dan direktori fitur dengan pemisah visual yang konsisten.
+- `v5` Editorial: indeks sistem dan daftar fitur bergaya publikasi teknis yang mudah dipindai.
+
+Nama bot mempertahankan kapitalisasi sesuai konfigurasi. Kelima tema menggunakan sumber data runtime yang sama, sehingga identitas pengguna, permission, kategori, jumlah command, versi, prefix, dan status sistem tidak berbeda antar-layout. Tema menu utama dan category menu tetap independen serta tersimpan pada collection `plugins` setelah restart. Pemilihan tema hanya mengubah presentasi; tidak mengubah command, registry, atau permission. Plugin pengaturan tema hanya dapat dijalankan owner bot yang terverifikasi.
 
 Daftar menu mengikuti registry dan permission pengguna. Plugin owner-only tidak ditampilkan kepada pengguna biasa; plugin group-only mengikuti konteks grup dan izin admin yang berlaku.
 
@@ -80,6 +115,20 @@ Gunakan nomor WhatsApp dengan kode negara, tanpa tanda `+` atau spasi. Isi `owne
 ```bash
 npm start
 ```
+
+Untuk memperbarui instalasi yang sudah ada tanpa menimpa `settings.js`, sesi, atau database lokal:
+
+```bash
+cd ~/basebot
+git pull --ff-only
+npm ci
+npm test
+npm run check
+npm start
+```
+
+Jika folder repository berada di lokasi lain, ganti `~/basebot` dengan path instalasi. Perintah `npm ci` menyelaraskan dependency dengan `package-lock.json`; jangan menghapus folder `session/` atau `data/database/` hanya untuk melakukan update.
+
 
 Pairing code dibuat oleh Baileys dan dicetak ke terminal hanya ketika sesi belum terdaftar. Jangan mengisi `PAIRING_CODE` dengan kode tetap. Setelah pairing berhasil, kredensial disimpan pada direktori sesi.
 
