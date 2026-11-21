@@ -7,7 +7,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 
 ## Snapshot repository
 
-> Data diverifikasi dari branch `main` pada 21 November 2026. Baseline kode: `244c82b9ea39a621e27c4b404b1344839846cae7`.
+ > Snapshot ini menggambarkan branch `feat/database-backup-restore` untuk PR #52 per 21 November 2026. Base branch `main`: `da8713be42b987f96275a379771203e0eb8c3478`.
 
 | Komponen | Kondisi terbaru |
 |---|---|
@@ -19,15 +19,15 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 | Kategori direktori plugin | 9 direktori |
 | Unit test | 49 file test |
 | Baileys | `@itsliaaa/baileys@0.5.6` |
-| CI | Lulus pada Node.js 22 dan 24 untuk commit baseline |
+| CI PR #52 | Lulus pada Node.js 22 dan 24 |
 
-Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (16), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
+Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (17), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
 
 Perubahan terbaru yang sudah masuk ke `main`:
 - **PR #49:** format balasan command dengan blockquote WhatsApp, misalnya `> .ping`, termasuk caption media dan pesan progres.
 - **PR #50:** pemeriksaan ID dan metadata WhatsApp Channel melalui `.idch` / `.cekidch`, serta Group melalui `.idgc` / `.cekidgc`.
 
-Tautan: [commit baseline](https://github.com/nhebotx-md/basebot/commit/244c82b9ea39a621e27c4b404b1344839846cae7) · [CI](https://github.com/nhebotx-md/basebot/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/basebot/pull/49) · [PR #50](https://github.com/nhebotx-md/basebot/pull/50)
+Tautan: [base commit](https://github.com/nhebotx-md/basebot/commit/da8713be42b987f96275a379771203e0eb8c3478) · [CI](https://github.com/nhebotx-md/basebot/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/basebot/pull/49) · [PR #50](https://github.com/nhebotx-md/basebot/pull/50)
 
 
 ## Fitur utama
