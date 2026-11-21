@@ -65,7 +65,7 @@ async function convertImage(command, imageUrl) {
 module.exports = {
   name: 'ai-image-transform',
   commands: COMMANDS,
-  category: 'maker',
+  category: 'image',
   description: 'Mengubah gaya gambar dengan koleksi AI image transform PatrickMD.',
   usage: '.tochibi (balas gambar) | .toghibli | .toreal | .tolego',
   permissions: {},

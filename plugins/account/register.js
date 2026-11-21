@@ -3,7 +3,7 @@
 module.exports = {
   name: 'register-user',
   commands: ['daftar'],
-  category: 'user',
+  category: 'account',
   description: 'Mendaftarkan pengguna agar dapat memakai fitur BASEBOT di grup.',
   usage: '.daftar nama',
   permissions: { registrationExempt: true },

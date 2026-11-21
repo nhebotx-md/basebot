@@ -17,7 +17,17 @@ Dokumen ini adalah kontrak struktur. Perpindahan kode dilakukan bertahap dengan 
 │   │   ├── connection/          # Lifecycle koneksi, pairing, reconnect
 │   │   ├── events/              # Adapter event masuk
 │   │   ├── messaging/           # Parser, context, dispatcher, menu
-│   │   ├── plugins/             # Discovery, validation, registry, lifecycle plugin
+│   │   ├── plugins/
+│   ├── ai/                 # Asisten AI dan chatbot
+│   ├── downloader/         # Pengunduh media
+│   ├── group/              # Manajemen grup
+│   ├── image/              # Transformasi dan pengolahan gambar
+│   ├── sticker/            # Pembuat dan pengelola sticker
+│   ├── media/              # Pemrosesan media non-sticker
+│   ├── message/            # Fitur pesan
+│   ├── owner/              # Pengaturan dan kontrol owner
+│   ├── account/            # Profil dan registrasi pengguna
+│   └── tools/              # Utilitas dan alat bantu             # Discovery, validation, registry, lifecycle plugin
 │   │   ├── security/            # Permission, URL policy, sanitasi
 │   │   └── services/            # Logger, storage, media, message, sticker, downloader services
 │   ├── integrations/

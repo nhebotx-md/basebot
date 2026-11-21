@@ -70,7 +70,7 @@ async function sendFallback(ctx, text) {
 module.exports = {
   name: 'interactive-menu',
   commands: ['menui'],
-  category: 'utility',
+  category: 'tools',
   description: 'Menampilkan daftar kategori fitur dalam menu interaktif.',
   usage: '.menui',
   permissions: { privateOnly: true },

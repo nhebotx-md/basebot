@@ -48,7 +48,7 @@ function formatGroupInfo(metadata, target) {
 module.exports = {
   name: 'group-id-lookup',
   commands: ['idgc', 'cekidgc'],
-  category: 'utility',
+  category: 'tools',
   description: 'Memeriksa ID dan metadata WhatsApp Group dari grup aktif, JID, tautan invite, atau kode undangan.',
   usage: '.idgc dari dalam grup atau .idgc <link_grup|kode_invite|groupJid>',
   permissions: { metadataRequired: true, registrationExempt: true },

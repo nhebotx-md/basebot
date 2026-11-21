@@ -4,7 +4,7 @@ const os = require('node:os');
 const { validatePermission } = require('../security/permission-manager');
 
 const CATEGORY_ICONS = Object.freeze({
-  owner: '👑', main: '⌂', system: '◈', utility: '⌘', tools: '⚙',
+  owner: '👑', main: '⌂', system: '◈', utility: '⌘', tools: '⚙', image: '▧', account: '♙',
   fun: '✦', game: '◇', download: '⇩', downloader: '⇩', search: '⌕',
   sticker: '▧', media: '▣', ai: '✧', group: '◎', religi: '☾',
   islamic: '☾', info: 'ⓘ', user: '♙', canvas: '▤', random: '⁕',
@@ -14,9 +14,9 @@ const CATEGORY_ICONS = Object.freeze({
 const MENU_THEMES = Object.freeze(['showcase', 'terminal', 'minimal', 'premium', 'editorial']);
 const MENU_THEME_VERSIONS = Object.freeze({ v1: 'showcase', v2: 'terminal', v3: 'minimal', v4: 'premium', v5: 'editorial' });
 const CATEGORY_LAYOUTS = Object.freeze({
-  owner: 'control', system: 'control', panel: 'control', vps: 'control',
+  owner: 'control', system: 'control', panel: 'control', vps: 'control', tools: 'directory',
   download: 'media', downloader: 'media', media: 'media', sticker: 'media',
-  ai: 'assistant', search: 'assistant', tts: 'assistant',
+  ai: 'assistant', search: 'assistant', tts: 'assistant', image: 'media', account: 'community',
   group: 'community', user: 'community', fun: 'community', game: 'community',
   religi: 'editorial', islamic: 'editorial', news: 'editorial', anime: 'editorial'
 });

@@ -20,7 +20,7 @@ function isImageBuffer(buffer) {
 module.exports = {
   name: 'brat-foto',
   commands: ['bratfoto'],
-  category: 'maker',
+  category: 'sticker',
   description: 'Membuat gambar Brat melalui provider alternatif PatrickMD.',
   usage: '.bratfoto <teks>',
   permissions: {},

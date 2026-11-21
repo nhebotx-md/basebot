@@ -13,7 +13,7 @@ function createFixture() {
   const plugins = [
     {
       name: 'ai-image-transform',
-      category: 'maker',
+      category: 'image',
       commands,
       description: 'Mengubah foto menjadi berbagai gaya visual.',
       usage: '.tochibi'
@@ -66,7 +66,7 @@ function createFixture() {
 
 test('category directory shows plugin names without command aliases or descriptions', () => {
   const { service, ctx } = createFixture();
-  ctx.args = ['maker'];
+  ctx.args = ['image'];
   const output = service.renderCategory(ctx);
 
   assert.match(output, /ai-image-transform/);
@@ -81,7 +81,7 @@ test('main menu shows plugin and command counts for new categories', () => {
   const { service, ctx } = createFixture();
   const output = service.renderMenu(ctx);
 
-  assert.match(output, /catmenu maker/);
+  assert.match(output, /catmenu image/);
   assert.match(output, /1 plugin \/ 12 command/);
   assert.match(output, /catmenu sticker/);
   assert.match(output, /catmenu downloader/);
@@ -92,7 +92,7 @@ test('interactive category lists each plugin once without command explanations',
   const sent = [];
   const replies = [];
   ctx.command = 'catmenu';
-  ctx.args = ['maker'];
+  ctx.args = ['image'];
   ctx.sendMessage = async (...args) => sent.push(args);
   ctx.reply = async message => replies.push(message);
 
