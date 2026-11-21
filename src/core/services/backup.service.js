@@ -227,8 +227,11 @@ function createBackupService({ database, logger = console, maxBackups = 14, inte
       }
     }
     if (present.length === 0) {
-      recovery = { recovered: false, freshInstall: true };
-      return { action: 'fresh-install' };
+      const existingSnapshots = (await list()).some(row => row.valid);
+      if (!existingSnapshots) {
+        recovery = { recovered: false, freshInstall: true };
+        return { action: 'fresh-install' };
+      }
     }
 
     let corruption = null;
