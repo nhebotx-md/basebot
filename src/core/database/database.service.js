@@ -140,7 +140,7 @@ class DatabaseService {
 
   restoreSnapshot(files) {
     this._assertReady();
-    if (!isRecord(files) || !['meta.json', ...COLLECTIONS].every(name => typeof files[name] === 'string')) {
+    if (!isRecord(files) || !['meta.json', ...[...COLLECTIONS].map(name => name + '.json')].every(name => typeof files[name] === 'string')) {
       throw new TypeError('Snapshot database tidak lengkap.');
     }
     const parsed = {};
