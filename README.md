@@ -14,8 +14,8 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 | Versi aplikasi | `2.0.0` |
 | Runtime | Node.js `>=22.13.0` |
 | Arsitektur | CommonJS, core modular, plugin registry |
-| Plugin | **52 file plugin** |
-| Command terdaftar | **145 command dan alias** |
+| Plugin | **53 file plugin** |
+| Command terdaftar | **146 command dan alias** |
 | Kategori direktori plugin | 9 direktori |
 | Unit test | 48 file test |
 | Baileys | `@itsliaaa/baileys@0.5.6` |
@@ -38,7 +38,7 @@ Tautan: [commit baseline](https://github.com/nhebotx-md/basebot/commit/244c82b9e
 - **Manajemen plugin:** owner dapat melihat informasi plugin, mengaktifkan/menonaktifkan plugin, reload manual, dan auto reload saat file plugin JavaScript berubah. Registry kandidat divalidasi dahulu; reload gagal tidak mengganti registry aktif.
 - **Permission manager:** owner-only, group-only, private-only, adminOnly, botAdminOnly, role, grant akses command/kategori, dan mode public/self. Pemeriksaan menu dan eksekusi memakai aturan permission yang sama.
 - **Profil pengguna:** registrasi, role user/premium/moderator, level, EXP, saldo koin, serta statistik pesan dan command.
-- **Database JSON:** collection users, groups, dan plugins; penulisan atomik, backup file, antrean penulisan, dan validasi versi skema.
+- **Database JSON:** collection users, groups, dan plugins; penulisan atomik, antrean penulisan, validasi versi skema, backup snapshot otomatis harian dengan checksum SHA-256, retensi 14 snapshot, verifikasi, dan restore dua langkah dengan safety backup. Panduan: `docs/JSON_DATABASE.md`.
 - **Runtime monitoring:** snapshot berkala, riwayat 120 sampel, alert heap/event-loop/antrean database, serta statistik job queue melalui `.health history`, `.health alerts`, dan `.health detail`.
 - **System Doctor:** `.doctor` memeriksa versi Node.js, konfigurasi lokal/template, dependency penting, akses direktori, database, koneksi WhatsApp, dan plugin tanpa menampilkan nilai API key.
 - **Provider Manager:** provider downloader memakai timeout, retry terbatas, circuit breaker/cooldown, fallback berurutan, dan statistik sukses/gagal yang bertahan selama runtime.
