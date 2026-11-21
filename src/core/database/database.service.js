@@ -127,7 +127,7 @@ class DatabaseService {
     this._assertReady();
     const operation = this.writeQueue.then(async () => {
       const files = {};
-      for (const name of ['meta.json', ...COLLECTIONS].sort()) {
+      for (const name of ['meta.json', ...[...COLLECTIONS].map(collection => collection + '.json')].sort()) {
         files[name] = await fs.readFile(path.join(this.directory, name), 'utf8');
       }
       return files;
