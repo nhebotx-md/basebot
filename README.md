@@ -7,7 +7,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 
 ## Snapshot repository
 
- > Snapshot ini menggambarkan branch `feat/database-backup-restore` untuk PR #52 per 21 November 2026. Base branch `main`: `da8713be42b987f96275a379771203e0eb8c3478`.
+> Snapshot ini menggambarkan branch `feat/database-backup-restore` untuk PR #52 per 21 November 2026. Base branch `main`: `da8713be42b987f96275a379771203e0eb8c3478`.
 
 | Komponen | Kondisi terbaru |
 |---|---|
