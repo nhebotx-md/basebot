@@ -92,11 +92,15 @@ module.exports = {
         return;
       }
       const result = await backups.restore(id);
+      let pluginStateNote = 'Status plugin aktif diselaraskan dengan database.';
+      try { await ctx.services?.pluginManager?.restore?.(); }
+      catch { pluginStateNote = 'Status plugin tersimpan, tetapi sinkronisasi runtime gagal. Restart BASEBOT sebelum digunakan kembali.'; }
       await ctx.reply([
         '*RESTORE DATABASE SELESAI*',
         'Backup dipulihkan: ' + result.restored,
         'Safety backup saat sebelum restore: ' + result.safetyBackup,
-        'Database sudah dimuat ulang pada runtime.',
+        'Data database aktif sudah dipulihkan.',
+        pluginStateNote,
         'Periksa data melalui fitur bot sebelum melanjutkan operasi normal.'
       ].join('\n'));
       return;
