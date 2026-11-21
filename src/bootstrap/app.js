@@ -41,8 +41,12 @@ async function createApp(options = {}) {
   if (typeof logger.startup === 'function') logger.startup({ name: config.botName, ...startupDetails });
   else logger.info('BASEBOT memulai runtime.', startupDetails);
 
-  const database = options.database || await new DatabaseService({ directory: config.paths.database || './data/database', logger }).init();
-  const backupService = options.backupService || createBackupService({ database, logger });
+  const database = options.database || new DatabaseService({ directory: config.paths.database || './data/database', logger });
+  const backupService = options.backupService || createBackupService({ database, logger, owners: config.owners, maxBackups: config.backups?.retention, intervalMs: config.backups?.intervalMs });
+  if (!options.database) {
+    await backupService.recoverBeforeInit();
+    await database.init();
+  }
   logger.stage?.('DATABASE', 'Persistent JSON storage initialized', 'success');
   const users = options.users || new UserService({ database, expPerMessage: config.profile?.expPerMessage ?? 5, expCooldownMs: config.profile?.expCooldownMs ?? 60000 });
   const groups = options.groups || new GroupService({ database });
