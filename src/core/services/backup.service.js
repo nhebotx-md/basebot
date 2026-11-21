@@ -17,7 +17,7 @@ function isRecord(value) {
 }
 
 function validId(value) {
-  return typeof value === 'string' && /^backup-[0-9T-]{15,24}Z-[a-f0-9]{8}$/.test(value);
+  return typeof value === 'string' && /^backup-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z-[a-f0-9]{8}$/.test(value);
 }
 
 function createBackupService({ database, logger = console, maxBackups = 14, clock = () => new Date() } = {}) {
@@ -94,7 +94,7 @@ function createBackupService({ database, logger = console, maxBackups = 14, cloc
       await database.flush();
       const files = await database.exportSnapshot();
       const now = clock();
-      const timestamp = now.toISOString().replace(/[:.]/g, '-');
+      const timestamp = now.toISOString().replace(/Z$/, '').replace(/[:.]/g, '-');
       const id = 'backup-' + timestamp + 'Z-' + crypto.randomBytes(4).toString('hex');
       const staging = path.join(root, '.tmp-' + crypto.randomBytes(8).toString('hex'));
       const destination = path.join(root, id);
