@@ -63,10 +63,10 @@ test('tampered snapshot is rejected before live database is modified', async t =
 test('database restore rejects incomplete or future-schema snapshots without changing data', async t => {
   const { database } = await fixture(t);
   await database.update('users', users => { users.keep = { value: 1 }; });
-  await assert.rejects(() => database.restoreSnapshot({}), /tidak lengkap/i);
+  assert.throws(() => database.restoreSnapshot({}), /tidak lengkap/i);
   const files = await database.exportSnapshot();
   const future = { ...files, 'users.json': JSON.stringify({ schemaVersion: 999, data: {} }) };
-  await assert.rejects(() => database.restoreSnapshot(future), /skema lebih baru/i);
+  assert.throws(() => database.restoreSnapshot(future), /skema lebih baru/i);
   assert.deepEqual(database.read('users'), { keep: { value: 1 } });
 });
 
