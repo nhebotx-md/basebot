@@ -15,9 +15,12 @@ class PluginManager {
 
   async restore() {
     if (!this.stateRepository) return [];
-    const disabled = await this.stateRepository.getDisabledPlugins();
-    for (const name of disabled) this.registry.disable(name);
-    return disabled;
+    const disabled = new Set(await this.stateRepository.getDisabledPlugins());
+    for (const plugin of this.registry.list()) {
+      if (disabled.has(plugin.name)) this.registry.disable(plugin.name);
+      else this.registry.enable(plugin.name);
+    }
+    return [...disabled];
   }
 
   list() {
