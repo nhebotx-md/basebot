@@ -45,7 +45,10 @@ function createBackupService({ database, logger = console, maxBackups = 14, cloc
     const directory = path.join(root, id);
     const stat = await fs.lstat(directory);
     if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Lokasi backup bukan direktori yang aman.');
-    const manifestRaw = await fs.readFile(path.join(directory, 'manifest.json'), 'utf8');
+    const manifestPath = path.join(directory, 'manifest.json');
+    const manifestStat = await fs.lstat(manifestPath);
+    if (!manifestStat.isFile() || manifestStat.isSymbolicLink() || manifestStat.size > 64 * 1024) throw new Error('Manifest backup tidak aman atau terlalu besar.');
+    const manifestRaw = await fs.readFile(manifestPath, 'utf8');
     const manifest = JSON.parse(manifestRaw);
     if (!isRecord(manifest) || manifest.formatVersion !== SNAPSHOT_VERSION || manifest.id !== id || !isRecord(manifest.files)) {
       throw new Error('Manifest backup tidak valid atau tidak didukung.');
@@ -135,7 +138,10 @@ function createBackupService({ database, logger = console, maxBackups = 14, cloc
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.isSymbolicLink() || !validId(entry.name)) continue;
       try {
-        const manifest = JSON.parse(await fs.readFile(path.join(root, entry.name, 'manifest.json'), 'utf8'));
+        const manifestPath = path.join(root, entry.name, 'manifest.json');
+        const manifestStat = await fs.lstat(manifestPath);
+        if (!manifestStat.isFile() || manifestStat.isSymbolicLink() || manifestStat.size > 64 * 1024) continue;
+        const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
         if (manifest?.formatVersion === SNAPSHOT_VERSION && manifest.id === entry.name) {
           rows.push({ id: entry.name, createdAt: manifest.createdAt, reason: manifest.reason || 'manual', bytes: Object.values(manifest.files || {}).reduce((sum, item) => sum + (Number(item.bytes) || 0), 0) });
         }
