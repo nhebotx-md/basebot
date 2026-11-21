@@ -227,8 +227,13 @@ function createBackupService({ database, logger = console, maxBackups = 14, inte
       }
     }
     if (present.length === 0) {
-      const existingSnapshots = (await list()).some(row => row.valid);
-      if (!existingSnapshots) {
+      const backupEntries = await fs.readdir(root).catch(error => error.code === 'ENOENT' ? [] : Promise.reject(error));
+      let legacyBackupExists = false;
+      for (const name of REQUIRED_FILES) {
+        try { await fs.lstat(path.join(database.directory, name + '.bak')); legacyBackupExists = true; }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+      }
+      if (backupEntries.length === 0 && !legacyBackupExists) {
         recovery = { recovered: false, freshInstall: true };
         return { action: 'fresh-install' };
       }
