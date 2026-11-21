@@ -113,3 +113,55 @@ test('owner backup command rejects non-owner before touching backup storage', as
   assert.equal(touched, false);
   assert.match(replies[0], /khusus owner/);
 });
+
+
+test('startup disaster recovery restores the newest verified snapshot before database init', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-recovery-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const original = await new DatabaseService({ directory, logger }).init();
+  await original.update('users', users => { users.recoverMe = { coins: 91 }; });
+  const originalBackups = createBackupService({ database: original, logger });
+  const snapshot = await originalBackups.create({ reason: 'known good recovery point' });
+  originalBackups.stop();
+  await original.close();
+
+  await fs.writeFile(path.join(directory, 'users.json'), '{"broken":');
+  const recoveredDatabase = new DatabaseService({ directory, logger });
+  const recoveryService = createBackupService({ database: recoveredDatabase, logger });
+  t.after(() => recoveryService.stop());
+  const result = await recoveryService.recoverBeforeInit();
+  assert.equal(result.action, 'recovered');
+  assert.equal(result.snapshotId, snapshot.id);
+  await recoveredDatabase.init();
+  assert.deepEqual(recoveredDatabase.read('users'), { recoverMe: { coins: 91 } });
+  assert.equal(recoveryService.status().recovery.recovered, true);
+  assert.ok((await fs.readdir(path.join(directory, 'recovery-quarantine'))).length > 0);
+  await recoveredDatabase.close();
+});
+
+test('startup recovery treats a genuinely empty database as a fresh install', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-fresh-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const database = new DatabaseService({ directory, logger });
+  const backups = createBackupService({ database, logger });
+  t.after(() => backups.stop());
+  assert.deepEqual(await backups.recoverBeforeInit(), { action: 'fresh-install' });
+  await database.init();
+  assert.deepEqual(database.read('users'), {});
+  await database.close();
+});
+
+test('startup recovery refuses corrupted data when no verified snapshot exists', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-no-recovery-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(path.join(directory, 'meta.json'), '{"schemaVersion":1}');
+  await fs.writeFile(path.join(directory, 'users.json'), '{"broken":');
+  await fs.writeFile(path.join(directory, 'groups.json'), '{"schemaVersion":1,"data":{}}');
+  await fs.writeFile(path.join(directory, 'plugins.json'), '{"schemaVersion":1,"data":{}}');
+  const database = new DatabaseService({ directory, logger });
+  const backups = createBackupService({ database, logger });
+  t.after(() => backups.stop());
+  await assert.rejects(() => backups.recoverBeforeInit(), /tidak ada snapshot valid/i);
+  assert.equal(database.initialized, false);
+});
