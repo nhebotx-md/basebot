@@ -76,3 +76,40 @@ test('snapshot export waits for queued database writes', async t => {
   const files = await database.exportSnapshot();
   assert.deepEqual(JSON.parse(files['groups.json']).data, { group1: { enabled: true } });
 });
+
+
+test('owner backup command requires a second restore confirmation and reconciles plugin state', async () => {
+  const command = require('../../plugins/owner/database-backup');
+  const replies = [];
+  const calls = [];
+  const ctx = {
+    isOwner: true, isNewsletter: false, isChannel: false, prefix: '.',
+    services: {
+      backups: {
+        async verify(id) { calls.push(['verify', id]); return { id, valid: true, createdAt: '2026-11-21T00:00:00.000Z', files: 4 }; },
+        async restore(id) { calls.push(['restore', id]); return { restored: id, safetyBackup: 'backup-safety' }; }
+      },
+      pluginManager: { async restore() { calls.push(['plugin-restore']); return []; } }
+    },
+    async reply(message) { replies.push(message); }
+  };
+  await command.execute({ ...ctx, args: ['restore', 'backup-target'] });
+  assert.deepEqual(calls, [['verify', 'backup-target']]);
+  assert.match(replies.pop(), /backup restore confirm backup-target/);
+  await command.execute({ ...ctx, args: ['restore', 'confirm', 'backup-target'] });
+  assert.deepEqual(calls.slice(1), [['restore', 'backup-target'], ['plugin-restore']]);
+  assert.match(replies.pop(), /backup-safety/);
+});
+
+test('owner backup command rejects non-owner before touching backup storage', async () => {
+  const command = require('../../plugins/owner/database-backup');
+  const replies = [];
+  let touched = false;
+  await command.execute({
+    isOwner: false, isNewsletter: false, isChannel: false, args: ['create'],
+    services: { backups: { async create() { touched = true; } } },
+    async reply(message) { replies.push(message); }
+  });
+  assert.equal(touched, false);
+  assert.match(replies[0], /khusus owner/);
+});
