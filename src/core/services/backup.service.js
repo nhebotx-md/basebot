@@ -17,7 +17,7 @@ function isRecord(value) {
 }
 
 function validId(value) {
-  return typeof value === 'string' && /^backup-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z-[a-f0-9]{8}$/.test(value);
+  return typeof value === 'string' && /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[a-f0-9]{8}$/.test(value);
 }
 
 function createBackupService({ database, logger = console, maxBackups = 14, clock = () => new Date() } = {}) {
