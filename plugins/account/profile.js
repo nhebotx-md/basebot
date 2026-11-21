@@ -3,7 +3,7 @@
 module.exports = {
   name: 'profile',
   commands: ['profile', 'me'],
-  category: 'user',
+  category: 'account',
   description: 'Melihat profil, level, EXP, koin, dan statistik pengguna.',
   usage: '.profile',
   permissions: {},

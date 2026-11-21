@@ -52,7 +52,7 @@ function formatChannelInfo(metadata, target) {
 module.exports = {
   name: 'channel-id-lookup',
   commands: ['idch', 'cekidch'],
-  category: 'utility',
+  category: 'tools',
   description: 'Memeriksa ID dan metadata WhatsApp Channel dari tautan, kode invite, JID, atau Channel aktif.',
   usage: '.idch <link_channel|kode_invite|channelJid> atau .idch dari dalam Channel',
   permissions: { registrationExempt: true },
