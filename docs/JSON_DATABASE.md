@@ -40,3 +40,22 @@ Sebelum PR digabung, jalankan `npm test` dan `npm run check` pada Node.js 22 ata
 ## Batas penggunaan
 
 JSON cocok untuk satu proses bot dan data awal hingga menengah. Karena satu collection ditulis ulang sebagai satu file, instalasi dengan trafik sangat tinggi atau beberapa proses bot yang berbagi direktori harus beralih ke database transaksional. Jangan menjalankan dua instance BASEBOT pada direktori database yang sama.
+
+
+## Backup dan restore database
+
+BASEBOT menyediakan backup snapshot terpisah dari file database aktif melalui `BackupService`. Snapshot disimpan di `data/database/backups/` (atau direktori database yang ditentukan pada konfigurasi lokal), dengan permission direktori `0700` dan file `0600`. Snapshot memuat `meta.json`, `users.json`, `groups.json`, dan `plugins.json`, beserta manifest berisi ukuran dan SHA-256 setiap file.
+
+- Backup otomatis harian dibuat saat runtime dimulai jika belum ada backup otomatis pada tanggal UTC tersebut. Pemeriksaan diulang setiap enam jam.
+- Retensi default adalah 14 snapshot terbaru. Snapshot lama dihapus setelah backup baru berhasil dibuat.
+- Backup manual: `.backup create`.
+- Daftar snapshot: `.backup list`.
+- Verifikasi integritas: `.backup verify <ID>`.
+- Restore meminta dua langkah: `.backup restore <ID>` untuk memeriksa dan menampilkan konfirmasi, lalu `.backup restore confirm <ID>` untuk menjalankan.
+- Sebelum restore, BASEBOT membuat safety backup dari kondisi database aktif.
+- Restore memvalidasi manifest, ukuran, checksum SHA-256, JSON, dan versi skema sebelum menulis database. Penulisan snapshot dilakukan melalui antrean database; file disiapkan lebih dulu, lalu dipindahkan secara atomik. Jika pergantian file gagal, sistem mencoba mengembalikan file sebelumnya.
+- Restore hanya mencakup database JSON. Sesi WhatsApp, `settings.js`, `.env`, file media sementara, dan log tidak termasuk dalam snapshot.
+
+Backup disimpan secara lokal di perangkat/server yang menjalankan bot. Backup lokal bukan perlindungan terhadap kerusakan atau kehilangan perangkat. Salin direktori `data/database/backups/` secara berkala ke media lain yang terenkripsi dan aksesnya dibatasi. Jangan mengunggah snapshot yang berisi profil, nomor WhatsApp, statistik, atau data grup ke repositori publik.
+
+Restore mengganti data database aktif dan dapat mengembalikan profil, pengaturan grup, serta status plugin ke waktu snapshot dibuat. Pastikan ID dan waktu backup benar sebelum mengonfirmasi. Jangan jalankan beberapa instance BASEBOT pada direktori database yang sama.
