@@ -103,7 +103,8 @@ test('allmenu inserts WhatsApp read-more marker when the directory is long', () 
   const output = service.renderAllMenu(ctx);
   assert.ok(output.includes('\u200e'.repeat(4001)));
   assert.match(output, /\.longcommand179/);
-});\n
+});
+
 test('menu V1-V5 render five distinct layouts', () => {
   const { service, ctx } = fixture();
   const themes = ['showcase', 'terminal', 'minimal', 'premium', 'editorial'];
