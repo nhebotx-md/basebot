@@ -74,8 +74,8 @@ test('category directory shows plugin names without command aliases or descripti
   assert.doesNotMatch(output, /Mengubah foto menjadi berbagai gaya visual/);
   for (const command of commands) assert.ok(!output.includes('.' + command), 'unexpected command in compact directory: ' + command);
   assert.doesNotMatch(output, /Fungsi\s*:|Pakai\s*:|Command:|<command>/);
-  assert.match(output, /Plugin\s+: 10/);
-  assert.match(output, /Command\s+: 10/);
+  assert.match(output, /PLUGIN\s*:\s*10/);
+  assert.match(output, /COMMAND\s*:\s*10/);
 });
 
 test('main menu shows plugin and command counts for new categories', () => {
