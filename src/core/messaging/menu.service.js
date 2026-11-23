@@ -536,13 +536,20 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
 
     if (!sections.length) return 'Tidak ada command yang tersedia.';
     const output = sections.join('\n\n');
-    const READ_MORE_THRESHOLD = 3000;
+    const READ_MORE_THRESHOLD = 1800;
     const READ_MORE_MARKER = '\u200e'.repeat(4001);
     if (output.length <= READ_MORE_THRESHOLD) return output;
 
-    const splitAt = output.indexOf('\n\n', Math.min(1800, output.length - 1));
+    // Prefer splitting between categories; if there is only one long category,
+    // split after a complete command line instead of cutting through a command.
+    let splitAt = output.indexOf('\n\n', READ_MORE_THRESHOLD);
+    let separatorLength = 2;
+    if (splitAt < 0) {
+      splitAt = output.indexOf('\n', READ_MORE_THRESHOLD);
+      separatorLength = 1;
+    }
     if (splitAt < 0) return output;
-    return output.slice(0, splitAt) + '\n' + READ_MORE_MARKER + '\n' + output.slice(splitAt + 2);
+    return output.slice(0, splitAt) + '\n' + READ_MORE_MARKER + '\n' + output.slice(splitAt + separatorLength);
   }
 
   return Object.freeze({
