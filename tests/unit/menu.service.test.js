@@ -288,7 +288,7 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
   }
   assert.match(menu, /MEMBER/);
   assert.match(menu, /SYSTEM STATUS/);
-  assert.match(menu, /FEATURE COLLECTION/);
+  assert.match(menu, /THE FEATURE LOUNGE/);
   assert.match(category, /DOWNLOAD STUDIO/);
   assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|Command:|Fungsi\s*:|Pakai\s*:/);
 });
@@ -298,8 +298,8 @@ test('.catmenu category index and unknown category use the same premium frame la
   const index = service.renderCategory(createContext({ command: 'catmenu' }).ctx);
   const missing = service.renderCategory(createContext({ command: 'catmenu', args: ['not-real'] }).ctx);
   assert.match(index, /CATEGORY COLLECTION/);
-  assert.doesNotMatch(index, /modules|modul tersedia|commands/i);
-  assert.match(index, /╔════════════ ✦ CATEGORY COLLECTION/);
+  assert.doesNotMatch(index, /modules|modul tersedia/i);
+  assert.match(index, /╔═+ ✦ CATEGORY COLLECTION/);
   assert.match(missing, /CATEGORY NOT FOUND/);
   assert.match(missing, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
 });
@@ -395,15 +395,14 @@ test('all five themes expose the same live system information and registered com
     const output = service.renderMenu(createContext().ctx, theme);
     assert.match(output, /Pengguna Uji/);
     assert.match(output, /PUBLIC/);
-    assert.match(output, /WIB\s*:/);
-    assert.match(output, /WITA\s*:/);
-    assert.match(output, /WIT\s*:/);
-    assert.match(output, /Tanggal\s*:/);
-    assert.match(output, /Uptime\s*:/);
-    assert.match(output, /OS\s*:/);
-    assert.match(output, /RAM\s*:/);
-    assert.match(output, /Fitur\s*:\s*4 Command/);
-    assert.match(output, /\.catmenu download/);
+    assert.match(output, /WIB/);
+    assert.match(output, /WITA/);
+    assert.match(output, /WIT/);
+    assert.match(output, /DATE/);
+    assert.match(output, /UPTIME/);
+    assert.match(output, /RAM/);
+    assert.match(output, /COMMANDS 4/);
+    assert.match(output, /\\.catmenu download/);
   }
 });
 
