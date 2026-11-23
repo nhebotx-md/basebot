@@ -5,13 +5,13 @@ function amount(value) {
     if (!Number.isSafeInteger(value) || value <= 0) throw new TypeError('Nominal harus berupa bilangan bulat positif.');
     return value;
   }
-  const normalized = String(value ?? '').trim().replace(/[.\\s]/g, '').replace(/,/g, '');
+  const normalized = String(value ?? '').trim().replace(/[.\s]/g, '').replace(/,/g, '');
   const parsed = Number(normalized);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new TypeError('Nominal harus berupa bilangan bulat positif.');
   return parsed;
 }
 function clean(value, max = 80) {
-  const result = String(value || '').replace(/[\\r\\n\\t]/g, ' ').trim().slice(0, max);
+  const result = String(value || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, max);
   if (!result) throw new TypeError('Keterangan tidak boleh kosong.');
   return result;
 }
@@ -47,7 +47,7 @@ class FinanceService {
   async addTransaction(jid, { type, value, category, note, date, account = 'Tunai' }) {
     if (!['income', 'expense', 'transfer'].includes(type)) throw new TypeError('Jenis transaksi tidak valid.');
     const item = { id: 'trx_' + this.clock().getTime().toString(36) + '_' + Math.random().toString(36).slice(2, 8), type, amount: amount(value), category: clean(category || 'Lainnya', 40), note: clean(note || category || type, 120), account: clean(account, 40), date: date ? clean(date, 10) : this.clock().toISOString().slice(0, 10), createdAt: this.clock().toISOString() };
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) || Number.isNaN(Date.parse(item.date))) throw new TypeError('Tanggal harus YYYY-MM-DD.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(item.date) || Number.isNaN(Date.parse(item.date))) throw new TypeError('Tanggal harus YYYY-MM-DD.');
     await this._mutate(jid, finance => { finance.transactions.push(item); });
     return item;
   }
@@ -115,7 +115,7 @@ class FinanceService {
   exportCsv(jid) {
     const rows = [['id', 'tanggal', 'jenis', 'nominal', 'kategori', 'keterangan', 'akun']];
     for (const item of this.get(jid).transactions) rows.push([item.id, item.date, item.type, item.amount, item.category, item.note, item.account]);
-    return rows.map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(',')).join('\\n');
+    return rows.map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
   }
 }
 module.exports = { FinanceService, amount, monthKey };
