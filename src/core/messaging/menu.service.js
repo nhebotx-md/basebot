@@ -335,45 +335,50 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     }
     const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
     const heading = categoryTitle(category);
-    const commandsFor = plugin => detailed
-      ? ((plugin.commands || []).filter(Boolean).length ? plugin.commands.filter(Boolean) : [plugin.name])
-      : [cleanLabel(plugin.name)];
+    const commandsFor = plugin => (plugin.commands || []).filter(Boolean).length
+      ? plugin.commands.filter(Boolean)
+      : [plugin.name];
+    const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+    const addDetails = (plugin, frame = '│') => {
+      if (!detailed) return;
+      lines.push(frame + '    Command: ' + commandsFor(plugin).map(command => commandPrefix + command).join('  |  '));
+      if (plugin.description) lines.push(frame + '    Fungsi : ' + cleanLabel(plugin.description));
+      if (plugin.usage) lines.push(frame + '    Pakai  : ' + cleanLabel(plugin.usage));
+    };
     let lines;
     if (theme === 'terminal') {
-      const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
       lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '║ COMMAND : ' + commandCount, '╠══ AVAILABLE MODULES ═════════'];
       for (const [index, plugin] of plugins.entries()) {
         lines.push('║ [' + String(index + 1).padStart(2, '0') + '] ' + cleanLabel(plugin.name));
-        lines.push('║     ' + commandsFor(plugin).map(command => commandPrefix + command).join('  |  '));
+        addDetails(plugin, '║');
       }
       lines.push('╚══ END / ' + plugins.length + ' MODULES ═════════');
     } else if (theme === 'minimal') {
       lines = [heading, '────────────────────────'];
-      for (const plugin of plugins) lines.push(...commandsFor(plugin).map(command => commandPrefix + command));
+      for (const plugin of plugins) {
+        lines.push(cleanLabel(plugin.name));
+        addDetails(plugin);
+      }
       lines.push('────────────────────────');
     } else if (theme === 'premium') {
-      const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
       lines = ['╔══════════════ ' + heading + ' ══════════════╗', '║              FEATURE COLLECTION               ║', '║  PLUGINS ' + plugins.length + '  ·  COMMANDS ' + commandCount, '╠════════════════════════════════════════════════╣'];
       for (const [index, plugin] of plugins.entries()) {
         lines.push('║  ' + String(index + 1).padStart(2, '0') + '  ◇  *' + cleanLabel(plugin.name) + '*');
-        lines.push('║      ' + commandsFor(plugin).map(command => commandPrefix + command).join('   ·   '));
-        if (detailed && plugin.description) lines.push('║      ' + cleanLabel(plugin.description));
+        addDetails(plugin, '║');
       }
       lines.push('╚════════════════════════════════════════════════╝');
     } else if (theme === 'editorial') {
-      lines = [category.label.toUpperCase() + ' / FEATURE NOTES', 'A categorized list of available commands', '────────────────────────────────────────'];
+      lines = [category.label.toUpperCase() + ' / FEATURE NOTES', 'A categorized list of available plugins', '────────────────────────────────────────'];
       for (const [index, plugin] of plugins.entries()) {
         lines.push(String(index + 1).padStart(2, '0') + ' / ' + cleanLabel(plugin.name).toUpperCase());
-        lines.push('     ' + commandsFor(plugin).map(command => commandPrefix + command).join('   ·   '));
-        if (detailed && plugin.description) lines.push('     ' + cleanLabel(plugin.description));
+        addDetails(plugin, ' ');
       }
       lines.push('────────────────────────────────────────');
     } else {
       lines = ['╭─〔 ' + heading + ' 〕', '│ ' + plugins.length + ' fitur tersedia'];
       for (const plugin of plugins) {
         lines.push('├─ ' + cleanLabel(plugin.name));
-        lines.push(...commandsFor(plugin).map(command => '│   ' + commandPrefix + command));
-        if (detailed && plugin.description) lines.push('│   ' + cleanLabel(plugin.description));
+        addDetails(plugin);
       }
       lines.push('╰────────────────────────');
     }
