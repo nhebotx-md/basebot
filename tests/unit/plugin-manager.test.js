@@ -257,7 +257,7 @@ test('owner addplugin command routes custom category installs through the manage
 });
 
 test('owner getplugin command returns installed plugin source', async () => {
-  const command = require('../../plugins/owner/plugin-install.handler.cjs');
+  const command = require('../../plugins/owner/getplugin.handler.cjs');
   const replies = [];
   const ctx = {
     isOwner: true, isNewsletter: false, isChannel: false, args: ['demo'],
