@@ -155,6 +155,7 @@ class PluginManager {
       if (targetStat && !targetTracked && targetPath !== oldPath) return { success: false, reason: 'file-already-exists' };
       const targetBackup = targetStat ? await fs.readFile(targetPath) : null;
       const oldBackup = oldPath && oldPath !== targetPath ? await fs.readFile(oldPath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error)) : null;
+      await fs.mkdir(path.dirname(targetPath), { recursive: true, mode: 0o700 });
       const tempTarget = targetPath + '.tmp-' + crypto.randomBytes(6).toString('hex');
       try {
         await fs.writeFile(tempTarget, source, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
