@@ -179,3 +179,104 @@ test('plugin manager restore reconciles both enabled and disabled states from th
   assert.equal(registry.isEnabled('beta'), true);
   await database.close();
 });
+
+test('automatic plugin installation detects category and reloads a new one-command plugin', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-add-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const registry = new PluginRegistry({ logger });
+  const manager = new PluginManager({
+    registry, directory, logger,
+    fetchSource: async () => ({ ok: true, buffer: Buffer.from(source('tools-newcmd', 'newcmd')) })
+  });
+  const result = await manager.addPluginFromUrl('https://raw.githubusercontent.com/example/repo/main/newcmd.js');
+  assert.equal(result.success, true);
+  assert.equal(result.category, 'test');
+  assert.equal(result.command, 'newcmd');
+  assert.ok(registry.getByCommand('newcmd'));
+  assert.equal((await fs.readFile(path.join(directory, 'test', 'newcmd.js'), 'utf8')).includes('newcmd'), true);
+});
+
+test('custom category installation overrides category and overwrites the existing command file', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-overwrite-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const registry = new PluginRegistry({ logger });
+  const manager = new PluginManager({ registry, directory, logger });
+  const first = await manager.installPluginSource(source('tools-same', 'same'));
+  assert.equal(first.success, true);
+  const second = await manager.installPluginSource(source('custom-same', 'same'), { category: 'custom-tools' });
+  assert.equal(second.success, true);
+  assert.equal(second.overwritten, true);
+  assert.equal(second.category, 'custom-tools');
+  assert.equal(registry.list().length, 1);
+  assert.equal(registry.getByCommand('same').category, 'custom-tools');
+  await assert.rejects(fs.access(path.join(directory, 'test', 'same.js')));
+  assert.ok(await fs.readFile(path.join(directory, 'custom-tools', 'same.js'), 'utf8'));
+});
+
+test('invalid replacement rolls back the previous plugin and rejects multi-command sources', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-rollback-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const registry = new PluginRegistry({ logger });
+  const manager = new PluginManager({ registry, directory, logger });
+  assert.equal((await manager.installPluginSource(source('tools-alpha', 'alpha'))).success, true);
+  const before = await fs.readFile(path.join(directory, 'test', 'alpha.js'), 'utf8');
+  const bad = source('tools-alpha', 'alpha').replace("description: 'Plugin test'", "description: ''");
+  assert.equal((await manager.installPluginSource(bad)).success, false);
+  assert.equal(await fs.readFile(path.join(directory, 'test', 'alpha.js'), 'utf8'), before);
+  assert.ok(registry.getByCommand('alpha'));
+  const multi = source('tools-alpha', 'alpha').replace("commands: ['alpha']", "commands: ['alpha', 'other']");
+  assert.equal((await manager.installPluginSource(multi)).reason, 'one-command-required');
+});
+
+test('getSource resolves plugin by name or command and returns its file content', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-get-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const registry = new PluginRegistry({ logger });
+  const manager = new PluginManager({ registry, directory, logger });
+  await manager.installPluginSource(source('tools-alpha', 'alpha'));
+  const byName = await manager.getSource('tools-alpha');
+  const byCommand = await manager.getSource('alpha');
+  assert.equal(byName.source, byCommand.source);
+  assert.equal(byName.category, 'test');
+});
+
+test('owner addplugin command routes custom category installs through the manager', async () => {
+  const command = require('../../plugins/owner/plugin-install.handler.cjs');
+  const calls = [];
+  const replies = [];
+  const ctx = {
+    isOwner: true, isNewsletter: false, isChannel: false,
+    args: ['custom', 'tools', 'https://raw.githubusercontent.com/example/plugin.js'],
+    services: { pluginManager: { async addPluginFromUrl(url, options) { calls.push([url, options]); return { success: true, overwritten: true, plugin: 'tools-demo', category: 'tools', command: 'demo', filePath: 'tools/demo.js' }; } } },
+    progress: { async start() {}, async complete() {} },
+    async reply(message) { replies.push(message); }
+  };
+  await command.execute(ctx);
+  assert.deepEqual(calls, [['https://raw.githubusercontent.com/example/plugin.js', { category: 'tools' }]]);
+  assert.match(replies[0], /PLUGIN BERHASIL DI-OVERWRITE/);
+});
+
+test('owner getplugin command returns installed plugin source', async () => {
+  const command = require('../../plugins/owner/getplugin.handler.cjs');
+  const replies = [];
+  const ctx = {
+    isOwner: true, isNewsletter: false, isChannel: false, args: ['demo'],
+    services: { pluginManager: { async getSource() { return { name: 'tools-demo', category: 'tools', commands: ['demo'], enabled: true, filePath: 'tools/demo.js', source: 'module.exports = {};' }; } } },
+    async reply(message) { replies.push(message); }
+  };
+  await command.execute(ctx);
+  assert.match(replies[0], /SOURCE PLUGIN/);
+  assert.match(replies[0], /module.exports/);
+});
+
+test('installer refuses to overwrite its own management commands', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-protected-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const registry = new PluginRegistry({ logger });
+  await fs.writeFile(path.join(directory, 'addplugin.js'), source('owner-addplugin', 'addplugin'));
+  loadPlugins({ directory, registry, logger });
+  const manager = new PluginManager({ registry, directory, logger });
+  const result = await manager.installPluginSource(source('owner-addplugin', 'addplugin'));
+  assert.deepEqual(result, { success: false, reason: 'protected-plugin' });
+  assert.ok(registry.getByCommand('addplugin'));
+});
