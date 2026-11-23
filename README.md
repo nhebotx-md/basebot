@@ -192,7 +192,7 @@ Kategori `owner` otomatis diperlakukan sebagai owner-only dan kategori `group` m
 
 Pengguna biasa di grup harus registrasi dengan `.daftar nama`. Role aplikasi yang dapat diberikan adalah `user`, `premium`, dan `moderator`; role owner tidak dapat diberikan melalui database. Owner dapat menggunakan `.setrole`, `.grantakses`, dan `.cabutakses` untuk pengelolaan akses.
 
-## Pemeriksaan ID WhatsApp Channel dan Group
+## Finance Manager (lokal)\n\nKategori `finance` menyediakan manajemen keuangan pribadi untuk setiap JID WhatsApp. Tidak membutuhkan API key, akun eksternal, atau koneksi PocketSmith. Data disimpan sebagai namespace `finance` di profil masing-masing dalam `users.json`, sehingga tetap tercakup dalam backup dan disaster recovery JSON yang sudah ada.\n\nCommand utama: `.finance` / `.balance` untuk dashboard, `.income nominal kategori`, `.expense nominal kategori`, `.transfer nominal kategori`, `.history [jumlah]`, `.searchtrx kata`, `.deletetrx ID`, `.setbudget kategori nominal`, `.budget`, `.debt nama nominal`, `.paydebt ID nominal`, `.debtreport`, `.saving nama nominal`, `.paygoal ID nominal`, `.recurring income|expense nominal kategori [daily|weekly|monthly|yearly]`, `.runrecurring ID`, `.monthly [YYYY-MM]`, `.yearly [YYYY]`, dan `.exportfinance` untuk CSV.\n\nSetiap transaksi, anggaran, utang, dan target tabungan hanya dapat dibaca atau diubah oleh pemilik JID tersebut. Transaksi rutin tidak dijalankan otomatis di background: pengguna memprosesnya secara eksplisit dengan `.runrecurring ID`, agar bot tidak mencatat pengeluaran tanpa konfirmasi. Nominal disimpan sebagai integer Rupiah; gunakan angka tanpa simbol mata uang. Penghapusan transaksi bersifat permanen dan harus menyebut ID transaksi.\n\n## Pemeriksaan ID WhatsApp Channel dan Group
 
 - `.idch <link_channel|kode_invite|channelJid>` atau `.cekidch ...`: memeriksa metadata Channel melalui API `newsletterMetadata`. Jika dijalankan tanpa argumen dari chat Channel, plugin menggunakan metadata Channel aktif yang tersedia pada context.
 - `.idgc` atau `.cekidgc`: dari dalam grup, menampilkan ID dan metadata grup aktif. Untuk pemeriksaan dari chat pribadi, gunakan `.idgc <link_grup|kode_invite|groupJid>`; tautan undangan diperiksa melalui `groupGetInviteInfo`, sedangkan JID diperiksa melalui `groupMetadata`.
@@ -225,8 +225,8 @@ ID referensi pada pesan pengguna dapat dicocokkan dengan record error di log ser
 - `src/core/plugins`: validator, registry, loader, dan plugin manager.
 - `src/core/security`: permission manager dan validasi URL publik.
 - `src/core/database`: database JSON dan service pengguna/grup.
-- `src/core/services`: logger, pesan, rich message, identity resolver, media, downloader, storage.
-- `plugins/<kategori>/*.js (ai, downloader, group, image, sticker, media, message, owner, account, tools)`: fitur bot.
+- `src/core/services`: logger, pesan, rich message, identity resolver, media, downloader, storage, finance manager.
+- `plugins/<kategori>/*.js (ai, downloader, group, image, sticker, media, message, owner, account, tools, finance)`: fitur bot.
 - `tests/unit/*.test.js`: unit test.
 - `docs/`: dokumentasi API dan pengembangan.
 
