@@ -122,6 +122,7 @@ async function createApp(options = {}) {
     jobQueue,
     doctorService,
     backupService,
+    financeService,
     pluginWatchService,
     async start() {
       backupService.start();
