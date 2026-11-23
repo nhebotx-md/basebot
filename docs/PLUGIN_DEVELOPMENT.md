@@ -38,4 +38,8 @@ Dispatcher membungkus pemanggilan `plugin.execute(ctx)`. Jika plugin melempar ex
 Diagnostik mengenali error koneksi/timeout, HTTP 401/403, 404, 429, 5xx, file/permission, dependency FFmpeg yang hilang, serta error JavaScript umum. Jangan menambahkan token, cookie, pairing code, atau data pengguna ke pesan error secara manual. ID referensi dari chat digunakan untuk menemukan record terkait di log.
 
 Plugin event yang gagal tidak memiliki jaminan konteks balasan chat. Kegagalannya dicatat dengan nama plugin, event, tahap, ID referensi, exception, dan hasil diagnosis di log; dispatcher melanjutkan pemrosesan plugin event lain.
-\n\n## Finance Manager\n\nFitur keuangan lokal memakai `ctx.services.finance`. Service menyimpan data pada namespace `finance` di record pengguna dalam collection `users`; gunakan hanya `ctx.sender` yang sudah dinormalisasi sebagai key. Jangan menerima JID target dari argumen command, jangan pernah membaca data finance pengguna lain, dan jangan menulis file JSON secara langsung. Nominal harus berupa integer Rupiah positif. Transaksi rutin hanya diproses melalui command eksplisit pengguna, bukan timer tersembunyi.\n
+
+
+## Finance Manager
+
+Fitur keuangan lokal memakai `ctx.services.finance`. Service menyimpan data pada namespace `finance` di record pengguna dalam collection `users`; gunakan hanya `ctx.sender` yang sudah dinormalisasi sebagai key. Jangan menerima JID target dari argumen command, jangan pernah membaca data finance pengguna lain, dan jangan menulis file JSON secara langsung. Nominal harus berupa integer Rupiah positif. Transaksi rutin hanya diproses melalui command eksplisit pengguna, bukan timer tersembunyi.
