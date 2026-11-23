@@ -518,27 +518,31 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const prefix = typeof ctx.prefix === 'string' && ctx.prefix
       ? ctx.prefix
       : (Array.isArray(config.prefix) ? config.prefix[0] : config.prefix) || '.';
-    const now = clock();
-    const uptime = formatUptime((now.getTime() - startedAt) / 1000);
-    const featureCount = countCommands(categories);
-    const userName = cleanLabel(ctx.pushname, 'Pengguna');
-    const role = ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN'
-      : ({ user: 'USER', premium: 'PREMIUM', moderator: 'MODERATOR', guest: 'GUEST' }[ctx.userRole] || 'MEMBER');
-    const lines = [
-      '╭━━━━━━━━〔 BASEBOT · COMPLETE DIRECTORY 〕',
-      '│ PENGGUNA : ' + userName,
-      '│ ROLE     : ' + role,
-      '│ VERSI    : v' + cleanLabel(version),
-      '│ UPTIME   : ' + uptime,
-      '│ TOTAL    : ' + featureCount + ' command · ' + categories.length + ' kategori',
-      '┣━━━━━━━━━━━━━━━━━━━━━━━━'
-    ];
-    if (!categories.length) lines.push('│ Belum ada fitur yang dapat ditampilkan untuk akun ini.');
-    for (const category of categories) {
-      lines.push(...renderCategoryLayout(category, prefix, 'premium', true));
-    }
-    lines.push('╰━━━━━━━━〔 END OF DIRECTORY 〕');
-    return lines.join('\n');
+
+    const sections = categories.map(category => {
+      const commands = [...category.plugins]
+        .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+        .flatMap(plugin => {
+          const available = (plugin.commands || []).filter(Boolean);
+          return available.length ? available : [plugin.name];
+        });
+      const uniqueCommands = [...new Set(commands)];
+      return [
+        '╭─〔 ' + cleanLabel(category.label).toLocaleUpperCase('id-ID') + ' 〕',
+        ...uniqueCommands.map(command => '│ ' + prefix + command),
+        '╰' + '─'.repeat(24)
+      ].join('\n');
+    });
+
+    if (!sections.length) return 'Tidak ada command yang tersedia.';
+    const output = sections.join('\n\n');
+    const READ_MORE_THRESHOLD = 3000;
+    const READ_MORE_MARKER = '\u200e'.repeat(4001);
+    if (output.length <= READ_MORE_THRESHOLD) return output;
+
+    const splitAt = output.indexOf('\n\n', Math.min(1800, output.length - 1));
+    if (splitAt < 0) return output;
+    return output.slice(0, splitAt) + '\n' + READ_MORE_MARKER + '\n' + output.slice(splitAt + 2);
   }
 
   return Object.freeze({
