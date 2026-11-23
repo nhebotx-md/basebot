@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const igdl = require('../../plugins/downloader/download-igdl');
-const tiktok = require('../../plugins/downloader/download-tiktok');
+const tiktok = require('../../plugins/downloader/tiktok');
 
 function baseContext(overrides = {}) {
   const albums = [];

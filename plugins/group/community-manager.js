@@ -11,7 +11,7 @@ function inviteCode(value) {
 module.exports = {
   name: 'community-manager',
   commands: ['community'],
-  category: 'owner',
+  category: 'group',
   description: 'Mengelola Community, subgrup, tautan, dan permintaan bergabung.',
   usage: '.community <create|list|info|groups|subgroup|link|unlink|invite|revoke|join|joininfo|leave|rename|description|setting|addmode|ephemeral|approval|requests|approve>',
   permissions: { ownerOnly: true, registrationExempt: true, metadataRequired: true },

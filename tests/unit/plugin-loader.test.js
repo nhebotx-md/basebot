@@ -36,7 +36,7 @@ test('loader sorts recursively, ignores hidden/dependency folders, and logs impo
 test('voicechanger registers all aliases even when its optional FFmpeg binary is unavailable', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-ffmpeg-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const pluginPath = require.resolve('../../plugins/media/voicechanger');
+  const pluginPath = require.resolve('../../plugins/media/voicechanger.handler.cjs');
   const originalLoad = Module._load;
   Module._load = function(request, parent, isMain) {
     if (request === '@ffmpeg-installer/ffmpeg') throw Object.assign(new Error('simulated missing binary package'), { code: 'MODULE_NOT_FOUND' });

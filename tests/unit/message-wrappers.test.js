@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const plugin = require('../../plugins/message/message-wrappers');
+const plugin = require('../../plugins/message/message-wrappers.handler.cjs');
 
 function context(command, mediaType = 'imageMessage', buffer = Buffer.from('media')) {
   const sent = [];

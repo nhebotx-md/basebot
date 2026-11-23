@@ -1,0 +1,9 @@
+'use strict';
+const handler = require('./image-enhancer.handler.cjs');
+const plugin = {
+  ...handler,
+  name: 'media-enhancer',
+  commands: ['enhancer'],
+  category: 'media'
+};
+module.exports = plugin;

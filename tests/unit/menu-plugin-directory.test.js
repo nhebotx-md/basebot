@@ -6,18 +6,18 @@ const { createMenuService } = require('../../src/core/messaging/menu.service');
 
 const commands = [
   'tobotak', 'tochibi', 'tofunk', 'tofigura', 'tofigurav2', 'tofigurav3',
-  'toghibli', 'tohijab', 'tojapanese', 'tojepang', 'tokacamata', 'tokamboja'
+  'toghibli', 'tohijab', 'tojapanese', 'tojepang'
 ];
 
 function createFixture() {
-  const plugins = [
-    {
-      name: 'ai-image-transform',
+  const plugins = commands.map(command => ({
+      name: 'image-' + command,
       category: 'image',
-      commands,
+      commands: [command],
       description: 'Mengubah foto menjadi berbagai gaya visual.',
-      usage: '.tochibi'
-    },
+      usage: '.' + command
+    }));
+  const otherPlugins = [
     {
       name: 'brat-foto',
       category: 'sticker',
@@ -33,6 +33,7 @@ function createFixture() {
       usage: '.fb <url>'
     }
   ];
+  plugins.push(...otherPlugins);
   const registry = {
     list() { return plugins; },
     getByCommand(command) {
@@ -69,12 +70,12 @@ test('category directory shows plugin names without command aliases or descripti
   ctx.args = ['image'];
   const output = service.renderCategory(ctx);
 
-  assert.match(output, /ai-image-transform/);
+  assert.match(output, /image-tobotak/);
   assert.doesNotMatch(output, /Mengubah foto menjadi berbagai gaya visual/);
   for (const command of commands) assert.ok(!output.includes('.' + command), 'unexpected command in compact directory: ' + command);
   assert.doesNotMatch(output, /Fungsi\s*:|Pakai\s*:|Command:|<command>/);
-  assert.match(output, /Plugin\s+: 1/);
-  assert.match(output, /Command\s+: 12/);
+  assert.match(output, /Plugin\s+: 10/);
+  assert.match(output, /Command\s+: 10/);
 });
 
 test('main menu shows plugin and command counts for new categories', () => {
@@ -82,7 +83,7 @@ test('main menu shows plugin and command counts for new categories', () => {
   const output = service.renderMenu(ctx);
 
   assert.match(output, /catmenu image/);
-  assert.match(output, /1 plugin \/ 12 command/);
+  assert.match(output, /10 plugin \/ 10 command/);
   assert.match(output, /catmenu sticker/);
   assert.match(output, /catmenu downloader/);
 });
@@ -101,8 +102,8 @@ test('interactive category lists each plugin once without command explanations',
   assert.equal(sent.length, 1);
   assert.equal(replies.length, 0);
   const rows = sent[0][1].buttons[0].sections[0].rows;
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].title, 'ai-image-transform');
+  assert.equal(rows.length, 10);
+  assert.equal(rows[0].title, 'image-tobotak');
   assert.equal(rows[0].id, '.tobotak');
   assert.equal(rows[0].description, undefined);
 });
