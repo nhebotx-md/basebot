@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { containsExternalLink } = require('../../src/core/events/anti-link');
 const antiLink = require('../../plugins/group/antilink');
 const welcome = require('../../plugins/group/welcome');
-const bratfoto = require('../../plugins/maker/brat-foto');
+const bratfoto = require('../../plugins/sticker/brat-foto');
 
 test('anti-link detection catches common external URLs without matching ordinary text', () => {
   for (const value of [
@@ -27,7 +27,7 @@ test('PatrickMD group controls and Bratfoto plugin register in their intended ca
   assert.equal(antiLink.permissions.adminOnly, true);
   assert.equal(welcome.category, 'group');
   assert.ok(welcome.commands.includes('welcome'));
-  assert.equal(bratfoto.category, 'maker');
+  assert.equal(bratfoto.category, 'sticker');
   assert.deepEqual(bratfoto.commands, ['bratfoto']);
 });
 
