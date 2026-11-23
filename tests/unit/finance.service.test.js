@@ -1,0 +1,16 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { FinanceService, amount } = require('../../src/core/services/finance.service');
+function fixture() {
+  const users = { '111@s.whatsapp.net': { id: '111@s.whatsapp.net' }, '222@s.whatsapp.net': { id: '222@s.whatsapp.net' } };
+  const database = { read() { return JSON.parse(JSON.stringify(users)); }, async update(name, fn) { assert.equal(name, 'users'); const draft = JSON.parse(JSON.stringify(users)); await fn(draft); Object.assign(users, draft); return draft; } };
+  let time = new Date('2026-11-23T10:00:00.000Z');
+  return { service: new FinanceService({ database, clock: () => new Date(time) }), advance(ms) { time = new Date(time.getTime() + ms); } };
+}
+test('finance data is isolated by WhatsApp JID', async () => { const { service } = fixture(); await service.addTransaction('111@s.whatsapp.net', { type: 'income', value: 500000, category: 'Gaji' }); assert.equal(service.get('111@s.whatsapp.net').transactions.length, 1); assert.equal(service.get('222@s.whatsapp.net').transactions.length, 0); });
+test('income and expense summary is calculated correctly', async () => { const { service } = fixture(); await service.addTransaction('111@s.whatsapp.net', { type: 'income', value: 1000000, category: 'Gaji' }); await service.addTransaction('111@s.whatsapp.net', { type: 'expense', value: 250000, category: 'Makan' }); const result = service.summary('111@s.whatsapp.net', '2026-11'); assert.equal(result.income, 1000000); assert.equal(result.expense, 250000); assert.equal(result.net, 750000); });
+test('budgets, debts and savings goals enforce limits', async () => { const { service } = fixture(); await service.setBudget('111@s.whatsapp.net', 'Makan', 300000); assert.equal(service.summary('111@s.whatsapp.net', '2026-11').budgets[0].remaining, 300000); const debt = await service.addDebt('111@s.whatsapp.net', { name: 'Pinjaman', value: 500000 }); await service.payDebt('111@s.whatsapp.net', debt.id, 200000); assert.equal(service.summary('111@s.whatsapp.net', '2026-11').activeDebt, 300000); const goal = await service.addGoal('111@s.whatsapp.net', { name: 'Darurat', target: 1000000 }); assert.equal((await service.contributeGoal('111@s.whatsapp.net', goal.id, 1000000)).status, 'completed'); });
+test('debt payment cannot exceed outstanding balance', async () => { const { service } = fixture(); const debt = await service.addDebt('111@s.whatsapp.net', { name: 'Pinjaman', value: 100000 }); await assert.rejects(service.payDebt('111@s.whatsapp.net', debt.id, 100001), /melebihi/); });
+test('recurring entries require due date and create a transaction once per run', async () => { const { service } = fixture(); const item = await service.addRecurring('111@s.whatsapp.net', { type: 'expense', value: 50000, category: 'Internet', interval: 'monthly', nextDate: '2026-11-23' }); await service.runRecurring('111@s.whatsapp.net', item.id); assert.equal(service.get('111@s.whatsapp.net').transactions.length, 1); assert.equal(service.get('111@s.whatsapp.net').recurring[0].nextDate, '2026-12-23'); });
+test('money amounts reject fractions, zero and unsafe values', () => { assert.throws(() => amount(1.5), /bilangan bulat/); assert.throws(() => amount(0), /bilangan bulat/); assert.throws(() => amount(Number.MAX_SAFE_INTEGER + 1), /bilangan bulat/); });
