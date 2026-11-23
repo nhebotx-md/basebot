@@ -120,7 +120,7 @@ class PluginManager {
     try {
       const requestedCategory = category === null ? null : String(category).trim().toLowerCase();
       if (requestedCategory !== null && !CATEGORY_PATTERN.test(requestedCategory)) return { success: false, reason: 'invalid-category' };
-      const embeddedCategory = source.match(/\\bcategory\\s*:\\s*(['"])([a-z0-9][a-z0-9_-]{0,31})\\1/i)?.[2]?.toLowerCase() || null;
+      const embeddedCategory = source.match(/category\s*:\s*(['"])([a-z0-9][a-z0-9_-]{0,31})\1/i)?.[2]?.toLowerCase() || null;
       const stageCategory = requestedCategory || embeddedCategory;
       const stageDirectory = stageCategory ? safeInside(root, stageCategory) : root;
       if (!stageDirectory) return { success: false, reason: 'invalid-category' };
@@ -167,7 +167,12 @@ class PluginManager {
       const sourcePath = customSource ? safeInside(root, path.join(selectedCategory, sourceFileName)) : null;
       const sourceBackup = sourcePath ? await fs.readFile(sourcePath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error)) : null;
       const installedSource = customSource
-        ? "'use strict';\\nconst plugin = require('./" + sourceFileName + "');\\nmodule.exports = { ...plugin, category: " + JSON.stringify(selectedCategory) + ", sourceFile: " + JSON.stringify(sourceFileName) + " };\\n"
+        ? [
+            "'use strict';",
+            "const plugin = require('./" + sourceFileName + "');",
+            "module.exports = { ...plugin, category: " + JSON.stringify(selectedCategory) + ", sourceFile: " + JSON.stringify(sourceFileName) + " };",
+            ''
+          ].join('\\n')
         : source;
       await fs.mkdir(path.dirname(targetPath), { recursive: true, mode: 0o700 });
       const tempTarget = targetPath + '.tmp-' + crypto.randomBytes(6).toString('hex');
