@@ -253,9 +253,9 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       for (const row of rows) lines.push('┃ [' + String(row.index + 1).padStart(2, '0') + '] ' + row.command + '  (' + row.count + ')');
       lines.push('┗━━ END :: ' + rows.length + ' CATEGORIES ━━━');
     } else if (theme === 'minimal') {
-      lines = [botName.toUpperCase() + '  /  MENU', userName + ' · ' + role + ' · ' + mode, 'v' + cleanLabel(version) + '  |  ' + prefixLabel, '────────────────────────', ...rows.map(row => row.command + '  (' + row.count + ')'), '────────────────────────', system.wib + ' WIB · ' + uptime];
+      lines = [botName.toUpperCase() + '  /  MENU', userName + ' · ' + role + ' · ' + mode, 'v' + cleanLabel(version) + '  |  ' + prefixLabel, '────────────────────────', ...rows.map(row => row.command + '  (' + row.count + ')'), '────────────────────────', ...systemLines];
     } else if (theme === 'premium') {
-      lines = ['╔══════════════ ' + botName.toUpperCase() + ' ══════════════╗', '║              THE FEATURE LOUNGE              ║', '╠════════════════ MEMBER PROFILE ══════════════╣', '║  ' + userName + '  ·  ' + role, '║  ' + mode + '  ·  v' + cleanLabel(version), '║  PREFIX  ' + prefixLabel, '╠════════════════ LIVE OVERVIEW ═══════════════╣', ...systemLines.map(line => '║  ' + line), '╠════════════════ CATEGORY LIST ══════════════╣'];
+      lines = ['╔══════════════ ' + botName.toUpperCase() + ' ══════════════╗', '║              THE FEATURE LOUNGE              ║', '╠════════════════ MEMBER PROFILE ══════════════╣', '║  ' + userName + '  ·  ' + role, '║  ' + mode + '  ·  v' + cleanLabel(version), '║  PREFIX  ' + prefixLabel, '╠════════════════ SYSTEM STATUS ═══════════════╣', ...systemLines.map(line => '║  ' + line), '╠════════════════ CATEGORY LIST ══════════════╣'];
       for (const row of rows) lines.push('║  ' + row.icon + '  *' + row.command + '*  ·  ' + row.count + ' commands');
       lines.push('╚══════════════════════════════════════════════╝');
     } else if (theme === 'editorial') {
@@ -306,7 +306,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       } else if (theme === 'minimal') {
         lines = ['CATEGORY INDEX', '────────────────────────', ...rows.map(row => commandPrefix + 'catmenu ' + row.category.slug), '────────────────────────'];
       } else if (theme === 'premium') {
-        lines = ['╔══════════════ ✦ CATEGORY ATELIER ✦ ══════════════╗', '║               CHOOSE YOUR WORKSPACE              ║', '╠══════════════════════════════════════════════════╣'];
+        lines = ['╔══════════════ ✦ CATEGORY COLLECTION ✦ ══════════════╗', '║               CHOOSE YOUR WORKSPACE              ║', '╠══════════════════════════════════════════════════╣'];
         for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*  ·  ' + row.count + ' commands');
         lines.push('╚══════════════════════════════════════════════════╝');
       } else if (theme === 'editorial') {
