@@ -103,4 +103,47 @@ test('allmenu inserts WhatsApp read-more marker when the directory is long', () 
   const output = service.renderAllMenu(ctx);
   assert.ok(output.includes('\u200e'.repeat(4001)));
   assert.match(output, /\.longcommand179/);
+});\n
+test('menu V1-V5 render five distinct layouts', () => {
+  const { service, ctx } = fixture();
+  const themes = ['showcase', 'terminal', 'minimal', 'premium', 'editorial'];
+  const outputs = themes.map(theme => service.renderMenu(ctx, theme));
+  assert.equal(new Set(outputs).size, 5);
+  assert.match(outputs[0], /FEATURE MENU/);
+  assert.match(outputs[1], /TERMINAL/);
+  assert.match(outputs[2], /BASEBOT  \/  MENU/);
+  assert.match(outputs[3], /FEATURE LOUNGE/);
+  assert.match(outputs[4], /FIELD GUIDE/);
+});
+
+test('setcatmenu V1-V5 render five distinct category layouts', async () => {
+  const { service, ctx } = fixture();
+  ctx.isOwner = true;
+  ctx.command = 'catmenu';
+  ctx.args = ['tools'];
+  const versions = ['v1', 'v2', 'v3', 'v4', 'v5'];
+  const outputs = [];
+  for (const version of versions) {
+    ctx.args = [version];
+    await service.setTheme(ctx, 'category');
+    ctx.args = ['tools'];
+    outputs.push(service.renderCategory(ctx));
+  }
+  assert.equal(new Set(outputs).size, 5);
+  assert.match(outputs[0], /TOOLS DIRECTORY/);
+  assert.match(outputs[1], /CATEGORY CONSOLE|AVAILABLE MODULES/);
+  assert.match(outputs[2], /sample/);
+  assert.match(outputs[3], /FEATURE COLLECTION/);
+  assert.match(outputs[4], /FEATURE NOTES/);
+});
+
+test('setmenu and setcatmenu preferences remain independent', async () => {
+  const { service, ctx } = fixture();
+  ctx.isOwner = true;
+  ctx.args = ['v2'];
+  await service.setTheme(ctx, 'menu');
+  ctx.args = ['v5'];
+  await service.setTheme(ctx, 'category');
+  assert.equal(service.preferences.menuTheme, 'terminal');
+  assert.equal(service.preferences.categoryTheme, 'editorial');
 });
