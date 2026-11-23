@@ -112,6 +112,7 @@ class PluginManager {
     return this.installPluginSource(source, { category });
   }
 
+
   async installPluginSource(source, { category = null } = {}) {
     if (typeof source !== 'string' || Buffer.byteLength(source, 'utf8') > MAX_PLUGIN_BYTES) return { success: false, reason: 'invalid-source' };
     const root = path.resolve(this.directory);
@@ -119,7 +120,9 @@ class PluginManager {
     try {
       const requestedCategory = category === null ? null : String(category).trim().toLowerCase();
       if (requestedCategory !== null && !CATEGORY_PATTERN.test(requestedCategory)) return { success: false, reason: 'invalid-category' };
-      const stageDirectory = requestedCategory ? safeInside(root, requestedCategory) : root;
+      const embeddedCategory = source.match(/\\bcategory\\s*:\\s*(['"])([a-z0-9][a-z0-9_-]{0,31})\\1/i)?.[2]?.toLowerCase() || null;
+      const stageCategory = requestedCategory || embeddedCategory;
+      const stageDirectory = stageCategory ? safeInside(root, stageCategory) : root;
       if (!stageDirectory) return { success: false, reason: 'invalid-category' };
       await fs.mkdir(stageDirectory, { recursive: true, mode: 0o700 });
       stagePath = path.join(stageDirectory, '.addplugin-stage-' + crypto.randomBytes(8).toString('hex') + '.cjs');
@@ -153,24 +156,47 @@ class PluginManager {
       const targetTracked = Boolean(targetPlugin);
       if (targetTracked && targetPath !== oldPath && targetPlugin !== existing) return { success: false, reason: 'file-already-exists' };
       if (targetStat && !targetTracked && targetPath !== oldPath) return { success: false, reason: 'file-already-exists' };
+
       const targetBackup = targetStat ? await fs.readFile(targetPath) : null;
       const oldBackup = oldPath && oldPath !== targetPath ? await fs.readFile(oldPath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error)) : null;
+      const oldSourcePath = existing?.sourceFile ? safeInside(root, path.join(path.dirname(existing.filePath), existing.sourceFile)) : null;
+      const oldSourceBackup = oldSourcePath ? await fs.readFile(oldSourcePath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error)) : null;
+      const customSource = Boolean(requestedCategory);
+      const sourceHash = crypto.createHash('sha256').update(source).digest('hex').slice(0, 12);
+      const sourceFileName = command + '.source-' + sourceHash + '.cjs';
+      const sourcePath = customSource ? safeInside(root, path.join(selectedCategory, sourceFileName)) : null;
+      const sourceBackup = sourcePath ? await fs.readFile(sourcePath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error)) : null;
+      const installedSource = customSource
+        ? "'use strict';\\nconst plugin = require('./" + sourceFileName + "');\\nmodule.exports = { ...plugin, category: " + JSON.stringify(selectedCategory) + ", sourceFile: " + JSON.stringify(sourceFileName) + " };\\n"
+        : source;
       await fs.mkdir(path.dirname(targetPath), { recursive: true, mode: 0o700 });
       const tempTarget = targetPath + '.tmp-' + crypto.randomBytes(6).toString('hex');
+      const tempSource = sourcePath ? sourcePath + '.tmp-' + crypto.randomBytes(6).toString('hex') : null;
       try {
-        await fs.writeFile(tempTarget, source, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+        if (sourcePath) {
+          await fs.writeFile(tempSource, source, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+          await fs.rename(tempSource, sourcePath);
+        }
+        await fs.writeFile(tempTarget, installedSource, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
         await fs.rename(tempTarget, targetPath);
         if (oldPath && oldPath !== targetPath) await fs.rm(oldPath, { force: true });
         const result = this.reload();
         if (!result.success) throw new Error('plugin-reload-validation-failed');
+        if (oldSourcePath && oldSourcePath !== sourcePath) await fs.rm(oldSourcePath, { force: true });
         const installed = this.registry.get(plugin.name) || this.registry.getByCommand(command);
         this.logger.info?.('Plugin berhasil dipasang atau diperbarui oleh owner.', { name: plugin.name, category: selectedCategory, command, overwritten: Boolean(existing) });
         return { success: true, overwritten: Boolean(existing), plugin: installed?.name || plugin.name, category: selectedCategory, command, filePath: targetRelativePosix };
       } catch (error) {
         await fs.rm(tempTarget, { force: true }).catch(() => {});
+        if (tempSource) await fs.rm(tempSource, { force: true }).catch(() => {});
         if (targetBackup) await fs.writeFile(targetPath, targetBackup, { mode: 0o600 });
         else await fs.rm(targetPath, { force: true });
         if (oldPath && oldPath !== targetPath && oldBackup) await fs.writeFile(oldPath, oldBackup, { mode: 0o600 });
+        if (sourcePath) {
+          if (sourceBackup) await fs.writeFile(sourcePath, sourceBackup, { mode: 0o600 });
+          else await fs.rm(sourcePath, { force: true });
+        }
+        if (oldSourcePath && oldSourcePath !== sourcePath && oldSourceBackup) await fs.writeFile(oldSourcePath, oldSourceBackup, { mode: 0o600 });
         this.reload();
         this.logger.warn?.('Pemasangan plugin dibatalkan dan perubahan file dipulihkan.', { error: error.message });
         return { success: false, reason: 'reload-validation-failed' };
@@ -192,7 +218,8 @@ class PluginManager {
     const plugin = this.registry.get(query) || this.registry.list().find(item => item.commands.includes(query));
     if (!plugin) return null;
     const root = path.resolve(this.directory);
-    const absolute = safeInside(root, plugin.filePath);
+    const sourceRelative = plugin.sourceFile ? path.join(path.dirname(plugin.filePath), plugin.sourceFile) : plugin.filePath;
+    const absolute = safeInside(root, sourceRelative);
     if (!absolute) return null;
     const source = await fs.readFile(absolute, 'utf8');
     return { name: plugin.name, category: plugin.category, commands: [...plugin.commands], filePath: plugin.filePath, enabled: this.registry.isEnabled(plugin.name), source };
