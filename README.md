@@ -14,14 +14,14 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 | Versi aplikasi | `2.0.0` |
 | Runtime | Node.js `>=22.13.0` |
 | Arsitektur | CommonJS, core modular, plugin registry |
-| Plugin | **53 file plugin** |
-| Command terdaftar | **146 command dan alias** |
-| Kategori direktori plugin | 9 direktori |
-| Unit test | 49 file test |
+| Plugin | **55 file plugin** |
+| Command terdaftar | **173 command dan alias** |
+| Kategori direktori plugin | 11 direktori |
+| Unit test | 50 file test |
 | Baileys | `@itsliaaa/baileys@0.5.6` |
 | CI PR #52 | Lulus pada Node.js 22 dan 24 |
 
-Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (17), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
+Kategori plugin saat ini mencakup `ai`, `downloader`, `group`, `image`, `sticker`, `media`, `message`, `owner`, `account`, `tools`, dan `finance`. Jumlah plugin dan command dihitung dari registry serta dijaga melalui pengujian aplikasi.
 
 Perubahan terbaru yang sudah masuk ke `main`:
 - **PR #49:** format balasan command dengan blockquote WhatsApp, misalnya `> .ping`, termasuk caption media dan pesan progres.
