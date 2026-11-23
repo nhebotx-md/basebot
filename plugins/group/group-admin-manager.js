@@ -10,7 +10,7 @@ function extractCode(value) {
 module.exports = {
   name: 'group-admin-manager',
   commands: ['groupadmin'],
-  category: 'management',
+  category: 'group',
   description: 'Mengelola grup, nama, deskripsi, undangan, dan akses grup.',
   usage: '.groupadmin <create|name|desc|invite|revoke|joininfo|join|leave> [data]',
   permissions: { registrationExempt: true, metadataRequired: true },

@@ -14,7 +14,7 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 | Versi aplikasi | `2.0.0` |
 | Runtime | Node.js `>=22.13.0` |
 | Arsitektur | CommonJS, core modular, plugin registry |
-| Plugin | **55 file plugin** |
+| Plugin | **173 file plugin** |
 | Command terdaftar | **173 command dan alias** |
 | Kategori direktori plugin | 11 direktori |
 | Unit test | 50 file test |

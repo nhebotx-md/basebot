@@ -4,6 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const idch = require('../../plugins/tools/idch');
 const idgc = require('../../plugins/tools/idgc');
+const cekidch = require('../../plugins/tools/cekidch');
+const cekidgc = require('../../plugins/tools/cekidgc');
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 
 function context(overrides = {}) {
@@ -20,11 +22,13 @@ test('IDCH and IDGC register unique commands in tools category', () => {
   const registry = new PluginRegistry();
   registry.register(idch, 'tools/idch.js');
   registry.register(idgc, 'tools/idgc.js');
-  assert.equal(registry.getByCommand('idch').name, 'channel-id-lookup');
-  assert.equal(registry.getByCommand('cekidch').name, 'channel-id-lookup');
-  assert.equal(registry.getByCommand('idgc').name, 'group-id-lookup');
-  assert.equal(registry.getByCommand('cekidgc').name, 'group-id-lookup');
-  assert.equal(registry.listByCategory('tools').length, 2);
+  registry.register(cekidch, 'tools/cekidch.js');
+  registry.register(cekidgc, 'tools/cekidgc.js');
+  assert.equal(registry.getByCommand('idch').name, 'tools-idch');
+  assert.equal(registry.getByCommand('cekidch').name, 'tools-cekidch');
+  assert.equal(registry.getByCommand('idgc').name, 'tools-idgc');
+  assert.equal(registry.getByCommand('cekidgc').name, 'tools-cekidgc');
+  assert.equal(registry.listByCategory('tools').length, 4);
 });
 
 test('IDCH parses invite URL, invite code, and newsletter JID', () => {

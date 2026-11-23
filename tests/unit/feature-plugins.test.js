@@ -4,13 +4,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const poll = require('../../plugins/message/poll');
-const actions = require('../../plugins/message/actions');
+const actions = require('../../plugins/message/actions.handler.cjs');
 const interactiveMenu = require('../../plugins/tools/interactive-menu');
-const groupInfo = require('../../plugins/group/group-info');
-const groupSettings = require('../../plugins/group/group-settings');
-const groupMembers = require('../../plugins/group/group-members');
-const groupRequests = require('../../plugins/group/group-requests');
-const groupRequestAction = require('../../plugins/group/group-request-action');
+const groupInfo = require('../../plugins/group/groupinfo');
+const groupSettings = require('../../plugins/group/grupset');
+const groupMembers = require('../../plugins/group/anggota');
+const groupRequests = require('../../plugins/group/joinrequests');
+const groupRequestAction = require('../../plugins/group/joinrequest');
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 
 function baseContext(overrides = {}) {
@@ -28,7 +28,7 @@ function baseContext(overrides = {}) {
 }
 
 test('group admin plugins register separate read and bot-admin-gated capabilities', () => {
-  assert.deepEqual(groupInfo.commands, ['groupinfo', 'grupinfo']);
+  assert.deepEqual(groupInfo.commands, ['groupinfo']);
   assert.equal(groupInfo.permissions.botAdminOnly, false);
   assert.equal(groupSettings.permissions.botAdminOnly, true);
   assert.equal(groupMembers.permissions.botAdminOnly, true);
