@@ -14,14 +14,14 @@ Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat s
 | Versi aplikasi | `2.0.0` |
 | Runtime | Node.js `>=22.13.0` |
 | Arsitektur | CommonJS, core modular, plugin registry |
-| Plugin | **53 file plugin** |
-| Command terdaftar | **146 command dan alias** |
-| Kategori direktori plugin | 9 direktori |
-| Unit test | 49 file test |
+| Plugin | **55 file plugin** |
+| Command terdaftar | **173 command dan alias** |
+| Kategori direktori plugin | 11 direktori |
+| Unit test | 50 file test |
 | Baileys | `@itsliaaa/baileys@0.5.6` |
 | CI PR #52 | Lulus pada Node.js 22 dan 24 |
 
-Distribusi file plugin saat ini: `ai` (2), `downloader` (5), `group` (13), `maker` (2), `media` (5), `message` (4), `owner` (17), `user` (2), dan `utility` (3). Jumlah command dihitung dari registry dan dijaga melalui pengujian aplikasi, bukan perkiraan dari jumlah file.
+Kategori plugin saat ini mencakup `ai`, `downloader`, `group`, `image`, `sticker`, `media`, `message`, `owner`, `account`, `tools`, dan `finance`. Jumlah plugin dan command dihitung dari registry serta dijaga melalui pengujian aplikasi.
 
 Perubahan terbaru yang sudah masuk ke `main`:
 - **PR #49:** format balasan command dengan blockquote WhatsApp, misalnya `> .ping`, termasuk caption media dan pesan progres.
@@ -192,6 +192,14 @@ Kategori `owner` otomatis diperlakukan sebagai owner-only dan kategori `group` m
 
 Pengguna biasa di grup harus registrasi dengan `.daftar nama`. Role aplikasi yang dapat diberikan adalah `user`, `premium`, dan `moderator`; role owner tidak dapat diberikan melalui database. Owner dapat menggunakan `.setrole`, `.grantakses`, dan `.cabutakses` untuk pengelolaan akses.
 
+## Finance Manager (lokal)
+
+Kategori `finance` menyediakan manajemen keuangan pribadi untuk setiap JID WhatsApp. Tidak membutuhkan API key, akun eksternal, atau koneksi PocketSmith. Data disimpan sebagai namespace `finance` di profil masing-masing dalam `users.json`, sehingga tetap tercakup dalam backup dan disaster recovery JSON yang sudah ada.
+
+Command utama: `.finance` / `.balance` untuk dashboard, `.income nominal kategori`, `.expense nominal kategori`, `.transfer nominal kategori`, `.history [jumlah]`, `.searchtrx kata`, `.deletetrx ID`, `.setbudget kategori nominal`, `.budget`, `.debt nama nominal`, `.paydebt ID nominal`, `.debtreport`, `.saving nama nominal`, `.paygoal ID nominal`, `.recurring income|expense nominal kategori [daily|weekly|monthly|yearly]`, `.runrecurring ID`, `.monthly [YYYY-MM]`, `.yearly [YYYY]`, dan `.exportfinance` untuk CSV.
+
+Setiap transaksi, anggaran, utang, dan target tabungan hanya dapat dibaca atau diubah oleh pemilik JID tersebut. Transaksi rutin tidak dijalankan otomatis di background: pengguna memprosesnya secara eksplisit dengan `.runrecurring ID`, agar bot tidak mencatat pengeluaran tanpa konfirmasi. Nominal disimpan sebagai integer Rupiah; gunakan angka tanpa simbol mata uang. Penghapusan transaksi bersifat permanen dan harus menyebut ID transaksi.
+
 ## Pemeriksaan ID WhatsApp Channel dan Group
 
 - `.idch <link_channel|kode_invite|channelJid>` atau `.cekidch ...`: memeriksa metadata Channel melalui API `newsletterMetadata`. Jika dijalankan tanpa argumen dari chat Channel, plugin menggunakan metadata Channel aktif yang tersedia pada context.
@@ -225,8 +233,8 @@ ID referensi pada pesan pengguna dapat dicocokkan dengan record error di log ser
 - `src/core/plugins`: validator, registry, loader, dan plugin manager.
 - `src/core/security`: permission manager dan validasi URL publik.
 - `src/core/database`: database JSON dan service pengguna/grup.
-- `src/core/services`: logger, pesan, rich message, identity resolver, media, downloader, storage.
-- `plugins/<kategori>/*.js (ai, downloader, group, image, sticker, media, message, owner, account, tools)`: fitur bot.
+- `src/core/services`: logger, pesan, rich message, identity resolver, media, downloader, storage, finance manager.
+- `plugins/<kategori>/*.js (ai, downloader, group, image, sticker, media, message, owner, account, tools, finance)`: fitur bot.
 - `tests/unit/*.test.js`: unit test.
 - `docs/`: dokumentasi API dan pengembangan.
 

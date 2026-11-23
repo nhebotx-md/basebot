@@ -115,6 +115,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
     doctor: registry.doctorService || null,
     database: registry.databaseService || null,
     backups: registry.backupService || null,
+    finance: registry.financeService || null,
     users: registry.userService || null,
     groups: registry.groupService || null,
     storage: createStorageService(config.paths.temp),
