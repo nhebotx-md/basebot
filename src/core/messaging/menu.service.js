@@ -340,7 +340,8 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       : [cleanLabel(plugin.name)];
     let lines;
     if (theme === 'terminal') {
-      const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);\n      lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '║ COMMAND : ' + commandCount, '╠══ AVAILABLE MODULES ═════════'];
+      const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+      lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '║ COMMAND : ' + commandCount, '╠══ AVAILABLE MODULES ═════════'];
       for (const [index, plugin] of plugins.entries()) {
         lines.push('║ [' + String(index + 1).padStart(2, '0') + '] ' + cleanLabel(plugin.name));
         lines.push('║     ' + commandsFor(plugin).map(command => commandPrefix + command).join('  |  '));
