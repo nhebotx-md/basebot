@@ -268,3 +268,15 @@ test('owner getplugin command returns installed plugin source', async () => {
   assert.match(replies[0], /SOURCE PLUGIN/);
   assert.match(replies[0], /module.exports/);
 });
+
+test('installer refuses to overwrite its own management commands', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-protected-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const registry = new PluginRegistry({ logger });
+  await fs.writeFile(path.join(directory, 'addplugin.js'), source('owner-addplugin', 'addplugin'));
+  loadPlugins({ directory, registry, logger });
+  const manager = new PluginManager({ registry, directory, logger });
+  const result = await manager.installPluginSource(source('owner-addplugin', 'addplugin'));
+  assert.deepEqual(result, { success: false, reason: 'protected-plugin' });
+  assert.ok(registry.getByCommand('addplugin'));
+});

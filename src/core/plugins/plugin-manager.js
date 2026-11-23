@@ -144,11 +144,14 @@ class PluginManager {
       const uniqueMatches = [...new Map(matches.map(item => [item.filePath, item])).values()];
       if (uniqueMatches.length > 1) return { success: false, reason: 'multiple-conflicts' };
       const existing = uniqueMatches[0] || null;
+      if (existing && ['owner-addplugin', 'owner-getplugin', 'owner-plugin', 'owner-plugins'].includes(existing.name)) return { success: false, reason: 'protected-plugin' };
       const oldPath = existing ? safeInside(root, existing.filePath) : null;
       if (existing && !oldPath) return { success: false, reason: 'invalid-existing-path' };
       const targetStat = await fs.stat(targetPath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error));
       const targetRelativePosix = path.relative(root, targetPath).split(path.sep).join('/');
-      const targetTracked = this.registry.list().some(item => item.filePath === targetRelativePosix);
+      const targetPlugin = this.registry.list().find(item => item.filePath === targetRelativePosix);
+      const targetTracked = Boolean(targetPlugin);
+      if (targetTracked && targetPath !== oldPath && targetPlugin !== existing) return { success: false, reason: 'file-already-exists' };
       if (targetStat && !targetTracked && targetPath !== oldPath) return { success: false, reason: 'file-already-exists' };
       const targetBackup = targetStat ? await fs.readFile(targetPath) : null;
       const oldBackup = oldPath && oldPath !== targetPath ? await fs.readFile(oldPath).catch(error => error.code === 'ENOENT' ? null : Promise.reject(error)) : null;

@@ -30,6 +30,7 @@ module.exports = {
         'validation-failed': 'Plugin ditolak karena metadata atau struktur plugin tidak sesuai API BaseBot.',
         'multiple-conflicts': 'Nama plugin dan command bertabrakan dengan lebih dari satu plugin.',
         'file-already-exists': 'File tujuan sudah ada tetapi bukan plugin terdaftar. Tidak ditimpa.',
+        'protected-plugin': 'Command inti pengelola plugin dilindungi dan tidak dapat ditimpa melalui installer.',
         'reload-validation-failed': 'Pemasangan dibatalkan. File dan registry lama dipulihkan karena validasi reload gagal.'
       };
       const message = messages[result.reason] || 'Plugin gagal dipasang.';
