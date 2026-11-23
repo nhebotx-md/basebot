@@ -335,10 +335,9 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     }
     const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
     const heading = categoryTitle(category);
-    const commandsFor = plugin => {
-      const commands = (plugin.commands || []).filter(Boolean);
-      return commands.length ? commands : [plugin.name];
-    };
+    const commandsFor = plugin => detailed
+      ? ((plugin.commands || []).filter(Boolean).length ? plugin.commands.filter(Boolean) : [plugin.name])
+      : [cleanLabel(plugin.name)];
     let lines;
     if (theme === 'terminal') {
       const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);\n      lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '║ COMMAND : ' + commandCount, '╠══ AVAILABLE MODULES ═════════'];
