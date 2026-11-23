@@ -86,7 +86,7 @@ test('failed or empty reload never destroys the live registry', async t => {
 
 
 test('owner plugin command delegates list and state changes to the runtime manager', async () => {
-  const command = require('../../plugins/owner/plugin-manager');
+  const command = require('../../plugins/owner/plugin-manager.handler.cjs');
   const replies = [];
   const calls = [];
   const manager = {
@@ -114,7 +114,7 @@ test('owner plugin command delegates list and state changes to the runtime manag
 });
 
 test('owner plugin command rejects channel/newsletter context even when metadata says owner', async () => {
-  const command = require('../../plugins/owner/plugin-manager');
+  const command = require('../../plugins/owner/plugin-manager.handler.cjs');
   const replies = [];
   await command.execute({
     isOwner: true, isNewsletter: true, isChannel: true, args: ['list'],
@@ -125,7 +125,7 @@ test('owner plugin command rejects channel/newsletter context even when metadata
 });
 
 test('owner plugin command has a second owner check and handles missing runtime service', async () => {
-  const command = require('../../plugins/owner/plugin-manager');
+  const command = require('../../plugins/owner/plugin-manager.handler.cjs');
   const replies = [];
   const base = { isNewsletter: false, isChannel: false, args: ['list'], async reply(message) { replies.push(message); } };
   await command.execute({ ...base, isOwner: false, services: { pluginManager: {} } });
