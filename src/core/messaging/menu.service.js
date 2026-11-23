@@ -186,7 +186,10 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
   };
 
   function getVisiblePlugins(ctx) {
-    return registry.list({ includeDisabled: false }).filter(plugin => validatePermission(plugin, ctx).allowed);
+    const internalMenuPlugins = new Set(['basebot-menu', 'basebot-catmenu', 'basebot-allmenu']);
+    return registry.list({ includeDisabled: false })
+      .filter(plugin => !internalMenuPlugins.has(plugin.name))
+      .filter(plugin => validatePermission(plugin, ctx).allowed);
   }
   function getCategories(ctx) {
     const groups = new Map();
@@ -231,113 +234,38 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
     const uptime = formatUptime((now.getTime() - startedAt) / 1000);
-    const featureCount = countCommands(categories);
-    const system = getSystemInfo(now, config.timezone, uptime, featureCount);
-    const rows = categories.map((category, index) => ({
-      category,
-      index,
-      icon: CATEGORY_ICONS[category.slug] || '▣'
-    }));
-    const directory = rows.map(row => {
-      const command = commandPrefix + 'catmenu ' + row.category.slug;
-      const pluginCount = row.category.plugins.length;
-      const commands = row.category.plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
-      const summary = pluginCount + ' plugin / ' + commands + ' command';
-      if (theme === 'terminal') return '│ ◃ ' + command + '  (' + summary + ')';
-      if (theme === 'minimal') return command + '  ·  ' + summary;
-      if (theme === 'premium') return '║  ' + row.icon + '  *' + command + '*  ·  ' + summary;
-      if (theme === 'editorial') return String(row.index + 1).padStart(2, '0') + '  /  ' + row.category.label.toUpperCase() + '  ·  ' + summary + '  ·  ' + command;
-      return '│ ◈ ' + row.icon + '  *' + command + '*  (' + summary + ')';
+    const system = getSystemInfo(now, config.timezone, uptime, countCommands(categories));
+    const rows = categories.map((category, index) => {
+      const command = commandPrefix + 'catmenu ' + category.slug;
+      const count = category.plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+      return { category, index, command, count, icon: CATEGORY_ICONS[category.slug] || '▣' };
     });
-    const info = [
-      '│ ◈ WIB    : ' + system.wib,
-      '│ ◈ WITA   : ' + system.wita,
-      '│ ◈ WIT    : ' + system.wit,
-      '│ ◈ Tanggal: ' + system.date,
-      '│ ◈ Uptime : ' + system.uptime,
-      '│ ◈ OS     : ' + system.os,
-      '│ ◈ RAM    : ' + system.ram,
-      '│ ◈ Fitur  : ' + system.featureCount + ' Command'
+    const profile = ['USER     ' + userName, 'ROLE     ' + role, 'MODE     ' + mode, 'VERSION  v' + cleanLabel(version), 'PREFIX   ' + prefixLabel];
+    const systemLines = [
+      'WIB ' + system.wib + '  |  WITA ' + system.wita + '  |  WIT ' + system.wit,
+      'DATE ' + system.date,
+      'UPTIME ' + uptime + '  |  RAM ' + system.ram,
+      'PLUGINS ' + categories.reduce((sum, category) => sum + category.plugins.length, 0) + '  |  COMMANDS ' + system.featureCount
     ];
     let lines;
     if (theme === 'terminal') {
-      lines = [
-        '┌─ [ 👤 USER INFO ]',
-        '│ ◈ Nama   : ' + userName,
-        '│ ◈ Status : ' + role,
-        '│ ◈ Mode   : ' + mode,
-        '└──────────────',
-        '',
-        '┌─ [ SYSTEM INFO ]',
-        ...info,
-        '└──────────────',
-        '',
-        'BASEBOT SYSTEM DASHBOARD',
-        '【 ⚙ MAIN MENU 】',
-        ...directory,
-        '└─ END OF DIRECTORY'
-      ];
+      lines = ['┏━━━ ' + botName.toUpperCase() + ' :: TERMINAL ━━━', '┃ SESSION / ' + userName, '┃ ACCESS  / ' + role, '┃ MODE    / ' + mode, '┣━━ SYSTEM STATUS ━━━━━━━━━━━━━', ...systemLines.map(line => '┃ ' + line), '┣━━ COMMAND INDEX ━━━━━━━━━━━━━'];
+      for (const row of rows) lines.push('┃ [' + String(row.index + 1).padStart(2, '0') + '] ' + row.command + '  (' + row.count + ')');
+      lines.push('┗━━ END :: ' + rows.length + ' CATEGORIES ━━━');
     } else if (theme === 'minimal') {
-      lines = [
-        botName.toUpperCase() + ' / MENU',
-        userName + ' · ' + role + ' · ' + mode,
-        'v' + cleanLabel(version) + '  |  ' + prefixLabel,
-        '────────────────────────',
-        'SYSTEM',
-        ...info.map(line => line.replace(/^│ ◈ /, '  ')),
-        '',
-        'FEATURE DIRECTORY',
-        ...directory,
-        '────────────────────────',
-        'Gunakan ' + commandPrefix + 'catmenu <kategori> untuk membuka fitur.'
-      ];
+      lines = [botName.toUpperCase() + '  /  MENU', userName + ' · ' + role + ' · ' + mode, 'v' + cleanLabel(version) + '  |  ' + prefixLabel, '────────────────────────', ...rows.map(row => row.command + '  (' + row.count + ')'), '────────────────────────', ...systemLines];
     } else if (theme === 'premium') {
-      lines = [
-        '╔══════════════ ' + botName + ' ══════════════╗',
-        '║  FEATURE COLLECTION',
-        '║  MEMBER   ' + userName + ' (' + role + ')',
-        '║  STATUS   ' + mode + '  ·  ' + uptime,
-        '║  VERSION  v' + cleanLabel(version) + '  ·  PREFIX ' + prefixLabel,
-        '╠══════════════ SYSTEM MONITOR ══════════════╣',
-        ...info.map(line => '║ ' + line.replace(/^│ /, '')),
-        '╠══════════════ FEATURE DIRECTORY ══════════╣',
-        ...directory,
-        '╚════════════════════════════════════════════╝'
-      ];
+      lines = ['╔══════════════ ' + botName.toUpperCase() + ' ══════════════╗', '║              THE FEATURE LOUNGE              ║', '╠════════════════ MEMBER PROFILE ══════════════╣', '║  ' + userName + '  ·  ' + role, '║  ' + mode + '  ·  v' + cleanLabel(version), '║  PREFIX  ' + prefixLabel, '╠════════════════ SYSTEM STATUS ═══════════════╣', ...systemLines.map(line => '║  ' + line), '╠════════════════ CATEGORY LIST ══════════════╣'];
+      for (const row of rows) lines.push('║  ' + row.icon + '  *' + row.command + '*  ·  ' + row.count + ' commands');
+      lines.push('╚══════════════════════════════════════════════╝');
     } else if (theme === 'editorial') {
-      lines = [
-        botName.toUpperCase() + ' / SYSTEM DIRECTORY',
-        'A structured index of available features',
-        '────────────────────────────────────────',
-        'USER      / ' + userName,
-        'ROLE      / ' + role,
-        'MODE      / ' + mode,
-        'RELEASE   / v' + cleanLabel(version),
-        'PREFIX    / ' + prefixLabel,
-        '',
-        'SYSTEM REPORT',
-        ...info.map(line => line.replace(/^│ ◈ /, '  ')),
-        '',
-        'CONTENTS',
-        ...directory,
-        '────────────────────────────────────────',
-        'Pilih kategori dengan ' + commandPrefix + 'catmenu <kategori>'
-      ];
+      lines = [botName.toUpperCase() + ' / FIELD GUIDE', 'A directory of tools available in this session', '────────────────────────────────────────', ...profile, '', '01 / SYSTEM SNAPSHOT', ...systemLines.map(line => '   ' + line), '', '02 / CONTENTS'];
+      for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + '   ' + row.category.label.toUpperCase() + '\n     ' + row.command + '  ·  ' + row.count + ' commands');
+      lines.push('────────────────────────────────────────', 'Open a section with ' + commandPrefix + 'catmenu <category>');
     } else {
-      lines = [
-        '┌─ [ ' + botName + ' / FEATURE MENU ]',
-        '│ USER INFORMATION',
-        '│ ◈ Nama   : ' + userName,
-        '│ ◈ Status : ' + role,
-        '│ ◈ Mode   : ' + mode,
-        '│ ◈ Versi  : v' + cleanLabel(version),
-        '│ ◈ Prefix : ' + prefixLabel,
-        '├─ [ SYSTEM MONITOR ]',
-        ...info,
-        '├─ [ FEATURE DIRECTORY ]',
-        ...directory,
-        '└──────────────────────────────'
-      ];
+      lines = ['╭─〔 ' + botName + ' / FEATURE MENU 〕', '│ ' + userName + '  •  ' + role + '  •  ' + mode, '│ v' + cleanLabel(version) + '  •  Prefix: ' + prefixLabel, '├─〔 SYSTEM 〕', ...systemLines.map(line => '│ ' + line), '├─〔 CATEGORY 〕'];
+      for (const row of rows) lines.push('│ ' + row.icon + '  *' + row.command + '*  ·  ' + row.category.plugins.length + ' plugin / ' + row.count + ' command');
+      lines.push('╰────────────────────────');
     }
     return lines.join('\n');
   }
@@ -366,45 +294,104 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const categories = getCategories(ctx);
     const theme = preferences.categoryTheme;
     if (!requested) {
-      const rows = categories.map((category, index) => ({ category, index, icon: CATEGORY_ICONS[category.slug] || '▣' }));
+      const rows = categories.map((category, index) => ({
+        category, index, icon: CATEGORY_ICONS[category.slug] || '▣',
+        count: category.plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0)
+      }));
       let lines;
       if (theme === 'terminal') {
-        lines = ['┌─ CATEGORY DIRECTORY', '├─ SELECT CATEGORY'];
-        for (const row of rows) lines.push('│ [' + String(row.index + 1).padStart(2, '0') + '] ' + commandPrefix + 'catmenu ' + row.category.slug);
-        lines.push('└─ END');
+        lines = ['╔══ CATEGORY CONSOLE ═════════════', '║ SELECT A CATEGORY'];
+        for (const row of rows) lines.push('║ ' + String(row.index + 1).padStart(2, '0') + ' > ' + commandPrefix + 'catmenu ' + row.category.slug + ' [' + row.count + ']');
+        lines.push('╚══ ' + rows.length + ' CATEGORIES ═════════════');
       } else if (theme === 'minimal') {
-        lines = ['CATEGORIES', '', ...rows.map(row => row.icon + '  ' + commandPrefix + 'catmenu ' + row.category.slug)];
+        lines = ['CATEGORY INDEX', '────────────────────────', ...rows.map(row => commandPrefix + 'catmenu ' + row.category.slug), '────────────────────────'];
       } else if (theme === 'premium') {
-        lines = ['╔════════════ ✦ CATEGORY COLLECTION ✦ ════════════╗', '║  SELECT A FEATURE SPACE                         ║', '╠═════════════════════════════════════════════════╣'];
+        lines = ['╔══════════════ ✦ CATEGORY COLLECTION ✦ ══════════════╗', '║               CHOOSE YOUR WORKSPACE              ║', '╠══════════════════════════════════════════════════╣'];
         for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
-        lines.push('╚═════════════════════════════════════════════════╝');
+        lines.push('╚══════════════════════════════════════════════════╝');
       } else if (theme === 'editorial') {
-        lines = ['THE CATEGORY INDEX', 'FEATURE DIRECTORY', '────────────────────────────────────', 'CONTENTS'];
-        for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + ' / ' + row.category.label.toUpperCase() + '  ·  ' + commandPrefix + 'catmenu ' + row.category.slug);
-        lines.push('────────────────────────────────────');
+        lines = ['THE CATEGORY INDEX', 'A guide to the available feature collections', '────────────────────────────────────────'];
+        for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + ' / ' + row.category.label.toUpperCase() + '\n     ' + commandPrefix + 'catmenu ' + row.category.slug + '  ·  ' + row.count + ' commands');
+        lines.push('────────────────────────────────────────');
       } else {
-        lines = frameLines('▣ CATEGORY INDEX', 'showcase', 'PILIH KATEGORI');
-        for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
-        if (!rows.length) lines.push('│ Tidak ada kategori aktif.');
-        lines.push(FRAME.showcase.bottom);
+        lines = ['╭─〔 CATEGORY MENU 〕', '│ Pilih kategori untuk melihat daftar fitur'];
+        for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*  (' + row.count + ')');
+        if (!rows.length) lines.push('│ Belum ada kategori aktif.');
+        lines.push('╰────────────────────────');
       }
-      lines.push('Gunakan *' + commandPrefix + 'catmenu <kategori>* untuk membuka pilihan fitur.');
+      lines.push('Gunakan *' + commandPrefix + 'catmenu <kategori>* untuk membuka kategori.');
       return lines.join('\n');
     }
     const category = categories.find(item => item.slug === requested);
     if (!category) {
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
-      return ['╭━━━━━━━━〔 ✕ CATEGORY NOT FOUND 〕━━━━━━━━', '│ Kategori *' + requested + '* tidak ditemukan atau tidak tersedia.', '│ Pilihan: ' + available, '╰━━━━━━━━━━━━━━━━━━━━━━━━', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      if (theme === 'premium') {
+        return ['╭━━━━━━━━〔 CATEGORY NOT FOUND 〕', '│ Kategori *' + requested + '* tidak ditemukan.', '│ Tersedia: ' + available, '╰━━━━━━━━━━━━━━━━━━━━━━━━', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      }
+      if (theme === 'terminal') {
+        return ['╔══ CATEGORY NOT FOUND ═════════════', '║ Kategori *' + requested + '* tidak ditemukan.', '║ Tersedia: ' + available, '╚════════════════════════════════════', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      }
+      if (theme === 'editorial') {
+        return ['CATEGORY NOT FOUND', 'Kategori *' + requested + '* tidak ditemukan.', 'Tersedia: ' + available, '────────────────────────────────────────', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      }
+      return ['╭─〔 CATEGORY NOT FOUND 〕', '│ Kategori *' + requested + '* tidak ditemukan.', '│ Tersedia: ' + available, '╰────────────────────────', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
     }
     const selectedCommand = String((ctx.args || [])[1] || '').trim().toLowerCase();
     if (selectedCommand) {
-      const selectedPlugin = category.plugins.find(plugin => plugin.commands.includes(selectedCommand) || plugin.name === selectedCommand);
+      const selectedPlugin = category.plugins.find(plugin => (plugin.commands || []).includes(selectedCommand) || plugin.name === selectedCommand);
       if (!selectedPlugin) return 'Fitur *' + selectedCommand + '* tidak ditemukan di kategori *' + category.slug + '*.';
-      return renderPluginHelp(ctx, selectedPlugin.commands[0]) || 'Panduan fitur tidak tersedia.';
+      return renderPluginHelp(ctx, (selectedPlugin.commands || [])[0]) || 'Panduan fitur tidak tersedia.';
     }
-    const lines = renderCategoryLayout(category, commandPrefix, theme, detailed);
-    if (detailed) lines.push('Ketik *' + commandPrefix + 'menu* untuk kembali.');
-    else lines.push('Ketik *' + commandPrefix + category.slug + '* untuk melihat panduan command, fungsi, dan cara pakai.');
+    const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
+    const heading = categoryTitle(category);
+    const commandsFor = plugin => (plugin.commands || []).filter(Boolean).length
+      ? plugin.commands.filter(Boolean)
+      : [plugin.name];
+    const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+    const addDetails = (plugin, frame = '│') => {
+      if (!detailed) return;
+      lines.push(frame + '    Command: ' + commandsFor(plugin).map(command => commandPrefix + command).join('  |  '));
+      if (plugin.description) lines.push(frame + '    Fungsi : ' + cleanLabel(plugin.description));
+      if (plugin.usage) lines.push(frame + '    Pakai  : ' + cleanLabel(plugin.usage));
+    };
+    let lines;
+    if (theme === 'terminal') {
+      lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '║ COMMAND : ' + commandCount, '╠══ AVAILABLE MODULES ═════════'];
+      for (const [index, plugin] of plugins.entries()) {
+        lines.push('║ [' + String(index + 1).padStart(2, '0') + '] ' + cleanLabel(plugin.name));
+        addDetails(plugin, '║');
+      }
+      lines.push('╚══ END / ' + plugins.length + ' MODULES ═════════');
+    } else if (theme === 'minimal') {
+      lines = [heading, '────────────────────────'];
+      for (const plugin of plugins) {
+        lines.push(cleanLabel(plugin.name));
+        addDetails(plugin);
+      }
+      lines.push('────────────────────────');
+    } else if (theme === 'premium') {
+      lines = ['╔══════════════ ' + heading + ' ══════════════╗', '║              FEATURE COLLECTION               ║', '║  PLUGINS ' + plugins.length + '  ·  COMMANDS ' + commandCount, '╠════════════════════════════════════════════════╣'];
+      for (const [index, plugin] of plugins.entries()) {
+        lines.push('║  ' + String(index + 1).padStart(2, '0') + '  ◇  *' + cleanLabel(plugin.name) + '*');
+        addDetails(plugin, '║');
+      }
+      lines.push('╚════════════════════════════════════════════════╝');
+    } else if (theme === 'editorial') {
+      lines = [category.label.toUpperCase() + ' / FEATURE NOTES', 'A categorized list of available plugins', '────────────────────────────────────────'];
+      for (const [index, plugin] of plugins.entries()) {
+        lines.push(String(index + 1).padStart(2, '0') + ' / ' + cleanLabel(plugin.name).toUpperCase());
+        addDetails(plugin, ' ');
+      }
+      lines.push('────────────────────────────────────────');
+    } else {
+      lines = ['╭─〔 ' + heading + ' 〕', '│ ' + plugins.length + ' fitur tersedia'];
+      for (const plugin of plugins) {
+        lines.push('├─ ' + cleanLabel(plugin.name));
+        addDetails(plugin);
+      }
+      lines.push('╰────────────────────────');
+    }
+    lines.push(detailed ? 'Ketik *' + commandPrefix + 'menu* untuk kembali.' : 'Ketik *' + commandPrefix + category.slug + '* untuk panduan lengkap.');
     return lines.join('\n').trim();
   }
 
@@ -510,8 +497,48 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     });
   }
 
+  function renderAllMenu(ctx) {
+    const categories = getCategories(ctx);
+    const prefix = typeof ctx.prefix === 'string' && ctx.prefix
+      ? ctx.prefix
+      : (Array.isArray(config.prefix) ? config.prefix[0] : config.prefix) || '.';
+
+    const sections = categories.map(category => {
+      const commands = [...category.plugins]
+        .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+        .flatMap(plugin => {
+          const available = (plugin.commands || []).filter(Boolean);
+          return available.length ? available : [plugin.name];
+        });
+      const uniqueCommands = [...new Set(commands)];
+      return [
+        '╭─〔 ' + cleanLabel(category.label).toLocaleUpperCase('id-ID') + ' 〕',
+        ...uniqueCommands.map(command => '│ ' + prefix + command),
+        '╰' + '─'.repeat(24)
+      ].join('\n');
+    });
+
+    if (!sections.length) return 'Tidak ada command yang tersedia.';
+    const output = sections.join('\n\n');
+    const READ_MORE_THRESHOLD = 1800;
+    const READ_MORE_MARKER = '\u200e'.repeat(4001);
+    if (output.length <= READ_MORE_THRESHOLD) return output;
+
+    // Prefer splitting between categories; if there is only one long category,
+    // split after a complete command line instead of cutting through a command.
+    let splitAt = output.indexOf('\n\n', READ_MORE_THRESHOLD);
+    let separatorLength = 2;
+    if (splitAt < 0) {
+      splitAt = output.indexOf('\n', READ_MORE_THRESHOLD);
+      separatorLength = 1;
+    }
+    if (splitAt < 0) return output;
+    return output.slice(0, splitAt) + '\n' + READ_MORE_MARKER + '\n' + output.slice(splitAt + separatorLength);
+  }
+
   return Object.freeze({
     canHandle(command) {
+      if (registry.getByCommand?.(command)) return false;
       if (['menu', 'help', 'catmenu'].includes(command)) return true;
       if (registry.getByCommand?.(command)) return false;
       return registry.list({ includeDisabled: true }).some(plugin => normalizeCategory(plugin.category) === command);
@@ -520,10 +547,6 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       const categoryAlias = !['menu', 'help', 'catmenu'].includes(ctx.command);
       if (categoryAlias) {
         await ctx.reply(renderCategory(ctx, { detailed: true, categoryAlias: true }));
-      } else if (ctx.command === 'menu' && preferences.menuTheme === 'terminal') {
-        await sendInteractiveMainMenu(ctx);
-      } else if (ctx.command === 'catmenu' && preferences.categoryTheme === 'terminal' && (ctx.args || []).length < 2) {
-        await sendInteractiveCategoryMenu(ctx);
       } else {
         const output = ctx.command === 'catmenu'
           ? renderCategory(ctx, { detailed: false })
@@ -534,7 +557,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       }
       return { handled: true, command: ctx.command };
     },
-    renderMenu, renderCategory, renderPluginHelp, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
+    renderMenu, renderCategory, renderAllMenu, renderPluginHelp, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
   });
 }
 

@@ -61,16 +61,12 @@ test('.menu keeps the manually selected theme and never rotates automatically', 
 
   const { ctx, replies } = createContext();
   for (let index = 0; index < 5; index += 1) await service.execute(ctx);
-
   assert.equal(replies.length, 5);
-  assert.ok(replies.every(output => output.includes('FEATURE COLLECTION')));
+  assert.ok(replies.every(output => output.includes('THE FEATURE LOUNGE')));
   assert.ok(replies.every(output => output.includes('Pengguna Uji')));
   assert.equal(service.getNextTheme(), 'premium');
   assert.equal(service.preferences.menuTheme, 'premium');
-});
-
-
-test('all five menu and category themes use distinct visual layouts', () => {
+});test('all five menu and category themes use distinct visual layouts', () => {
   const mainOutputs = MENU_THEMES.map(theme => {
     const service = createMenuService({ registry: createRegistry(), config, version: '2.0.0' });
     return service.renderMenu(createContext().ctx, theme);
@@ -140,66 +136,40 @@ test('setmenu and setcatmenu are standalone owner plugins routed through the reg
   }
 });
 
-test('.menu renders an interactive category list only when main-menu theme is v2', async () => {
+test('.menu v2 renders the terminal text layout without interactive messages', async () => {
   const database = { read: () => ({ menuPreferences: { menuTheme: 'terminal' } }) };
   const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
   const { ctx, replies, sends } = createContext({ command: 'menu' });
-
   await service.execute(ctx);
-
-  assert.equal(replies.length, 0);
-  assert.equal(sends.length, 1);
-  const payload = sends[0][1];
-  assert.match(payload.text, /BASEBOT SYSTEM DASHBOARD/);
-  assert.equal(payload.buttons[0].text, 'Pilih kategori');
-  const rows = payload.buttons[0].sections[0].rows;
-  assert.ok(rows.some(row => row.id === '.catmenu download'));
-  assert.ok(rows.some(row => row.id === '.catmenu utility'));
-  assert.ok(rows.some(row => row.id === '.catmenu ai'));
-  assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => row.description && row.description.length <= 72));
-});
-
-test('.menu falls back to its text layout when WhatsApp rejects the interactive list', async () => {
+  assert.equal(replies.length, 1);
+  assert.equal(sends.length, 0);
+  assert.match(replies[0], /TERMINAL/);
+  assert.match(replies[0], /\.catmenu download/);
+});test('.menu v2 remains usable when no interactive-list transport is available', async () => {
   const database = { read: () => ({ menuPreferences: { menuTheme: 'terminal' } }) };
   const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
   const replies = [];
-  const { ctx } = createContext({
-    command: 'menu',
-    sendMessage: async () => { throw new Error('interactive list unavailable'); },
-    reply: async value => replies.push(value)
-  });
-
+  const { ctx } = createContext({ command: 'menu', sendMessage: undefined, reply: async value => replies.push(value) });
   await service.execute(ctx);
-
   assert.equal(replies.length, 1);
-  assert.match(replies[0], /BASEBOT SYSTEM DASHBOARD/);
+  assert.match(replies[0], /TERMINAL/);
   assert.match(replies[0], /\.catmenu download/);
-});
-
-test('.catmenu renders interactive category and feature lists only when category-menu theme is v2', async () => {
+});test('.catmenu v2 renders terminal category and plugin directories as text', async () => {
   const database = { read: () => ({ menuPreferences: { categoryTheme: 'terminal' } }) };
   const service = createMenuService({ registry: createRegistry(), config, database, version: '2.0.0' });
-
   const index = createContext({ command: 'catmenu', args: [] });
   await service.execute(index.ctx);
-  assert.equal(index.replies.length, 0);
-  assert.equal(index.sends.length, 1);
-  assert.equal(index.sends[0][1].buttons[0].text, 'Pilih kategori');
-  assert.ok(index.sends[0][1].buttons[0].sections[0].rows.some(row => row.id === '.catmenu download'));
-
+  assert.equal(index.replies.length, 1);
+  assert.equal(index.sends.length, 0);
+  assert.match(index.replies[0], /CATEGORY CONSOLE/);
   const category = createContext({ command: 'catmenu', args: ['download'] });
   await service.execute(category.ctx);
-  assert.equal(category.replies.length, 0);
-  assert.equal(category.sends.length, 1);
-  assert.equal(category.sends[0][1].buttons[0].text, 'Pilih fitur');
-  const rows = category.sends[0][1].buttons[0].sections[0].rows;
-  assert.ok(rows.some(row => row.title === 'yt-download' && row.id === '.ytmp4'));
-  assert.ok(rows.every(row => row.title.length <= 24));
-  assert.ok(rows.every(row => !row.description));
-});
-
-test('.setmenu and .setcatmenu remain plain theme-setting commands', async () => {
+  assert.equal(category.replies.length, 1);
+  assert.equal(category.sends.length, 0);
+  assert.match(category.replies[0], /AVAILABLE MODULES/);
+  assert.match(category.replies[0], /yt-download/);
+  assert.doesNotMatch(category.replies[0], /\.ytmp4|\.ytv/);
+});test('.setmenu and .setcatmenu remain plain theme-setting commands', async () => {
   const registry = createRegistry();
   const service = createMenuService({ registry, config, version: '2.0.0' });
   registry.menuService = service;
@@ -223,7 +193,7 @@ test('menu theme preferences are restored from database on service recreation', 
   const service = createMenuService({ registry: createRegistry(), config, database });
   assert.equal(service.preferences.menuTheme, 'terminal');
   assert.equal(service.preferences.categoryTheme, 'minimal');
-  assert.match(service.renderMenu(createContext().ctx), /BASEBOT SYSTEM DASHBOARD/);
+  assert.match(service.renderMenu(createContext().ctx), /TERMINAL/);
   assert.match(service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx), /DOWNLOAD STUDIO/);
 });
 
@@ -233,7 +203,7 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   await service.execute(ctx);
   assert.equal(replies.length, 1);
   assert.match(replies[0], /ShoNhe/);
-  assert.doesNotMatch(replies[0], /modules|modul|commands|command:/i);
+  assert.doesNotMatch(replies[0], /modules|modul|description|fungsi|pakai/i);
   assert.match(replies[0], /\.catmenu download/);
   assert.match(replies[0], /\.catmenu utility/);
   assert.match(replies[0], /\.catmenu ai/);
@@ -317,8 +287,8 @@ test('.menu and .catmenu share a consistent framed information hierarchy', () =>
     assert.match(output, /╚═+/);
   }
   assert.match(menu, /MEMBER/);
-  assert.match(menu, /STATUS/);
-  assert.match(menu, /FEATURE COLLECTION/);
+  assert.match(menu, /SYSTEM STATUS/);
+  assert.match(menu, /THE FEATURE LOUNGE/);
   assert.match(category, /DOWNLOAD STUDIO/);
   assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|Command:|Fungsi\s*:|Pakai\s*:/);
 });
@@ -328,8 +298,8 @@ test('.catmenu category index and unknown category use the same premium frame la
   const index = service.renderCategory(createContext({ command: 'catmenu' }).ctx);
   const missing = service.renderCategory(createContext({ command: 'catmenu', args: ['not-real'] }).ctx);
   assert.match(index, /CATEGORY COLLECTION/);
-  assert.doesNotMatch(index, /modules|modul tersedia|commands/i);
-  assert.match(index, /╔════════════ ✦ CATEGORY COLLECTION/);
+  assert.doesNotMatch(index, /modules|modul tersedia/i);
+  assert.match(index, /╔═+ ✦ CATEGORY COLLECTION/);
   assert.match(missing, /CATEGORY NOT FOUND/);
   assert.match(missing, /╰━━━━━━━━━━━━━━━━━━━━━━━━/);
 });
@@ -425,14 +395,13 @@ test('all five themes expose the same live system information and registered com
     const output = service.renderMenu(createContext().ctx, theme);
     assert.match(output, /Pengguna Uji/);
     assert.match(output, /PUBLIC/);
-    assert.match(output, /WIB\s*:/);
-    assert.match(output, /WITA\s*:/);
-    assert.match(output, /WIT\s*:/);
-    assert.match(output, /Tanggal\s*:/);
-    assert.match(output, /Uptime\s*:/);
-    assert.match(output, /OS\s*:/);
-    assert.match(output, /RAM\s*:/);
-    assert.match(output, /Fitur\s*:\s*4 Command/);
+    assert.match(output, /WIB/);
+    assert.match(output, /WITA/);
+    assert.match(output, /WIT/);
+    assert.match(output, /DATE/);
+    assert.match(output, /UPTIME/);
+    assert.match(output, /RAM/);
+    assert.match(output, /COMMANDS 4/);
     assert.match(output, /\.catmenu download/);
   }
 });

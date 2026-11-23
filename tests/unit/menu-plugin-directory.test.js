@@ -74,8 +74,8 @@ test('category directory shows plugin names without command aliases or descripti
   assert.doesNotMatch(output, /Mengubah foto menjadi berbagai gaya visual/);
   for (const command of commands) assert.ok(!output.includes('.' + command), 'unexpected command in compact directory: ' + command);
   assert.doesNotMatch(output, /Fungsi\s*:|Pakai\s*:|Command:|<command>/);
-  assert.match(output, /Plugin\s+: 10/);
-  assert.match(output, /Command\s+: 10/);
+  assert.match(output, /PLUGIN\s*:\s*10/);
+  assert.match(output, /COMMAND\s*:\s*10/);
 });
 
 test('main menu shows plugin and command counts for new categories', () => {
@@ -88,22 +88,16 @@ test('main menu shows plugin and command counts for new categories', () => {
   assert.match(output, /catmenu downloader/);
 });
 
-test('interactive category lists each plugin once without command explanations', async () => {
+test('category directory stays textual and lists each plugin once without command aliases', async () => {
   const { service, ctx } = createFixture();
-  const sent = [];
   const replies = [];
   ctx.command = 'catmenu';
   ctx.args = ['image'];
-  ctx.sendMessage = async (...args) => sent.push(args);
   ctx.reply = async message => replies.push(message);
 
   await service.execute(ctx);
 
-  assert.equal(sent.length, 1);
-  assert.equal(replies.length, 0);
-  const rows = sent[0][1].buttons[0].sections[0].rows;
-  assert.equal(rows.length, 10);
-  assert.equal(rows[0].title, 'image-tobotak');
-  assert.equal(rows[0].id, '.tobotak');
-  assert.equal(rows[0].description, undefined);
+  assert.equal(replies.length, 1);
+  assert.match(replies[0], /image-tobotak/);
+  assert.doesNotMatch(replies[0], /\\.tobotak|Mengubah foto menjadi berbagai gaya visual/);
 });
