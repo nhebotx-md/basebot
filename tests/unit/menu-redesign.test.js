@@ -48,15 +48,13 @@ test('menu commands are routed to their plugin wrappers when registered', () => 
   assert.equal(service.canHandle('help'), true);
 });
 
-test('allmenu renders every visible plugin with command, description and usage', () => {
+test('allmenu only renders accessible commands grouped by category', () => {
   const { service, ctx } = fixture();
   const output = service.renderAllMenu(ctx);
-  assert.match(output, /BASEBOT · COMPLETE DIRECTORY/);
-  assert.match(output, /TOOLS DIRECTORY/);
-  assert.match(output, /sample-tool/);
+  assert.match(output, /TOOLS/);
   assert.match(output, /\.sample/);
-  assert.match(output, /Contoh fitur untuk pengujian/);
-  assert.match(output, /Pakai\s*:/);
+  assert.match(output, /\.sample2/);
+  assert.doesNotMatch(output, /BASEBOT · COMPLETE DIRECTORY|sample-tool|Contoh fitur|Pakai\s*:|COMMANDS|TOTAL|UPTIME|VERSI/);
   assert.doesNotMatch(output, /basebot-menu|basebot-catmenu|basebot-allmenu/);
 });
 
@@ -77,11 +75,31 @@ test('menu command plugins delegate to the shared menu service', async () => {
   assert.match(replies[1], /TOOLS DIRECTORY/);
 });
 
-test('allmenu plugin sends the complete directory in WhatsApp-safe chunks', async () => {
+test('allmenu plugin sends one compact category directory message', async () => {
   const { ctx, replies } = fixture();
   const allmenu = require('../../plugins/main/allmenu');
   await allmenu.execute(ctx);
-  assert.ok(replies.length >= 1);
-  assert.ok(replies.every(page => page.length <= 3500));
-  assert.match(replies[0], /BASEBOT · COMPLETE DIRECTORY/);
+  assert.equal(replies.length, 1);
+  assert.match(replies[0], /TOOLS/);
+  assert.match(replies[0], /\.sample/);
+  assert.doesNotMatch(replies[0], /Contoh fitur|Pakai\s*:|TOTAL|UPTIME|VERSI/);
+});
+
+test('allmenu inserts WhatsApp read-more marker when the directory is long', () => {
+  const { service, ctx, registry } = fixture();
+  const manyFeatures = Array.from({ length: 180 }, (_, index) => ({
+    name: 'long-feature-' + index,
+    category: index % 2 ? 'media' : 'tools',
+    commands: ['longcommand' + index],
+    permissions: {}
+  }));
+  registry.list = () => [
+    { name: 'basebot-menu', category: 'main', commands: ['menu'] },
+    { name: 'basebot-catmenu', category: 'main', commands: ['catmenu'] },
+    { name: 'basebot-allmenu', category: 'main', commands: ['allmenu'] },
+    ...manyFeatures
+  ];
+  const output = service.renderAllMenu(ctx);
+  assert.ok(output.includes('\u200e'.repeat(4001)));
+  assert.match(output, /\.longcommand179/);
 });
