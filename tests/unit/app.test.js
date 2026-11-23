@@ -15,6 +15,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.equal(app.users.expCooldownMs, 60000);
   assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 173);
   assert.ok(app.registry.list().every(plugin => plugin.commands.length === 1), 'every plugin must own exactly one command');
+  assert.ok(app.registry.list().every(plugin => plugin.category === plugin.filePath.split('/')[0]), 'plugin category must match its directory');
   assert.ok(app.registry.list().some(plugin => plugin.name === 'account-profile'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'health'));
   assert.ok(app.registry.list().some(plugin => plugin.name === 'doctor'));
@@ -29,8 +30,8 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.ok(app.registry.getByCommand('fb'));
   assert.ok(app.registry.getByCommand('musik'));
   assert.ok(app.registry.getByCommand('yta'));
-  assert.ok(app.registry.list().some(plugin => plugin.name === 'voicechanger'));
-  assert.ok(app.registry.list().some(plugin => plugin.name === 'sticker-rest-api'));
+  assert.ok(app.registry.list().some(plugin => plugin.name === 'media-bass'));
+  assert.ok(app.registry.list().some(plugin => plugin.name === 'sticker-brat'));
   assert.equal(app.registry.get('sticker-brat').category, 'sticker');
   assert.equal(app.registry.get('media-bass').category, 'media');
   assert.ok(app.registry.getByCommand('tochibi'));
@@ -43,7 +44,7 @@ test('app loads all bundled plugins without opening a WhatsApp socket', async ()
   assert.ok(app.registry.getByCommand('setbio'));
   assert.ok(app.registry.getByCommand('setname'));
   assert.ok(app.registry.getByCommand('setthumb'));
-  for (const name of ['group-info', 'group-settings', 'group-members', 'group-requests', 'group-request-action', 'poll', 'message-actions', 'interactive-menu', 'message-wrappers', 'group-admin-manager', 'community-manager', 'newsletter-manager', 'rich-message']) {
+  for (const name of ['group-groupinfo', 'group-grupset', 'group-anggota', 'group-joinrequests', 'group-joinrequest', 'message-poll', 'message-react', 'interactive-menu', 'message-spoiler', 'group-admin-manager', 'community-manager', 'newsletter-manager', 'rich-message']) {
     assert.ok(app.registry.list().some(plugin => plugin.name === name), `missing plugin: ${name}`);
   }
   assert.equal(typeof app.start, 'function');

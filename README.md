@@ -2,12 +2,12 @@
 
 BASEBOT adalah framework bot WhatsApp berbasis **Node.js, CommonJS, dan Baileys**. Command dipisahkan ke direktori `plugins/`, sedangkan koneksi WhatsApp, lifecycle, permission, database, logging, dan eksekusi command dikelola oleh core di `src/`.
 
-Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat startup, command dan alias didaftarkan ke registry, lalu dieksekusi melalui dispatcher terpusat. Menu dibangun dari registry aktif, bukan daftar command statis.
+Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat startup, command didaftarkan ke registry, lalu dieksekusi melalui dispatcher terpusat. **Setiap command memiliki satu file plugin sendiri** di kategori yang sesuai; alias juga dipisahkan menjadi file plugin terpisah. Menu dibangun dari registry aktif, bukan daftar command statis.
 
 
 ## Snapshot repository
 
-> Snapshot ini menggambarkan branch `feat/database-backup-restore` untuk PR #52 per 21 November 2026. Base branch `main`: `da8713be42b987f96275a379771203e0eb8c3478`.
+Snapshot repository per 23 November 2026 berdasarkan `main` commit `8adb00bffdb90714ec0e27d982677d00a4fd7140`.
 
 | Komponen | Kondisi terbaru |
 |---|---|
@@ -251,6 +251,6 @@ Lihat [Panduan Pengembangan Plugin](docs/PLUGIN_DEVELOPMENT.md) dan [Plugin API]
 
 ## Sticker API
 
-Satu plugin media menyediakan `.brat <teks>` untuk sticker Brat statis dan `.bratvid <teks>` untuk sticker animasi. Alias `.bratvideo` tetap tersedia. `.stickerapi brat <teks>` dan `.stickerapi animated <teks>` (alias `.stapi`) juga dipertahankan untuk kompatibilitas.
+Kategori sticker menyediakan plugin command terpisah untuk `.brat <teks>` (statis), `.bratvid <teks>` / `.bratvideo <teks>` (animasi), serta `.stickerapi brat|animated <teks>` / `.stapi` untuk format alternatif.
 
 Siputzx menjadi satu-satunya provider. BASEBOT membatasi teks hingga 300 karakter, timeout 15 detik, respons 8 MiB, memvalidasi signature PNG/GIF, lalu mengonversi media ke format sticker WhatsApp dengan metadata pack lokal. Jika API gagal atau format respons tidak valid, bot melaporkan kegagalan tanpa mengirim file yang belum tervalidasi. Jangan kirim teks rahasia karena teks diproses oleh provider pihak ketiga.
