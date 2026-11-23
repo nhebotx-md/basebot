@@ -17,7 +17,7 @@ module.exports = {
       if (['income', 'pemasukan', 'expense', 'pengeluaran', 'transfer'].includes(command)) {
         if (!first || !rest.length) return ctx.reply('Format: .' + command + ' nominal kategori | keterangan opsional');
         const item = await service.addTransaction(ctx.sender, { type: ['income', 'pemasukan'].includes(command) ? 'income' : ['expense', 'pengeluaran'].includes(command) ? 'expense' : 'transfer', value: amount(first), category: rest[0], note: rest.slice(1).join(' ') || rest[0] });
-        return ctx.reply('Transaksi tersimpan\\nJenis: ' + item.type + '\\nNominal: ' + money(item.amount) + '\\nKategori: ' + item.category + '\\nID: ' + item.id);
+        return ctx.reply('Transaksi tersimpan\nJenis: ' + item.type + '\nNominal: ' + money(item.amount) + '\nKategori: ' + item.category + '\nID: ' + item.id);
       }
       if (command === 'deletetrx') {
         if (!first) return ctx.reply('Format: .deletetrx ID');
@@ -28,7 +28,7 @@ module.exports = {
       if (command === 'searchtrx' && first) { const query = [first, ...rest].join(' ').toLocaleLowerCase('id-ID'); items = items.filter(item => [item.category, item.note, item.type, item.id].join(' ').toLocaleLowerCase('id-ID').includes(query)); }
       items = items.slice(0, Math.min(30, Math.max(1, Number(first) || 10)));
       if (!items.length) return ctx.reply('Belum ada transaksi yang cocok.');
-      return ctx.reply(['RIWAYAT TRANSAKSI', ...items.map(item => item.date + ' | ' + item.type.toUpperCase() + ' | ' + money(item.amount) + ' | ' + item.category + ' | ' + item.id)].join('\\n'));
+      return ctx.reply(['RIWAYAT TRANSAKSI', ...items.map(item => item.date + ' | ' + item.type.toUpperCase() + ' | ' + money(item.amount) + ' | ' + item.category + ' | ' + item.id)].join('\n'));
     } catch (error) { return ctx.reply('Transaksi gagal: ' + error.message); }
   }
 };
