@@ -22,6 +22,7 @@ const { JobQueue } = require('../core/services/job-queue.service');
 const { createDownloaderService } = require('../core/services/downloader.service');
 const { SystemDoctorService } = require('../core/services/system-doctor.service');
 const { createBackupService } = require('../core/services/backup.service');
+const { FinanceService } = require('../core/services/finance.service');
 
 async function createApp(options = {}) {
   const config = options.config || loadConfig();
@@ -51,6 +52,7 @@ async function createApp(options = {}) {
   const users = options.users || new UserService({ database, expPerMessage: config.profile?.expPerMessage ?? 5, expCooldownMs: config.profile?.expCooldownMs ?? 60000 });
   const groups = options.groups || new GroupService({ database });
   const pluginStateRepository = options.pluginStateRepository || new PluginStateRepository({ database });
+  const financeService = options.financeService || new FinanceService({ database });
 
   const pluginDirectory = path.resolve(config.plugins.directory);
   const pluginFiles = findPluginFiles(pluginDirectory);
@@ -67,6 +69,7 @@ async function createApp(options = {}) {
   registry.groupService = groups;
   registry.databaseService = database;
   registry.backupService = backupService;
+  registry.financeService = financeService;
   registry.pluginManager = pluginManager;
   const activePlugins = registry.list({ includeDisabled: false });
   logger.stage?.('PLUGIN REGISTRY', activePlugins.length + ' active modules discovered', loaded.length === pluginFiles.length ? 'success' : 'warn');
