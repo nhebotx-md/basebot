@@ -172,7 +172,7 @@ class PluginManager {
             "const plugin = require('./" + sourceFileName + "');",
             "module.exports = { ...plugin, category: " + JSON.stringify(selectedCategory) + ", sourceFile: " + JSON.stringify(sourceFileName) + " };",
             ''
-          ].join('\\n')
+          ].join('\n')
         : source;
       await fs.mkdir(path.dirname(targetPath), { recursive: true, mode: 0o700 });
       const tempTarget = targetPath + '.tmp-' + crypto.randomBytes(6).toString('hex');
