@@ -186,7 +186,10 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
   };
 
   function getVisiblePlugins(ctx) {
-    return registry.list({ includeDisabled: false }).filter(plugin => validatePermission(plugin, ctx).allowed);
+    const internalMenuPlugins = new Set(['basebot-menu', 'basebot-catmenu', 'basebot-allmenu']);
+    return registry.list({ includeDisabled: false })
+      .filter(plugin => !internalMenuPlugins.has(plugin.name))
+      .filter(plugin => validatePermission(plugin, ctx).allowed);
   }
   function getCategories(ctx) {
     const groups = new Map();
@@ -510,8 +513,37 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     });
   }
 
+  function renderAllMenu(ctx) {
+    const categories = getCategories(ctx);
+    const prefix = typeof ctx.prefix === 'string' && ctx.prefix
+      ? ctx.prefix
+      : (Array.isArray(config.prefix) ? config.prefix[0] : config.prefix) || '.';
+    const now = clock();
+    const uptime = formatUptime((now.getTime() - startedAt) / 1000);
+    const featureCount = countCommands(categories);
+    const userName = cleanLabel(ctx.pushname, 'Pengguna');
+    const role = ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN'
+      : ({ user: 'USER', premium: 'PREMIUM', moderator: 'MODERATOR', guest: 'GUEST' }[ctx.userRole] || 'MEMBER');
+    const lines = [
+      '╭━━━━━━━━〔 BASEBOT · COMPLETE DIRECTORY 〕',
+      '│ PENGGUNA : ' + userName,
+      '│ ROLE     : ' + role,
+      '│ VERSI    : v' + cleanLabel(version),
+      '│ UPTIME   : ' + uptime,
+      '│ TOTAL    : ' + featureCount + ' command · ' + categories.length + ' kategori',
+      '┣━━━━━━━━━━━━━━━━━━━━━━━━'
+    ];
+    if (!categories.length) lines.push('│ Belum ada fitur yang dapat ditampilkan untuk akun ini.');
+    for (const category of categories) {
+      lines.push(...renderCategoryLayout(category, prefix, 'premium', true));
+    }
+    lines.push('╰━━━━━━━━〔 END OF DIRECTORY 〕');
+    return lines.join('\\n');
+  }
+
   return Object.freeze({
     canHandle(command) {
+      if (registry.getByCommand?.(command)) return false;
       if (['menu', 'help', 'catmenu'].includes(command)) return true;
       if (registry.getByCommand?.(command)) return false;
       return registry.list({ includeDisabled: true }).some(plugin => normalizeCategory(plugin.category) === command);
@@ -534,7 +566,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       }
       return { handled: true, command: ctx.command };
     },
-    renderMenu, renderCategory, renderPluginHelp, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
+    renderMenu, renderCategory, renderAllMenu, renderPluginHelp, getCategories, getNextTheme, setTheme, themes: MENU_THEMES, themeVersions: MENU_THEME_VERSIONS, preferences
   });
 }
 
