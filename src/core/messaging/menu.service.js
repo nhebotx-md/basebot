@@ -263,7 +263,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       for (const row of rows) lines.push(String(row.index + 1).padStart(2, '0') + '   ' + row.category.label.toUpperCase() + '\n     ' + row.command + '  ·  ' + row.count + ' commands');
       lines.push('────────────────────────────────────────', 'Open a section with ' + commandPrefix + 'catmenu <category>');
     } else {
-      lines = ['╭─〔 ' + botName.toUpperCase() + ' / MAIN MENU 〕', '│ ' + userName + '  •  ' + role + '  •  ' + mode, '│ v' + cleanLabel(version) + '  •  Prefix: ' + prefixLabel, '├─〔 SYSTEM 〕', ...systemLines.map(line => '│ ' + line), '├─〔 CATEGORY 〕'];
+      lines = ['╭─〔 ' + botName.toUpperCase() + ' / FEATURE MENU 〕', '│ ' + userName + '  •  ' + role + '  •  ' + mode, '│ v' + cleanLabel(version) + '  •  Prefix: ' + prefixLabel, '├─〔 SYSTEM 〕', ...systemLines.map(line => '│ ' + line), '├─〔 CATEGORY 〕'];
       for (const row of rows) lines.push('│ ' + row.icon + '  *' + row.command + '*  ·  ' + row.count + ' commands');
       lines.push('╰────────────────────────');
     }
@@ -532,10 +532,6 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       const categoryAlias = !['menu', 'help', 'catmenu'].includes(ctx.command);
       if (categoryAlias) {
         await ctx.reply(renderCategory(ctx, { detailed: true, categoryAlias: true }));
-      } else if (ctx.command === 'menu' && preferences.menuTheme === 'terminal') {
-        await sendInteractiveMainMenu(ctx);
-      } else if (ctx.command === 'catmenu' && preferences.categoryTheme === 'terminal' && (ctx.args || []).length < 2) {
-        await sendInteractiveCategoryMenu(ctx);
       } else {
         const output = ctx.command === 'catmenu'
           ? renderCategory(ctx, { detailed: false })
