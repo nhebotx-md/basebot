@@ -325,6 +325,15 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const category = categories.find(item => item.slug === requested);
     if (!category) {
       const available = categories.map(item => item.slug).join(', ') || 'belum ada';
+      if (theme === 'premium') {
+        return ['╭━━━━━━━━〔 CATEGORY NOT FOUND 〕', '│ Kategori *' + requested + '* tidak ditemukan.', '│ Tersedia: ' + available, '╰━━━━━━━━━━━━━━━━━━━━━━━━', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      }
+      if (theme === 'terminal') {
+        return ['╔══ CATEGORY NOT FOUND ═════════════', '║ Kategori *' + requested + '* tidak ditemukan.', '║ Tersedia: ' + available, '╚════════════════════════════════════', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      }
+      if (theme === 'editorial') {
+        return ['CATEGORY NOT FOUND', 'Kategori *' + requested + '* tidak ditemukan.', 'Tersedia: ' + available, '────────────────────────────────────────', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
+      }
       return ['╭─〔 CATEGORY NOT FOUND 〕', '│ Kategori *' + requested + '* tidak ditemukan.', '│ Tersedia: ' + available, '╰────────────────────────', 'Ketik *' + commandPrefix + 'menu* untuk kembali.'].join('\n');
     }
     const selectedCommand = String((ctx.args || [])[1] || '').trim().toLowerCase();
