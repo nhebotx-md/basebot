@@ -9,7 +9,7 @@ const { fetchPublic } = require('../security/safe-url');
 
 const MAX_PLUGIN_BYTES = 256 * 1024;
 const CATEGORY_PATTERN = /^[a-z0-9][a-z0-9_-]{0,31}$/;
-const COMMAND_PATTERN = /^[\\p{L}\\p{N}_-]{1,40}$/u;
+const COMMAND_PATTERN = /^[a-z0-9_-]{1,40}$/i;
 
 function safeInside(root, relativePath) {
   const absolute = path.resolve(root, relativePath);
