@@ -12,6 +12,9 @@ Plugin Manager menyediakan kontrol runtime untuk owner melalui chat pribadi atau
 | \`.plugin disable <nama>\` | Menonaktifkan plugin |
 | \`.plugin reload all\` | Memuat ulang seluruh plugin secara staged |
 | \`.plugin stats\` | Ringkasan plugin, command, dan kategori |
+| \`.addplugin <url>\` | Memasang plugin baru otomatis ke kategori metadata-nya |
+| \`.addplugin custom <kategori> <url>\` | Memasang atau overwrite plugin pada kategori pilihan |
+| \`.getplugin <nama\|command>\` | Menampilkan metadata dan source plugin terpasang |
 
 ## Keamanan dan perilaku
 
@@ -21,7 +24,12 @@ Plugin Manager menyediakan kontrol runtime untuk owner melalui chat pribadi atau
 - Direktori kosong tidak boleh menghapus seluruh registry secara tidak sengaja.
 - Status enable/disable disimpan di `data/database/plugins.json` dan dipulihkan saat startup. Jika penyimpanan gagal, perubahan runtime dibatalkan.
 - Reload saat ini berlaku untuk seluruh plugin; reload satu plugin belum didukung agar konflik alias dan dependensi antar-plugin tetap tervalidasi secara global.
-- Plugin adalah kode JavaScript lokal yang memiliki hak proses bot. Jangan menyalin plugin tidak tepercaya ke direktori plugin.
+- `.addplugin` menerima URL HTTPS publik dengan source maksimal 256 KB. Plugin wajib valid menurut Plugin API dan memiliki tepat satu command.
+- `.addplugin custom <kategori> <url>` mengganti metadata kategori dengan kategori pilihan owner. Nama kategori hanya huruf kecil, angka, `-`, dan `_`.
+- Jika nama plugin atau command sudah terdaftar, file plugin lama diganti secara atomik dan seluruh registry divalidasi ulang. Jika validasi gagal, file lama dipulihkan.
+- File tujuan yang sudah ada tetapi tidak tercatat sebagai plugin tidak akan ditimpa. Path dibatasi ke direktori `plugins/`.
+- `.getplugin` mencari berdasarkan nama plugin atau command dan mengirim metadata serta source dalam beberapa bagian jika diperlukan.
+- Import source plugin menjalankan kode top-level dengan hak proses bot. Installer bukan sandbox; hanya pasang source yang benar-benar dipercaya.
 
 ## Menu
 
