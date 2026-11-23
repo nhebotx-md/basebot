@@ -203,7 +203,7 @@ test('.menu builds categories from active registry plugins and hides owner-only 
   await service.execute(ctx);
   assert.equal(replies.length, 1);
   assert.match(replies[0], /ShoNhe/);
-  assert.doesNotMatch(replies[0], /modules|modul|commands|command:/i);
+  assert.doesNotMatch(replies[0], /modules|modul|description|fungsi|pakai/i);
   assert.match(replies[0], /\.catmenu download/);
   assert.match(replies[0], /\.catmenu utility/);
   assert.match(replies[0], /\.catmenu ai/);
@@ -402,7 +402,7 @@ test('all five themes expose the same live system information and registered com
     assert.match(output, /UPTIME/);
     assert.match(output, /RAM/);
     assert.match(output, /COMMANDS 4/);
-    assert.match(output, /\\.catmenu download/);
+    assert.match(output, /\.catmenu download/);
   }
 });
 
