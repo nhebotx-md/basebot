@@ -85,6 +85,7 @@ test('allmenu plugin sends one compact category directory message', async () => 
   assert.doesNotMatch(replies[0], /Contoh fitur|Pakai\s*:|TOTAL|UPTIME|VERSI/);
 });
 
+// WhatsApp read-more keeps the full directory in one message instead of spamming multiple replies.
 test('allmenu inserts WhatsApp read-more marker when the directory is long', () => {
   const { service, ctx, registry } = fixture();
   const manyFeatures = Array.from({ length: 180 }, (_, index) => ({
