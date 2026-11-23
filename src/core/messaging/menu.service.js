@@ -307,7 +307,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
         lines = ['CATEGORY INDEX', '────────────────────────', ...rows.map(row => commandPrefix + 'catmenu ' + row.category.slug), '────────────────────────'];
       } else if (theme === 'premium') {
         lines = ['╔══════════════ ✦ CATEGORY COLLECTION ✦ ══════════════╗', '║               CHOOSE YOUR WORKSPACE              ║', '╠══════════════════════════════════════════════════╣'];
-        for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*  ·  ' + row.count + ' commands');
+        for (const row of rows) lines.push('║  ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
         lines.push('╚══════════════════════════════════════════════════╝');
       } else if (theme === 'editorial') {
         lines = ['THE CATEGORY INDEX', 'A guide to the available feature collections', '────────────────────────────────────────'];
