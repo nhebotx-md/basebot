@@ -538,7 +538,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       lines.push(...renderCategoryLayout(category, prefix, 'premium', true));
     }
     lines.push('╰━━━━━━━━〔 END OF DIRECTORY 〕');
-    return lines.join('\\n');
+    return lines.join('\n');
   }
 
   return Object.freeze({
