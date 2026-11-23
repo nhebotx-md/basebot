@@ -352,7 +352,8 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       for (const plugin of plugins) lines.push(...commandsFor(plugin).map(command => commandPrefix + command));
       lines.push('────────────────────────');
     } else if (theme === 'premium') {
-      const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);\n      lines = ['╔══════════════ ' + heading + ' ══════════════╗', '║              FEATURE COLLECTION               ║', '║  PLUGINS ' + plugins.length + '  ·  COMMANDS ' + commandCount, '╠════════════════════════════════════════════════╣'];
+      const commandCount = plugins.reduce((total, plugin) => total + Math.max(1, (plugin.commands || []).length), 0);
+      lines = ['╔══════════════ ' + heading + ' ══════════════╗', '║              FEATURE COLLECTION               ║', '║  PLUGINS ' + plugins.length + '  ·  COMMANDS ' + commandCount, '╠════════════════════════════════════════════════╣'];
       for (const [index, plugin] of plugins.entries()) {
         lines.push('║  ' + String(index + 1).padStart(2, '0') + '  ◇  *' + cleanLabel(plugin.name) + '*');
         lines.push('║      ' + commandsFor(plugin).map(command => commandPrefix + command).join('   ·   '));
