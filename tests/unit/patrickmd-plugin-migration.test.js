@@ -3,13 +3,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
-const maker = require('../../plugins/maker/ai-image-transform');
+const maker = require('../../plugins/image/ai-image-transform');
 const owner = require('../../plugins/owner/account-tools');
 const group = require('../../plugins/group/quoted-tagall');
 
 test('migrated PatrickMD plugins register with unique command ownership', () => {
   const registry = new PluginRegistry();
-  registry.register(maker, 'maker/ai-image-transform.js');
+  registry.register(maker, 'image/ai-image-transform.js');
   registry.register(owner, 'owner/account-tools.js');
   registry.register(group, 'group/quoted-tagall.js');
 
