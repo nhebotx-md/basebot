@@ -314,7 +314,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
         lines.push('────────────────────────────────────────');
       } else {
         lines = ['╭─〔 CATEGORY MENU 〕', '│ Pilih kategori untuk melihat daftar fitur'];
-        for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*  (' + row.count + ')');
+        for (const row of rows) lines.push('│ ' + row.icon + '  *' + commandPrefix + 'catmenu ' + row.category.slug + '*');
         if (!rows.length) lines.push('│ Belum ada kategori aktif.');
         lines.push('╰────────────────────────');
       }
@@ -343,18 +343,16 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     }
     const plugins = [...category.plugins].sort((a, b) => a.name.localeCompare(b.name, 'id'));
     const heading = categoryTitle(category);
-    const commandsFor = plugin => (plugin.commands || []).filter(Boolean).length
-      ? plugin.commands.filter(Boolean)
-      : [plugin.name];
     const addDetails = (plugin, frame = '│') => {
       if (!detailed) return;
-      lines.push(frame + '    Command: ' + commandsFor(plugin).map(command => commandPrefix + command).join('  |  '));
+      const commands = (plugin.commands || []).filter(Boolean);
+      if (commands.length) lines.push(frame + '    Command: ' + commands.map(command => commandPrefix + command).join('  |  '));
       if (plugin.description) lines.push(frame + '    Fungsi : ' + cleanLabel(plugin.description));
       if (plugin.usage) lines.push(frame + '    Pakai  : ' + cleanLabel(plugin.usage));
     };
     let lines;
     if (theme === 'terminal') {
-      lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '║ COMMAND : ' + commandCount, '╠══ AVAILABLE MODULES ═════════'];
+      lines = ['╔══ ' + heading + ' ═════════════', '║ PATH / ' + commandPrefix + 'catmenu ' + category.slug, '║ PLUGIN : ' + plugins.length, '╠══ AVAILABLE MODULES ═════════'];
       for (const [index, plugin] of plugins.entries()) {
         lines.push('║ [' + String(index + 1).padStart(2, '0') + '] ' + cleanLabel(plugin.name));
         addDetails(plugin, '║');
