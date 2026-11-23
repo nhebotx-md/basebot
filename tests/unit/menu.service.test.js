@@ -232,7 +232,7 @@ test('.catmenu <category> is a compact plugin directory without command or help 
   assert.doesNotMatch(replies[0], /Command:|Fungsi\s*:|Pakai\s*:/);
   assert.doesNotMatch(replies[0], /Unduh video dari YouTube|\.ytmp4|\.ytv/);
   assert.match(replies[0], /PLUGINS\s+1/);
-  assert.match(replies[0], /COMMANDS\s+2/);
+  assert.doesNotMatch(replies[0], /COMMANDS?\s*[:\s]/i);
 });
 
 test('.group opens the detailed guide for every plugin in the selected category', async () => {
