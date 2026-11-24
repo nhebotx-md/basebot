@@ -91,7 +91,7 @@ module.exports = {
     await progress.start('Memvalidasi tautan TikTok', {
       detail: 'Memeriksa alamat dan menyiapkan provider media.'
     });
-    const data = await ctx.services.downloaders.tiktok(url);
+    const data = await ctx.services.downloaders.tiktok(url, { mode });
     const title = String(data.title || 'Konten TikTok').slice(0, 300);
 
     if (mode === 'video') {
