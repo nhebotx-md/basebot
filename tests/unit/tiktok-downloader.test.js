@@ -6,6 +6,7 @@ const handler = require('../../plugins/downloader/download-tiktok.handler.cjs');
 const { createDownloaderService } = require('../../src/core/services/downloader.service');
 const { resolveMediaType } = handler;
 const tiktokPlugin = require('../../plugins/downloader/tiktok');
+const ttPlugin = require('../../plugins/downloader/tt');
 
 test('TikTok input parser recognizes media choices before or after the URL', () => {
   assert.deepEqual(handler.parseTikTokInput('https://vt.tiktok.com/abc video'), {
@@ -79,5 +80,6 @@ test('TikTok media type detection rejects unrelated HTML error pages', () => {
 });
 
 test('TikTok plugin registers both .tiktok and .tt command aliases', () => {
-  assert.deepEqual(tiktokPlugin.commands, ['tiktok', 'tt']);
+  assert.deepEqual(tiktokPlugin.commands, ['tiktok']);
+  assert.deepEqual(ttPlugin.commands, ['tt']);
 });
