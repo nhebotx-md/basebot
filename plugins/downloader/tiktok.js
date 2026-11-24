@@ -3,7 +3,7 @@ const handler = require('./download-tiktok.handler.cjs');
 const plugin = {
   ...handler,
   name: 'downloader-tiktok',
-  commands: ['tiktok', 'tt'],
+  commands: ['tiktok'],
   category: 'downloader'
 };
 module.exports = plugin;
