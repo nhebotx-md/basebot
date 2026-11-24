@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const handler = require('../../plugins/downloader/download-tiktok.handler.cjs');
 const { createDownloaderService } = require('../../src/core/services/downloader.service');
 const { resolveMediaType } = handler;
+const tiktokPlugin = require('../../plugins/downloader/tiktok');
 
 test('TikTok input parser recognizes media choices before or after the URL', () => {
   assert.deepEqual(handler.parseTikTokInput('https://vt.tiktok.com/abc video'), {
@@ -75,4 +76,8 @@ test('TikTok media type detection rejects unrelated HTML error pages', () => {
   const html = Buffer.from('<html>blocked</html>');
   assert.equal(resolveMediaType('text/html', html, 'video'), '');
   assert.equal(resolveMediaType('application/octet-stream', html, 'audio'), '');
+});
+
+test('TikTok plugin registers both .tiktok and .tt command aliases', () => {
+  assert.deepEqual(tiktokPlugin.commands, ['tiktok', 'tt']);
 });
