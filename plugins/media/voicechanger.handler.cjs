@@ -28,7 +28,7 @@ function resolveFfmpegPath() {
     if (!executable || !path.isAbsolute(executable) || !fs.existsSync(executable)) throw new Error('Executable FFmpeg tidak ditemukan.');
     return executable;
   } catch (cause) {
-    const error = new Error('Binari FFmpeg tidak tersedia. Jalankan `npm ci` pada direktori BASEBOT lalu mulai ulang bot.', { cause });
+    const error = new Error('Binari FFmpeg tidak tersedia. Jalankan `npm ci` pada direktori MUSE-MD lalu mulai ulang bot.', { cause });
     error.code = 'FFMPEG_BINARY_MISSING';
     throw error;
   }

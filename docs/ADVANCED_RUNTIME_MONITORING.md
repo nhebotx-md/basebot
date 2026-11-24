@@ -1,6 +1,6 @@
 # Advanced Runtime Monitoring
 
-BASEBOT mengambil snapshot setiap 30 detik dan menyimpan maksimum 120 sampel di memori proses.
+MUSE-MD mengambil snapshot setiap 30 detik dan menyimpan maksimum 120 sampel di memori proses.
 
 ## Command owner
 - `.health`: status runtime, WhatsApp, database, plugin, heap, event loop, dan auto reload.

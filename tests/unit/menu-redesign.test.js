@@ -15,9 +15,9 @@ const feature = {
 
 function fixture() {
   const menuPlugins = [
-    { name: 'basebot-menu', category: 'main', commands: ['menu'] },
-    { name: 'basebot-catmenu', category: 'main', commands: ['catmenu'] },
-    { name: 'basebot-allmenu', category: 'main', commands: ['allmenu'] }
+    { name: 'muse-menu', category: 'main', commands: ['menu'] },
+    { name: 'muse-catmenu', category: 'main', commands: ['catmenu'] },
+    { name: 'muse-allmenu', category: 'main', commands: ['allmenu'] }
   ];
   const plugins = [...menuPlugins, feature];
   const registry = {
@@ -26,7 +26,7 @@ function fixture() {
   };
   const service = createMenuService({
     registry,
-    config: { botName: 'BASEBOT', prefix: '.', publicMode: true, timezone: 'Asia/Jakarta' },
+    config: { botName: 'MUSE-MD', prefix: '.', publicMode: true, timezone: 'Asia/Jakarta' },
     version: '2.0.0'
   });
   registry.menuService = service;
@@ -54,8 +54,8 @@ test('allmenu only renders accessible commands grouped by category', () => {
   assert.match(output, /TOOLS/);
   assert.match(output, /\.sample/);
   assert.match(output, /\.sample2/);
-  assert.doesNotMatch(output, /BASEBOT · COMPLETE DIRECTORY|sample-tool|Contoh fitur|Pakai\s*:|COMMANDS|TOTAL|UPTIME|VERSI/);
-  assert.doesNotMatch(output, /basebot-menu|basebot-catmenu|basebot-allmenu/);
+  assert.doesNotMatch(output, /MUSE-MD · COMPLETE DIRECTORY|sample-tool|Contoh fitur|Pakai\s*:|COMMANDS|TOTAL|UPTIME|VERSI/);
+  assert.doesNotMatch(output, /muse-menu|muse-catmenu|muse-allmenu/);
 });
 
 test('menu command plugins delegate to the shared menu service', async () => {
@@ -95,9 +95,9 @@ test('allmenu inserts WhatsApp read-more marker when the directory is long', () 
     permissions: {}
   }));
   registry.list = () => [
-    { name: 'basebot-menu', category: 'main', commands: ['menu'] },
-    { name: 'basebot-catmenu', category: 'main', commands: ['catmenu'] },
-    { name: 'basebot-allmenu', category: 'main', commands: ['allmenu'] },
+    { name: 'muse-menu', category: 'main', commands: ['menu'] },
+    { name: 'muse-catmenu', category: 'main', commands: ['catmenu'] },
+    { name: 'muse-allmenu', category: 'main', commands: ['allmenu'] },
     ...manyFeatures
   ];
   const output = service.renderAllMenu(ctx);
@@ -112,7 +112,7 @@ test('menu V1-V5 render five distinct layouts', () => {
   assert.equal(new Set(outputs).size, 5);
   assert.match(outputs[0], /FEATURE MENU/);
   assert.match(outputs[1], /TERMINAL/);
-  assert.match(outputs[2], /BASEBOT  \/  MENU/);
+  assert.match(outputs[2], /MUSE-MD  \/  MENU/);
   assert.match(outputs[3], /FEATURE LOUNGE/);
   assert.match(outputs[4], /FIELD GUIDE/);
 });

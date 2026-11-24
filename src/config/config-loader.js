@@ -52,7 +52,7 @@ function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath()
   }
   const source = settings;
   const config = {
-    botName: source.botName || 'BASEBOT',
+    botName: source.botName || 'MUSE-MD',
     ownerName: source.ownerName || 'Owner',
     owners: Array.isArray(source.owners) ? source.owners.map(value => String(value).replace(/\D/g, '')).filter(Boolean) : [],
     prefix: String(source.prefix ?? '.'),
@@ -62,7 +62,7 @@ function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath()
     newsletter: { name: source.newsletter?.name || '', id: source.newsletter?.id || '', url: source.newsletter?.url || '' },
     timezone: source.timezone || 'Asia/Jakarta',
     sticker: {
-      packname: source.sticker?.packname || 'BASEBOT',
+      packname: source.sticker?.packname || 'MUSE-MD',
       author: source.sticker?.author || '',
       apis: { asepharyanaEnabled: parseBoolean(source.sticker?.apis?.asepharyanaEnabled, false) }
     },
@@ -84,7 +84,7 @@ function loadConfig(env = readDotEnv(), settings = require(resolveSettingsPath()
       color: source.logging?.color || 'auto',
       baileysLevel: source.logging?.baileysLevel || 'warn',
       fileEnabled: parseBoolean(source.logging?.fileEnabled, true),
-      fileName: source.logging?.fileName || 'basebot.jsonl',
+      fileName: source.logging?.fileName || 'muse-md.jsonl',
       fileMaxBytes: boundedInteger(source.logging?.fileMaxBytes, 5242880, 65536, 104857600),
       fileMaxFiles: boundedInteger(source.logging?.fileMaxFiles, 5, 2, 20)
     },

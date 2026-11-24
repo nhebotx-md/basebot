@@ -27,7 +27,7 @@ module.exports = {
 
     if (ctx.command === 'setname') {
       const name = String(ctx.text || '').trim();
-      if (!name) return ctx.reply('Masukkan nama profil bot. Contoh: ' + ctx.prefix + 'setname BASEBOT');
+      if (!name) return ctx.reply('Masukkan nama profil bot. Contoh: ' + ctx.prefix + 'setname MUSE-MD');
       if (name.length > 25) return ctx.reply('Nama profil WhatsApp maksimal 25 karakter.');
       if (typeof client.updateProfileName !== 'function') return ctx.reply('API pembaruan nama profil tidak tersedia pada koneksi Baileys ini.');
       await client.updateProfileName(name);

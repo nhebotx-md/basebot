@@ -9,7 +9,7 @@ function statusLabel(status) {
 
 function summary(report, prefix) {
   return [
-    '*BASEBOT HEALTH*',
+    '*MUSE-MD HEALTH*',
     'Status: *' + statusLabel(report.status) + '*',
     'Uptime: ' + report.uptimeSeconds + ' detik',
     'WhatsApp: ' + report.whatsapp.state + (report.whatsapp.connected ? ' (connected)' : ' (not connected)'),
@@ -70,7 +70,7 @@ module.exports = {
   name: 'health',
   commands: ['health'],
   category: 'owner',
-  description: 'Memeriksa kesehatan runtime, koneksi, database, plugin, dan resource BASEBOT.',
+  description: 'Memeriksa kesehatan runtime, koneksi, database, plugin, dan resource MUSE-MD.',
   usage: '.health [detail|plugins|memory|history|alerts|providers]',
   permissions: { ownerOnly: true },
   async execute(ctx) {

@@ -82,7 +82,7 @@ function diagnosePluginError(error) {
     return { cause: 'Layanan tujuan menolak request karena parameter atau kebijakan akses.', action: 'Periksa format input, endpoint, parameter, dan izin akses API.' };
   }
   if (code === 'FFMPEG_BINARY_MISSING') {
-    return { cause: 'Executable FFmpeg tidak tersedia pada instalasi BASEBOT.', action: 'Jalankan npm ci dari direktori project, pastikan dependency platform cocok, lalu restart bot.' };
+    return { cause: 'Executable FFmpeg tidak tersedia pada instalasi MUSE-MD.', action: 'Jalankan npm ci dari direktori project, pastikan dependency platform cocok, lalu restart bot.' };
   }
   if (['ENOENT', 'EACCES', 'EPERM', 'ENOSPC'].includes(code)) {
     return { cause: 'File atau direktori yang dibutuhkan tidak tersedia atau tidak dapat diakses.', action: 'Periksa lokasi file, izin akses direktori, ruang penyimpanan, dan dependency yang dibutuhkan.' };
@@ -232,7 +232,7 @@ class CommandDispatcher {
       await ctx.reply('Antrean bot sedang penuh. Tunggu pekerjaan selesai lalu coba lagi.');
       return { handled: true, plugin: plugin.name, reason: 'busy' };
     }
-    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, commandLabel: (ctx.prefix || '.') + ctx.command, logger: this.logger, botName: ctx.config?.botName || 'ShooNhee-AI' });
+    ctx.progress = createPluginProgress({ client: ctx.client, message: ctx.m, plugin, command: ctx.command, commandLabel: (ctx.prefix || '.') + ctx.command, logger: this.logger, botName: ctx.config?.botName || 'MUSE-MD' });
     ctx.process = ctx.progress;
     if (ctx.services) ctx.services.progress = ctx.progress;
     const startedAt = Date.now();

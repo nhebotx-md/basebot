@@ -13,7 +13,7 @@ const legacyClientFactory = require('../../src/core/client/create-client');
 const { createPairingManager } = require('../../src/core/connection/pairing-manager');
 
 test('client factory serializes async credential writes and exposes a flush barrier', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-client-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-client-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   assert.equal(legacyClientFactory.createClientFactory, createClientFactory);
   const state = { creds: { registered: true }, keys: {} };
@@ -52,7 +52,7 @@ test('client factory serializes async credential writes and exposes a flush barr
   assert.equal(options.printQRInTerminal, false);
   assert.equal(pinoOptions.level, 'warn');
   await client.sendMessage('120363000000000000@g.us', { text: 'sent' });
-  assert.deepEqual(sentOptions[0].quoted, createFakeQuoted('ShooNhee-AI', true));
+  assert.deepEqual(sentOptions[0].quoted, createFakeQuoted('MUSE-MD', true));
   await client.sendMessage('120363000000000000@g.us', { text: 'without quote' }, { quoted: null });
   assert.equal(sentOptions[1].quoted, null);
   await client.sendMessage('120363000000000000@g.us', { react: { text: '👍', key: { id: 'incoming' } } });
@@ -89,7 +89,7 @@ test('pairing manager ignores fixed custom codes and does not expose generated c
 });
 
 test('existing auth directory and files are tightened and symlink roots are rejected', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-auth-permissions-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-auth-permissions-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const auth = path.join(root, 'auth');
   fsSync.mkdirSync(auth, { mode: 0o777 });
@@ -106,7 +106,7 @@ test('existing auth directory and files are tightened and symlink roots are reje
 test('Baileys Pino logger redacts account identity at info level', async t => {
   const { Writable } = require('node:stream');
   const realPino = require('pino');
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-pino-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-pino-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const lines = [];
   const destination = new Writable({ write(chunk, encoding, callback) { lines.push(chunk.toString()); callback(); } });

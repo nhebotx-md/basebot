@@ -24,7 +24,7 @@ test('plugin progress begins with the invoked command as a WhatsApp blockquote',
     client, message, plugin: { name: 'tiktok' }, command: 'tt', commandLabel: '.tt'
   });
   await progress.start('Memvalidasi tautan');
-  assert.match(client.calls[0].content.text, /^> \.tt\n\n╭─〔 BASEBOT PROCESS 〕/);
+  assert.match(client.calls[0].content.text, /^> \.tt\n\n╭─〔 MUSE-MD PROCESS 〕/);
 });
 
 test('plugin progress edits one informative status message through processing stages', async () => {

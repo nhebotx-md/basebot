@@ -8,7 +8,7 @@ const { createMessagesUpsertHandler } = require('../../src/core/events/messages-
 
 const logger = { info() {}, debug() {}, warn() {}, error() {} };
 test('mock messages.upsert builds context, dispatches case-insensitive command, and replies through shared service', async () => {
-  const config = loadConfig({}, { owners: ['6281234567890'], botName: 'ShooNhee-AI', prefix: '.', paths: { temp: '/tmp/basebot-integration-temp' } });
+  const config = loadConfig({}, { owners: ['6281234567890'], botName: 'MUSE-MD', prefix: '.', paths: { temp: '/tmp/muse-md-integration-temp' } });
   const registry = new PluginRegistry();
   registry.register({ name: 'ping', commands: ['ping', 'p'], category: 'system', description: 'test', usage: '.ping', permissions: {}, async execute(ctx) { await ctx.reply(`Pong: ${ctx.text}`); } });
   const dispatcher = new CommandDispatcher({ registry, logger, rateLimit: 0 });
@@ -21,5 +21,5 @@ test('mock messages.upsert builds context, dispatches case-insensitive command, 
   assert.equal(sent[0][0], '6289999999999@s.whatsapp.net');
   assert.equal(sent[0][1].text, '> .ping\n\nPong: hello there');
   assert.equal(sent[0][2].quoted.key.remoteJid, '13135550002@s.whatsapp.net');
-  assert.equal(sent[0][2].quoted.message.contactMessage.displayName, '✅ ShooNhee-AI');
+  assert.equal(sent[0][2].quoted.message.contactMessage.displayName, '✅ MUSE-MD');
 });

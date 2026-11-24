@@ -1,4 +1,4 @@
-# Arsitektur BASEBOT
+# Arsitektur MUSE-MD
 
 ## Alur command
 

@@ -48,7 +48,7 @@ class DatabaseService {
     }
     const version = Number(meta.schemaVersion || 0);
     if (version > CURRENT_SCHEMA_VERSION) {
-      throw new Error('Versi database lebih baru daripada versi BASEBOT. Upgrade aplikasi diperlukan.');
+      throw new Error('Versi database lebih baru daripada versi MUSE-MD. Upgrade aplikasi diperlukan.');
     }
     if (version < 1) {
       meta = { ...meta, schemaVersion: 1, createdAt: meta.createdAt || new Date().toISOString(), migratedAt: new Date().toISOString() };

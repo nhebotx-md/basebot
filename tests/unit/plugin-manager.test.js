@@ -29,7 +29,7 @@ function source(name, command) {
 }
 
 async function fixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-manager-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-manager-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   await fs.writeFile(path.join(directory, 'alpha.js'), source('alpha', 'alpha'));
   await fs.writeFile(path.join(directory, 'plugin-manager.js'), source('plugin-manager', 'plugin'));
@@ -136,7 +136,7 @@ test('owner plugin command has a second owner check and handles missing runtime 
 
 
 test('plugin enabled state is restored from JSON database after manager recreation', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-state-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-state-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const database = await new DatabaseService({ directory: path.join(directory, 'database'), logger }).init();
   const stateRepository = new PluginStateRepository({ database });
@@ -160,7 +160,7 @@ test('plugin enabled state is restored from JSON database after manager recreati
 
 
 test('plugin manager restore reconciles both enabled and disabled states from the database', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-restore-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-restore-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const database = await new DatabaseService({ directory: path.join(directory, 'database'), logger }).init();
   const stateRepository = new PluginStateRepository({ database });
@@ -181,7 +181,7 @@ test('plugin manager restore reconciles both enabled and disabled states from th
 });
 
 test('automatic plugin installation detects category and reloads a new one-command plugin', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-add-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-add-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const registry = new PluginRegistry({ logger });
   const manager = new PluginManager({
@@ -197,7 +197,7 @@ test('automatic plugin installation detects category and reloads a new one-comma
 });
 
 test('custom category installation overrides category and overwrites the existing command file', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-overwrite-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-overwrite-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const registry = new PluginRegistry({ logger });
   const manager = new PluginManager({ registry, directory, logger });
@@ -214,7 +214,7 @@ test('custom category installation overrides category and overwrites the existin
 });
 
 test('invalid replacement rolls back the previous plugin and rejects multi-command sources', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-rollback-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-rollback-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const registry = new PluginRegistry({ logger });
   const manager = new PluginManager({ registry, directory, logger });
@@ -229,7 +229,7 @@ test('invalid replacement rolls back the previous plugin and rejects multi-comma
 });
 
 test('getSource resolves plugin by name or command and returns its file content', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-get-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-get-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const registry = new PluginRegistry({ logger });
   const manager = new PluginManager({ registry, directory, logger });
@@ -270,7 +270,7 @@ test('owner getplugin command returns installed plugin source', async () => {
 });
 
 test('installer refuses to overwrite its own management commands', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-plugin-protected-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-plugin-protected-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const registry = new PluginRegistry({ logger });
   await fs.writeFile(path.join(directory, 'addplugin.js'), source('owner-addplugin', 'addplugin'));

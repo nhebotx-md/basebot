@@ -31,7 +31,7 @@ function getPluginProgress(ctx) {
   return typeof ctx?.progress === 'function' ? ctx.progress : createNoopPluginProgress();
 }
 
-function createPluginProgress({ client, message, plugin, command, commandLabel = '', logger = console, botName = 'ShooNhee-AI' } = {}) {
+function createPluginProgress({ client, message, plugin, command, commandLabel = '', logger = console, botName = 'MUSE-MD' } = {}) {
   if (!client || typeof client.sendMessage !== 'function' || !message?.chat || !message?.key) return createNoopPluginProgress();
   const state = { started: false, finished: false, status: 'running', statusMessage: null, steps: [], current: null, startedAt: 0, deliveryUnavailable: false };
 
@@ -39,7 +39,7 @@ function createPluginProgress({ client, message, plugin, command, commandLabel =
     const elapsed = state.startedAt ? Math.max(0, Math.round((Date.now() - state.startedAt) / 1000)) : 0;
     const lines = [
       ...(commandLabel ? ['> ' + clean(commandLabel), ''] : []),
-      '╭─〔 BASEBOT PROCESS 〕',
+      '╭─〔 MUSE-MD PROCESS 〕',
       '│ Plugin  : *' + clean(plugin?.name, 'unknown') + '*',
       '│ Command : *' + clean(command, '-') + '*',
       '│ Status  : *' + (state.status === 'success' ? 'BERHASIL' : state.status === 'failed' ? 'GAGAL' : 'SEDANG DIPROSES') + '*',

@@ -104,7 +104,7 @@ async function buildContext({ client, m, chatUpdate, store, config, registry, lo
   }
   const userProfile = registry.userService && sender ? await registry.userService.getProfile(sender) : null;
   const commandQuote = parsed ? parsed.prefix + parsed.command : '';
-  const messageService = createMessageService(client, { botName: config.botName || 'ShooNhee-AI', verified: true, commandQuote });
+  const messageService = createMessageService(client, { botName: config.botName || 'MUSE-MD', verified: true, commandQuote });
   const services = {
     ...messageService, config, logger, store,
     identity: getIdentityResolver(client),

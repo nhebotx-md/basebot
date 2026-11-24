@@ -2,7 +2,7 @@
 
 const { createFakeQuoted } = require('../messaging/fake-quoted');
 
-function createMessageService(client, { botName = 'ShooNhee-AI', verified = true, commandQuote = '' } = {}) {
+function createMessageService(client, { botName = 'MUSE-MD', verified = true, commandQuote = '' } = {}) {
   const commandHeader = commandQuote ? '> ' + String(commandQuote).replace(/[\r\n]/g, '').trim() : '';
 
   function formatCommandContent(content) {

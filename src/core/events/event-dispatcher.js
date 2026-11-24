@@ -40,7 +40,7 @@ function createBaileysEventDispatcher({ dispatcher, config, registry, logger = c
   async function dispatch(client, eventName, payload) {
     if (eventName === 'lid-mapping.update') getIdentityResolver(client).clear();
     const chat = eventChat(payload);
-    const messages = createMessageService(client, { botName: config?.botName || 'ShooNhee-AI', verified: true });
+    const messages = createMessageService(client, { botName: config?.botName || 'MUSE-MD', verified: true });
     const context = {
       client, sock: client, config, registry, logger, chat,
       isGroup: typeof chat === 'string' && chat.endsWith('@g.us'),

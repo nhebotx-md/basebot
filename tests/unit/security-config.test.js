@@ -37,7 +37,7 @@ test('configuration reads user options from settings.js and API credentials from
 
 
 test('dotenv reader preserves existing process values and quoted # characters', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'basebot-env-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'muse-md-env-'));
   const file = path.join(root, '.env');
   try {
     fs.writeFileSync(file, 'KEEP=new\nVALUE="secret # still part of value" # trailing comment\nPLAIN=value # comment\n');
@@ -80,13 +80,13 @@ test('pretty logger renders branded cards, honors color settings, and redacts pr
   const lines = [];
   const sink = { log(line) { lines.push(line); }, info(line) { lines.push(line); }, warn(line) { lines.push(line); }, error(line) { lines.push(line); }, debug(line) { lines.push(line); } };
   const logger = createLogger({ level: 'debug', format: 'pretty', colors: false, sink, component: 'test', clock: () => new Date('2026-11-12T14:00:00.000Z') });
-  logger.banner({ name: 'BASEBOT', version: '2.0.0', mode: 'public', prefix: '.' });
+  logger.banner({ name: 'MUSE-MD', version: '2.0.0', mode: 'public', prefix: '.' });
   logger.plugins({ discovered: 24, loaded: 24, skipped: 0, commands: 52, plugins: ['menu', 'ping'] });
   logger.connection('open', { credentialsRegistered: true, phoneNumber: '6281234567890' });
   logger.activity({ command: 'menu', plugin: 'menu', scope: 'group', durationMs: 12, sender: '6281234567890@s.whatsapp.net' });
   logger.info('Uji kontrol\u001b[31m dan metadata.', { phone: '6281234567890', token: 'private-token', statusCode: 200 });
   const output = lines.join('\n');
-  assert.match(output, /BASEBOT/);
+  assert.match(output, /MUSE-MD/);
   assert.match(output, /PLUGIN ECOSYSTEM/);
   assert.match(output, /CONNECTED/);
   assert.match(output, /\.menu.*menu.*GROUP/);
@@ -114,7 +114,7 @@ test('silent logger suppresses branded banner, plugin, connection and activity c
   const lines = [];
   const sink = { log(line) { lines.push(line); }, info(line) { lines.push(line); }, warn(line) { lines.push(line); }, error(line) { lines.push(line); } };
   const logger = createLogger({ level: 'silent', format: 'pretty', colors: false, sink });
-  logger.banner({ name: 'BASEBOT', version: '2.0.0' });
+  logger.banner({ name: 'MUSE-MD', version: '2.0.0' });
   logger.plugins({ discovered: 24, loaded: 24, commands: 52 });
   logger.connection('open', { credentialsRegistered: true });
   logger.activity({ command: 'menu', plugin: 'menu' });

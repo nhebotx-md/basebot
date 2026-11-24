@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 class RotatingFileLog {
-  constructor({ directory = './logs', filename = 'basebot.jsonl', maxBytes = 5 * 1024 * 1024, maxFiles = 5, maxPendingWrites = 2000 } = {}) {
+  constructor({ directory = './logs', filename = 'muse-md.jsonl', maxBytes = 5 * 1024 * 1024, maxFiles = 5, maxPendingWrites = 2000 } = {}) {
     if (typeof filename !== 'string' || !/^[a-zA-Z0-9._-]{1,64}$/.test(filename) || filename === '.' || filename === '..') {
       throw new TypeError('Nama file log tidak valid.');
     }
@@ -57,7 +57,7 @@ class RotatingFileLog {
       this.enabled = false;
       if (!this.reportedError) {
         this.reportedError = true;
-        process.stderr?.write?.('[BASEBOT] File logger dinonaktifkan setelah kegagalan penulisan. Periksa direktori log dan izin penyimpanan.\n');
+        process.stderr?.write?.('[MUSE-MD] File logger dinonaktifkan setelah kegagalan penulisan. Periksa direktori log dan izin penyimpanan.\n');
       }
     }).finally(() => {
       this.pending = Math.max(0, this.pending - 1);

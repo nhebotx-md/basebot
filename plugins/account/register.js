@@ -4,7 +4,7 @@ module.exports = {
   name: 'register-user',
   commands: ['daftar'],
   category: 'account',
-  description: 'Mendaftarkan pengguna agar dapat memakai fitur BASEBOT di grup.',
+  description: 'Mendaftarkan pengguna agar dapat memakai fitur MUSE-MD di grup.',
   usage: '.daftar nama',
   permissions: { registrationExempt: true },
   async execute(ctx) {
@@ -28,7 +28,7 @@ module.exports = {
       '│ Role: *user*',
       '│ Status: *Aktif*',
       '╰────────────────',
-      'Akunmu sudah tersimpan di database BASEBOT. Fitur yang bisa digunakan mengikuti role dan izin akun.'
+      'Akunmu sudah tersimpan di database MUSE-MD. Fitur yang bisa digunakan mengikuti role dan izin akun.'
     ].join('\n'));
   }
 };

@@ -2,7 +2,7 @@
 
 const MAX_STORED_POLLS = 200;
 const MAX_UPDATES_PER_POLL = 500;
-const POLL_MAP_PROPERTY = '__basebotPollVotes';
+const POLL_MAP_PROPERTY = '__musePollVotes';
 
 function getPollMap(client) {
   if (!(client[POLL_MAP_PROPERTY] instanceof Map)) client[POLL_MAP_PROPERTY] = new Map();

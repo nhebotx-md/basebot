@@ -1,12 +1,12 @@
 'use strict';
 
 /**
- * BASEBOT user configuration.
+ * MUSE-MD user configuration.
  * Customize this file only. Keep API credentials in .env.
- * Restart BASEBOT after changing settings.
+ * Restart MUSE-MD after changing settings.
  */
 module.exports = {
-  botName: 'BASEBOT',
+  botName: 'MUSE-MD',
   ownerName: 'Owner',
   owners: [],
   prefix: '.',
@@ -17,7 +17,7 @@ module.exports = {
   timezone: 'Asia/Jakarta',
 
   sticker: {
-    packname: 'BASEBOT',
+    packname: 'MUSE-MD',
     author: '',
     apis: { asepharyanaEnabled: false }
   },
@@ -39,7 +39,7 @@ module.exports = {
     color: 'auto',
     baileysLevel: 'warn',
     fileEnabled: true,
-    fileName: 'basebot.jsonl',
+    fileName: 'muse-md.jsonl',
     fileMaxBytes: 5242880,
     fileMaxFiles: 5
   },

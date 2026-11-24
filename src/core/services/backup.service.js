@@ -193,7 +193,7 @@ function createBackupService({ database, logger = console, maxBackups = 14, inte
         replaced.push(name);
       }
       recovery = { recovered: true, snapshotId, recoveredAt: clock().toISOString(), quarantine };
-      notificationQueue.push('DATABASE RECOVERY BERHASIL\nDatabase BASEBOT terdeteksi rusak saat startup dan dipulihkan otomatis dari snapshot terverifikasi: ' + snapshotId + '. Salinan file sebelum pemulihan disimpan di recovery-quarantine. Periksa data dan buat backup eksternal.');
+      notificationQueue.push('DATABASE RECOVERY BERHASIL\nDatabase MUSE-MD terdeteksi rusak saat startup dan dipulihkan otomatis dari snapshot terverifikasi: ' + snapshotId + '. Salinan file sebelum pemulihan disimpan di recovery-quarantine. Periksa data dan buat backup eksternal.');
       logger.warn?.('Disaster recovery database berhasil.', recovery);
     } catch (error) {
       for (const name of replaced.reverse()) {
@@ -270,7 +270,7 @@ function createBackupService({ database, logger = console, maxBackups = 14, inte
         logger.warn?.('Snapshot tidak dapat digunakan untuk disaster recovery; mencoba snapshot berikutnya.', { id: candidate.id, error: error.message });
       }
     }
-    notificationQueue.push('DATABASE RECOVERY GAGAL\nBASEBOT mendeteksi database rusak, tetapi tidak menemukan snapshot yang valid dan kompatibel. Runtime dihentikan agar data tidak tertimpa. Periksa folder data/database dan recovery-quarantine.');
+    notificationQueue.push('DATABASE RECOVERY GAGAL\nMUSE-MD mendeteksi database rusak, tetapi tidak menemukan snapshot yang valid dan kompatibel. Runtime dihentikan agar data tidak tertimpa. Periksa folder data/database dan recovery-quarantine.');
     throw new Error('Database rusak dan tidak ada snapshot valid untuk pemulihan otomatis. Startup dihentikan demi keamanan data.', { cause: corruption });
   }
 
@@ -306,13 +306,13 @@ function createBackupService({ database, logger = console, maxBackups = 14, inte
     if (timer || stopped) return;
     ensureAutomaticBackup().catch(error => {
       lastBackupError = error.message;
-      notificationQueue.push('BACKUP OTOMATIS GAGAL\nPembuatan backup otomatis BASEBOT gagal: ' + error.message);
+      notificationQueue.push('BACKUP OTOMATIS GAGAL\nPembuatan backup otomatis MUSE-MD gagal: ' + error.message);
       logger.error?.('Backup otomatis gagal.', { error });
     });
     timer = setInterval(() => {
       ensureAutomaticBackup().catch(error => {
         lastBackupError = error.message;
-        notificationQueue.push('BACKUP OTOMATIS GAGAL\nPembuatan backup otomatis BASEBOT gagal: ' + error.message);
+        notificationQueue.push('BACKUP OTOMATIS GAGAL\nPembuatan backup otomatis MUSE-MD gagal: ' + error.message);
         logger.error?.('Backup otomatis gagal.', { error });
       });
     }, Math.max(60_000, intervalMs));

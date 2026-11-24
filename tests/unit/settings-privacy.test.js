@@ -7,7 +7,7 @@ const path = require('node:path');
 const { loadConfig, resolveSettingsPath, getSettingsSource } = require('../../src/config/config-loader');
 
 test('configuration resolver prefers ignored local settings and safely falls back to template', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'basebot-settings-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'muse-md-settings-'));
   fs.writeFileSync(path.join(root, 'settings.example.js'), 'module.exports = {};');
   assert.equal(path.basename(resolveSettingsPath(root)), 'settings.example.js');
   assert.equal(getSettingsSource(root), 'template');

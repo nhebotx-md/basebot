@@ -5,12 +5,12 @@ const { loadConfig } = require('../../src/config/config-loader');
 const { createApp } = require('../../src/app');
 
 test('app loads all bundled plugins without opening a WhatsApp socket', async () => {
-  const config = loadConfig({}, { owners: ['6281234567890'], plugins: { directory: './plugins', autoReload: false }, paths: { session: '/tmp/basebot-test-session', temp: '/tmp/basebot-test-temp', logs: '/tmp/basebot-test-logs', database: '/tmp/basebot-test-database' } });
+  const config = loadConfig({}, { owners: ['6281234567890'], plugins: { directory: './plugins', autoReload: false }, paths: { session: '/tmp/muse-md-test-session', temp: '/tmp/muse-md-test-temp', logs: '/tmp/muse-md-test-logs', database: '/tmp/muse-md-test-database' } });
   const messages = [];
   const logger = { info(...args) { messages.push(args); }, debug() {}, warn() {}, error(...args) { messages.push(args); } };
   const app = await createApp({ config, logger });
   assert.equal(app.registry.list().length, 178);
-  assert.equal(app.config.paths.database, '/tmp/basebot-test-database');
+  assert.equal(app.config.paths.database, '/tmp/muse-md-test-database');
   assert.equal(app.users.expPerMessage, 5);
   assert.equal(app.users.expCooldownMs, 60000);
   assert.equal(app.registry.list().reduce((count, plugin) => count + plugin.commands.length, 0), 178);

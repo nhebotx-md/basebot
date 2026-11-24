@@ -14,7 +14,7 @@ test('legacy EXIF facade preserves the public helper API', () => {
 });
 
 function tempStickerDirectories() {
-  return new Set(fs.readdirSync(os.tmpdir()).filter(name => name.startsWith('basebot-sticker-')));
+  return new Set(fs.readdirSync(os.tmpdir()).filter(name => name.startsWith('muse-md-sticker-')));
 }
 
 test('sticker converter produces valid WebP and EXIF metadata, and always removes private input temp directories', async () => {
@@ -22,7 +22,7 @@ test('sticker converter produces valid WebP and EXIF metadata, and always remove
   const webp = await imageToWebp(PNG_FIXTURE);
   assert.equal(webp.toString('ascii', 0, 4), 'RIFF');
   assert.equal(webp.toString('ascii', 8, 12), 'WEBP');
-  const tagged = await addExif(webp, 'BASEBOT', 'Test');
+  const tagged = await addExif(webp, 'MUSE-MD', 'Test');
   assert.equal(tagged.toString('ascii', 0, 4), 'RIFF');
   assert.equal(tagged.toString('ascii', 8, 12), 'WEBP');
   assert.ok(tagged.includes(Buffer.from('sticker-pack-name')));
@@ -30,7 +30,7 @@ test('sticker converter produces valid WebP and EXIF metadata, and always remove
 });
 
 test('metadata sticker file has private permissions and is caller-cleanable', async () => {
-  const stickerPath = await writeExifImg(PNG_FIXTURE, { packname: 'BASEBOT', author: 'Test' });
+  const stickerPath = await writeExifImg(PNG_FIXTURE, { packname: 'MUSE-MD', author: 'Test' });
   try {
     const stat = fs.statSync(stickerPath);
     assert.equal(stat.mode & 0o777, 0o600);
@@ -44,7 +44,7 @@ test('animated GIF converts to animated WebP and EXIF sticker without leaving te
   const webp = await videoToWebp(GIF_FIXTURE);
   assert.equal(webp.toString('ascii', 8, 12), 'WEBP');
   assert.ok(webp.includes(Buffer.from('ANIM')) || webp.includes(Buffer.from('ANMF')));
-  const stickerPath = await writeExifVid(GIF_FIXTURE, { packname: 'BASEBOT', author: 'Test' });
+  const stickerPath = await writeExifVid(GIF_FIXTURE, { packname: 'MUSE-MD', author: 'Test' });
   try { assert.equal(fs.readFileSync(stickerPath).toString('ascii', 8, 12), 'WEBP'); }
   finally { fs.rmSync(stickerPath, { force: true }); }
   assert.deepEqual(tempStickerDirectories(), before);

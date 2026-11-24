@@ -1,6 +1,6 @@
 # JSON Database
 
-BASEBOT memakai JSON sebagai database awal tanpa dependency eksternal. Data runtime disimpan di \`data/database/\` dan direktori tersebut diabaikan oleh Git karena berisi data pengguna.
+MUSE-MD memakai JSON sebagai database awal tanpa dependency eksternal. Data runtime disimpan di \`data/database/\` dan direktori tersebut diabaikan oleh Git karena berisi data pengguna.
 
 ## File
 
@@ -39,12 +39,12 @@ Sebelum PR digabung, jalankan `npm test` dan `npm run check` pada Node.js 22 ata
 
 ## Batas penggunaan
 
-JSON cocok untuk satu proses bot dan data awal hingga menengah. Karena satu collection ditulis ulang sebagai satu file, instalasi dengan trafik sangat tinggi atau beberapa proses bot yang berbagi direktori harus beralih ke database transaksional. Jangan menjalankan dua instance BASEBOT pada direktori database yang sama.
+JSON cocok untuk satu proses bot dan data awal hingga menengah. Karena satu collection ditulis ulang sebagai satu file, instalasi dengan trafik sangat tinggi atau beberapa proses bot yang berbagi direktori harus beralih ke database transaksional. Jangan menjalankan dua instance MUSE-MD pada direktori database yang sama.
 
 
 ## Automatic Backup & Disaster Recovery
 
-BASEBOT menjalankan \`BackupService\` sebagai bagian dari lifecycle runtime. Fitur ini bukan hanya perintah manual: sebelum database diinisialisasi, sistem memeriksa konsistensi file aktif dan dapat melakukan pemulihan otomatis dari snapshot lengkap yang lolos verifikasi.
+MUSE-MD menjalankan \`BackupService\` sebagai bagian dari lifecycle runtime. Fitur ini bukan hanya perintah manual: sebelum database diinisialisasi, sistem memeriksa konsistensi file aktif dan dapat melakukan pemulihan otomatis dari snapshot lengkap yang lolos verifikasi.
 
 ### Kebijakan backup otomatis
 
@@ -66,7 +66,7 @@ backups: {
 
 ### Automatic Disaster Recovery
 
-Saat startup, BASEBOT melakukan preflight terhadap empat file database sebelum \`DatabaseService.init()\` mengubah atau memigrasikan file:
+Saat startup, MUSE-MD melakukan preflight terhadap empat file database sebelum \`DatabaseService.init()\` mengubah atau memigrasikan file:
 
 1. Database yang benar-benar baru, tanpa file database maupun snapshot, dikenali sebagai instalasi baru dan diinisialisasi kosong.
 2. Database yang sehat dilanjutkan seperti biasa.
@@ -77,7 +77,7 @@ Saat startup, BASEBOT melakukan preflight terhadap empat file database sebelum \
 
 Database kosong tidak otomatis dianggap rusak. Namun, jika file database hilang sementara snapshot masih tersedia, kondisi tersebut diperlakukan sebagai kehilangan data dan recovery dijalankan.
 
-Setelah koneksi WhatsApp tersedia, BASEBOT mengirim notifikasi recovery atau kegagalan backup kepada nomor owner yang dikonfigurasi. Jika startup berhenti karena tidak ada recovery point, periksa log terminal, pulihkan snapshot eksternal, lalu jalankan ulang bot. Recovery tidak dapat menjamin pemberitahuan WhatsApp saat proses startup memang harus dihentikan dan koneksi belum terbentuk.
+Setelah koneksi WhatsApp tersedia, MUSE-MD mengirim notifikasi recovery atau kegagalan backup kepada nomor owner yang dikonfigurasi. Jika startup berhenti karena tidak ada recovery point, periksa log terminal, pulihkan snapshot eksternal, lalu jalankan ulang bot. Recovery tidak dapat menjamin pemberitahuan WhatsApp saat proses startup memang harus dihentikan dan koneksi belum terbentuk.
 
 ### Restore manual dan keselamatan data
 
@@ -88,7 +88,7 @@ Setelah koneksi WhatsApp tersedia, BASEBOT mengirim notifikasi recovery atau keg
 - Restore mencakup database JSON saja. Sesi WhatsApp, \`settings.js\`, \`.env\`, media sementara, dan log tidak termasuk.
 - Backup lokal tidak melindungi dari kehilangan perangkat. Salin direktori \`data/database/backups/\` secara berkala ke media lain yang terenkripsi dan aksesnya dibatasi. Jangan mengunggah snapshot berisi profil, nomor WhatsApp, statistik, atau data grup ke repositori publik.
 
-JSON database ditujukan untuk satu proses bot. Jangan menjalankan dua instance BASEBOT pada direktori database yang sama.
+JSON database ditujukan untuk satu proses bot. Jangan menjalankan dua instance MUSE-MD pada direktori database yang sama.
 
 
 ## Data Finance

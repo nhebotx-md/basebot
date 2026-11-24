@@ -27,7 +27,7 @@ function metadataExif(metadata, categories = [''], extra = {}) {
 
 async function convertToWebp(media, animated = false) {
   if (!Buffer.isBuffer(media) || media.length === 0) throw new TypeError('Data media kosong atau tidak valid.');
-  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'basebot-sticker-'));
+  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'muse-md-sticker-'));
   const inputFile = path.join(tempDirectory, animated ? 'input.mp4' : 'input.jpg');
   const outputFile = path.join(tempDirectory, 'output.webp');
   try {

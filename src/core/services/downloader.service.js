@@ -25,7 +25,7 @@ function validateSource(input, allowedHosts, label) {
 
 async function downloadWithYtDlp(input, { binary = 'yt-dlp', tempDir = './storage/temp', timeoutMs = 90000 } = {}) {
   await fs.mkdir(tempDir, { recursive: true });
-  const root = await fs.mkdtemp(path.join(tempDir, 'basebot-downloader-'));
+  const root = await fs.mkdtemp(path.join(tempDir, 'muse-md-downloader-'));
   const output = path.join(root, 'audio.%(ext)s');
   try {
     await execFileAsync(binary, [
@@ -56,7 +56,7 @@ function createDownloaderService(config = {}, adapters = {}) {
   const tikwmProvider = adapters.tikwm || (async url => {
     const body = new URLSearchParams({ url, count: '12', cursor: '0', web: '1', hd: '1' });
     const response = await axios.post('https://www.tikwm.com/api/', body.toString(), {
-      headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'user-agent': 'Mozilla/5.0 BaseBot/2.0', accept: 'application/json, text/plain, */*', referer: 'https://www.tikwm.com/' },
+      headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'user-agent': 'Mozilla/5.0 MUSE-MD/2.0', accept: 'application/json, text/plain, */*', referer: 'https://www.tikwm.com/' },
       timeout: 25000, maxRedirects: 3, maxContentLength: 1024 * 1024, maxBodyLength: 16 * 1024
     });
     const payload = response.data;

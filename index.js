@@ -6,7 +6,7 @@ const { createLogger } = require('./src/core/services/logger.service');
 if (require.main === module) {
   startApp().catch(error => {
     // Error detail tetap berguna untuk operator, sementara secret disensor logger.
-    createLogger({ level: 'info' }).error('BASEBOT gagal dijalankan.', { error });
+    createLogger({ level: 'info' }).error('MUSE-MD gagal dijalankan.', { error });
     process.exitCode = 1;
   });
 }

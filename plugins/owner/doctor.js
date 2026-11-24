@@ -4,7 +4,7 @@ module.exports = {
   name: 'doctor',
   commands: ['doctor'],
   category: 'owner',
-  description: 'Memeriksa konfigurasi, dependency, direktori, database, koneksi, dan plugin BASEBOT.',
+  description: 'Memeriksa konfigurasi, dependency, direktori, database, koneksi, dan plugin MUSE-MD.',
   usage: '.doctor',
   permissions: { ownerOnly: true },
   async execute(ctx) {
@@ -14,7 +14,7 @@ module.exports = {
     if (!doctor || typeof doctor.run !== 'function') { await ctx.reply('System Doctor belum tersedia pada runtime ini.'); return; }
     const report = await doctor.run();
     const icon = report.status === 'healthy' ? '✓' : report.status === 'warning' ? '!' : '×';
-    const lines = ['*BASEBOT SYSTEM DOCTOR*', 'Status: *' + report.status.toUpperCase() + '* ' + icon,
+    const lines = ['*MUSE-MD SYSTEM DOCTOR*', 'Status: *' + report.status.toUpperCase() + '* ' + icon,
       'Pemeriksaan: ' + report.summary.passed + ' lolos · ' + report.summary.warnings + ' peringatan · ' + report.summary.failures + ' gagal', ''];
     for (const check of report.checks) {
       lines.push((check.status === 'pass' ? '✓' : check.status === 'warn' ? '!' : '×') + ' *' + check.name + '*: ' + check.detail);

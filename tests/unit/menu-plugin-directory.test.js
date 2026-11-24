@@ -45,7 +45,7 @@ function createFixture() {
   };
   const service = createMenuService({
     registry,
-    config: { prefix: '.', timezone: 'Asia/Jakarta', botName: 'BASEBOT', publicMode: true },
+    config: { prefix: '.', timezone: 'Asia/Jakarta', botName: 'MUSE-MD', publicMode: true },
     database
   });
   const ctx = {

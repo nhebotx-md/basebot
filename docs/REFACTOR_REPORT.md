@@ -1,4 +1,4 @@
-# Laporan Teknis Refactor BASEBOT
+# Laporan Teknis Refactor MUSE-MD
 
 ## Ringkasan repository sebelum refactor
 
@@ -80,11 +80,11 @@ Verifikasi lokal yang dilaporkan pengguna pada 2026-11-13:
 ## Belum diuji / batasan
 
 - Tidak ada pairing, login, atau koneksi WhatsApp nyata; tes event dan socket menggunakan mock sebagaimana disyaratkan. Lakukan uji terkontrol dengan akun uji operator sebelum deploy.
-- Node.js 20 tidak didukung karena fork Baileys memerlukan peer dependency native `better-sqlite3` pada runtime di bawah 22.13; BASEBOT menetapkan minimum 22.13 dan CI menguji Node 22/24.
+- Node.js 20 tidak didukung karena fork Baileys memerlukan peer dependency native `better-sqlite3` pada runtime di bawah 22.13; MUSE-MD menetapkan minimum 22.13 dan CI menguji Node 22/24.
 - Timeout request diterapkan pada transport; suite otomatis memverifikasi batas byte dan safe URL, sedangkan request HTTP aktual yang dilakukan di smoke test adalah endpoint publik yang berhasil, bukan timeout/redirect.
 - Sejumlah layanan AI/downloader pihak ketiga tidak dapat dijamin tersedia permanen.
 - Credential SMTP yang tertanam di baseline telah dihapus dari working tree, tetapi riwayat penuh tidak dipindai karena checkout dangkal. Rotasi credential dan scan secret pada clone penuh tetap diperlukan.
-- Branch pengembangan terkini: `refactor/architecture-foundation`. PR arsitektur aktif: https://github.com/nhebotx-md/basebot/pull/9. Commit yang diuji lokal pengguna pada 2026-11-13: `e0704dc96583baa42ffc212d20d248cd597bf46c`.
+- Branch pengembangan terkini: `refactor/architecture-foundation`. PR arsitektur aktif: https://github.com/nhebotx-md/muse-md/pull/9. Commit yang diuji lokal pengguna pada 2026-11-13: `e0704dc96583baa42ffc212d20d248cd597bf46c`.
 
 ## Cara menjalankan
 

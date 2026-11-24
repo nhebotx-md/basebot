@@ -2,7 +2,7 @@
 
 const FAKE_QUOTED_JID = '13135550002@s.whatsapp.net';
 
-function createFakeQuoted(botName = 'ShooNhee-AI', verified = true) {
+function createFakeQuoted(botName = 'MUSE-MD', verified = true) {
   return {
     key: {
       fromMe: false,

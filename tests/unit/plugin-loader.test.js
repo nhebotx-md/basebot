@@ -9,7 +9,7 @@ const { findPluginFiles, loadPlugins } = require('../../src/core/plugins/plugin-
 const { PluginRegistry } = require('../../src/core/plugins/plugin-registry');
 
 test('loader sorts recursively, ignores hidden/dependency folders, and logs import/validation failure detail', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-loader-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-loader-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, 'system', '.hidden'), { recursive: true });
   await fs.mkdir(path.join(root, 'node_modules', 'ignored'), { recursive: true });
@@ -34,7 +34,7 @@ test('loader sorts recursively, ignores hidden/dependency folders, and logs impo
 });
 
 test('voicechanger registers all aliases even when its optional FFmpeg binary is unavailable', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-ffmpeg-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-ffmpeg-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const pluginPath = require.resolve('../../plugins/media/voicechanger.handler.cjs');
   const originalLoad = Module._load;
