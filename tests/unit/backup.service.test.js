@@ -11,7 +11,7 @@ const { createBackupService } = require('../../src/core/services/backup.service'
 const logger = { info() {}, warn() {}, error() {} };
 
 async function fixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-backup-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-backup-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const database = await new DatabaseService({ directory, logger }).init();
   t.after(() => database.close());
@@ -116,7 +116,7 @@ test('owner backup command rejects non-owner before touching backup storage', as
 
 
 test('startup disaster recovery restores the newest verified snapshot before database init', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-recovery-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-recovery-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const original = await new DatabaseService({ directory, logger }).init();
   await original.update('users', users => { users.recoverMe = { coins: 91 }; });
@@ -140,7 +140,7 @@ test('startup disaster recovery restores the newest verified snapshot before dat
 });
 
 test('startup recovery treats a genuinely empty database as a fresh install', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-fresh-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-fresh-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const database = new DatabaseService({ directory, logger });
   const backups = createBackupService({ database, logger });
@@ -152,7 +152,7 @@ test('startup recovery treats a genuinely empty database as a fresh install', as
 });
 
 test('startup recovery refuses corrupted data when no verified snapshot exists', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-no-recovery-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-no-recovery-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(path.join(directory, 'meta.json'), '{"schemaVersion":1}');

@@ -14,7 +14,7 @@ const COMMANDS = [
 ];
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 15 * 1024 * 1024;
-const USER_AGENT = 'BASEBOT/2.0 (image-transform)';
+const USER_AGENT = 'MUSE-MD/2.0 (image-transform)';
 
 function detectImageFormat(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
@@ -27,7 +27,7 @@ function detectImageFormat(buffer) {
 
 async function uploadImage(buffer) {
   const form = new FormData();
-  form.append('files[]', buffer, { filename: 'basebot-input.jpg', contentType: 'application/octet-stream' });
+  form.append('files[]', buffer, { filename: 'muse-md-input.jpg', contentType: 'application/octet-stream' });
   const response = await axios.post('https://uguu.se/upload', form, {
     headers: { ...form.getHeaders(), 'User-Agent': USER_AGENT },
     timeout: 30000,

@@ -88,7 +88,7 @@ function createClientFactory({ config, logger = createLogger(), dependencies } =
         const hasExplicitQuote = Object.hasOwn(options, 'quoted') && options.quoted !== undefined;
         const shouldAddFakeQuote = !hasExplicitQuote && !isControlMessage && jid !== 'status@broadcast';
         const sendOptions = shouldAddFakeQuote
-          ? { ...options, quoted: createFakeQuoted(config.botName || 'ShooNhee-AI', true) }
+          ? { ...options, quoted: createFakeQuoted(config.botName || 'MUSE-MD', true) }
           : options;
         const sent = await originalSendMessage(jid, content, sendOptions);
         const key = sent?.key;

@@ -1,4 +1,4 @@
-# Migrasi BASEBOT 1.x → 2.x
+# Migrasi MUSE-MD 1.x → 2.x
 
 ## Perubahan penting
 

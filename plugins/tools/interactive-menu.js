@@ -92,7 +92,7 @@ module.exports = {
     }));
     const message = {
       text: `Pilih kategori lewat tombol interaktif. Jika tombol tidak tampil, gunakan command berikut:\n${categories.map(category => `• ${prefix}catmenu ${category.slug}`).join('\n')}`,
-      footer: 'BASEBOT',
+      footer: 'MUSE-MD',
       buttons: [{ text: 'Pilih kategori', sections: [{ title: 'Kategori', rows }] }]
     };
 

@@ -42,11 +42,11 @@ test('IDCH fetches and displays detailed channel metadata', async () => {
   const calls = [];
   const ctx = context({
     command: 'idch', text: 'https://whatsapp.com/channel/0029Vb8vySGAYlUMLcZVFT3d',
-    client: { async newsletterMetadata(...args) { calls.push(args); return { id: '120363111111111111@newsletter', name: 'BASEBOT Updates', description: 'Informasi rilis bot', subscribers: 1250, state: 'active', creation_time: 1735689600 }; } }
+    client: { async newsletterMetadata(...args) { calls.push(args); return { id: '120363111111111111@newsletter', name: 'MUSE-MD Updates', description: 'Informasi rilis bot', subscribers: 1250, state: 'active', creation_time: 1735689600 }; } }
   });
   await idch.execute(ctx);
   assert.deepEqual(calls, [['invite', '0029Vb8vySGAYlUMLcZVFT3d']]);
-  assert.match(ctx.replies[0], /BASEBOT Updates/);
+  assert.match(ctx.replies[0], /MUSE-MD Updates/);
   assert.match(ctx.replies[0], /120363111111111111@newsletter/);
   assert.match(ctx.replies[0], /1250/);
   assert.match(ctx.replies[0], /Informasi rilis bot/);
@@ -78,10 +78,10 @@ test('IDGC parses invite URL, invite code, and group JID', () => {
 test('IDGC displays detailed metadata for the active group', async () => {
   const ctx = context({
     isGroup: true, chat: '120363000000000000@g.us',
-    groupMetadata: { id: '120363000000000000@g.us', subject: 'Komunitas BASEBOT', desc: 'Diskusi dan pengumuman', participants: [{}, {}, {}], owner: '628123456789@s.whatsapp.net', creation: 1735689600, announce: true, restrict: false, memberAddMode: true, joinApprovalMode: true, ephemeralDuration: 86400, isCommunity: true }
+    groupMetadata: { id: '120363000000000000@g.us', subject: 'Komunitas MUSE-MD', desc: 'Diskusi dan pengumuman', participants: [{}, {}, {}], owner: '628123456789@s.whatsapp.net', creation: 1735689600, announce: true, restrict: false, memberAddMode: true, joinApprovalMode: true, ephemeralDuration: 86400, isCommunity: true }
   });
   await idgc.execute(ctx);
-  assert.match(ctx.replies[0], /Komunitas BASEBOT/);
+  assert.match(ctx.replies[0], /Komunitas MUSE-MD/);
   assert.match(ctx.replies[0], /120363000000000000@g.us/);
   assert.match(ctx.replies[0], /Jumlah Anggota:\* 3/);
   assert.match(ctx.replies[0], /Hanya admin/);

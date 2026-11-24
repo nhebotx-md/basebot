@@ -23,7 +23,7 @@ function makeContext(command, args, { downloadBuffer } = {}) {
     ctx: {
       command, args, prefix: '.', chat: 'chat@s.whatsapp.net',
       m: { raw: { key: { id: 'm1' } } },
-      config: { sticker: { packname: 'BASEBOT', author: 'test' } },
+      config: { sticker: { packname: 'MUSE-MD', author: 'test' } },
       progress, services: { media: { downloadBuffer } },
       client: {
         async sendImageAsSticker(...values) { sent.push(['image', ...values]); },

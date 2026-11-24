@@ -1,6 +1,6 @@
-# BASEBOT
+# MUSE-MD
 
-BASEBOT adalah framework bot WhatsApp berbasis **Node.js, CommonJS, dan Baileys**. Command dipisahkan ke direktori `plugins/`, sedangkan koneksi WhatsApp, lifecycle, permission, database, logging, dan eksekusi command dikelola oleh core di `src/`.
+MUSE-MD adalah framework bot WhatsApp berbasis **Node.js, CommonJS, dan Baileys**. Command dipisahkan ke direktori `plugins/`, sedangkan koneksi WhatsApp, lifecycle, permission, database, logging, dan eksekusi command dikelola oleh core di `src/`.
 
 Project ini menggunakan sistem plugin modular: metadata plugin divalidasi saat startup, command didaftarkan ke registry, lalu dieksekusi melalui dispatcher terpusat. **Setiap command memiliki satu file plugin sendiri** di kategori yang sesuai; alias juga dipisahkan menjadi file plugin terpisah. Menu dibangun dari registry aktif, bukan daftar command statis.
 
@@ -27,7 +27,7 @@ Perubahan terbaru yang sudah masuk ke `main`:
 - **PR #49:** format balasan command dengan blockquote WhatsApp, misalnya `> .ping`, termasuk caption media dan pesan progres.
 - **PR #50:** pemeriksaan ID dan metadata WhatsApp Channel melalui `.idch` / `.cekidch`, serta Group melalui `.idgc` / `.cekidgc`.
 
-Tautan: [base commit](https://github.com/nhebotx-md/basebot/commit/da8713be42b987f96275a379771203e0eb8c3478) · [CI](https://github.com/nhebotx-md/basebot/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/basebot/pull/49) · [PR #50](https://github.com/nhebotx-md/basebot/pull/50)
+Tautan: [base commit](https://github.com/nhebotx-md/muse-md/commit/da8713be42b987f96275a379771203e0eb8c3478) · [CI](https://github.com/nhebotx-md/muse-md/actions/runs/44721680450) · [PR #49](https://github.com/nhebotx-md/muse-md/pull/49) · [PR #50](https://github.com/nhebotx-md/muse-md/pull/50)
 
 
 ## Fitur utama
@@ -101,8 +101,8 @@ Dependency Baileys dikunci pada `@itsliaaa/baileys@0.5.6`; gunakan lockfile proj
 ## Instalasi dan menjalankan
 
 ```bash
-git clone https://github.com/nhebotx-md/basebot.git
-cd basebot
+git clone https://github.com/nhebotx-md/muse-md.git
+cd muse-md
 npm ci
 cp .env.example .env
 cp settings.example.js settings.js
@@ -119,7 +119,7 @@ npm start
 Untuk memperbarui instalasi yang sudah ada tanpa menimpa `settings.js`, sesi, atau database lokal:
 
 ```bash
-cd ~/basebot
+cd ~/muse-md
 git pull --ff-only
 npm ci
 npm test
@@ -127,7 +127,7 @@ npm run check
 npm start
 ```
 
-Jika folder repository berada di lokasi lain, ganti `~/basebot` dengan path instalasi. Perintah `npm ci` menyelaraskan dependency dengan `package-lock.json`; jangan menghapus folder `session/` atau `data/database/` hanya untuk melakukan update.
+Jika folder repository berada di lokasi lain, ganti `~/muse-md` dengan path instalasi. Perintah `npm ci` menyelaraskan dependency dengan `package-lock.json`; jangan menghapus folder `session/` atau `data/database/` hanya untuk melakukan update.
 
 
 Pairing code dibuat oleh Baileys dan dicetak ke terminal hanya ketika sesi belum terdaftar. Jangan mengisi `PAIRING_CODE` dengan kode tetap. Setelah pairing berhasil, kredensial disimpan pada direktori sesi.
@@ -158,7 +158,7 @@ CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas
 | `LOG_FORMAT` | `pretty` untuk terminal atau `json` untuk log terstruktur. |
 | `LOG_COLOR` | `auto`, `always`, atau `never`. |
 | `LOG_FILE_ENABLED` | Menulis log JSONL ke disk; default `true`. Set `false` untuk mematikan file log. |
-| `LOG_FILE_NAME` | Nama file log di dalam `LOG_DIR`; tidak menerima path. Default `basebot.jsonl`. |
+| `LOG_FILE_NAME` | Nama file log di dalam `LOG_DIR`; tidak menerima path. Default `muse-md.jsonl`. |
 | `LOG_FILE_MAX_BYTES`, `LOG_FILE_MAX_FILES` | Batas ukuran per file dan jumlah file termasuk file aktif; default 5 MiB dan 5 file. File log memakai permission privat. |
 | `COMMAND_RATE_LIMIT`, `COMMAND_RATE_WINDOW_MS` | Batas command per pengirim dan jendela waktu; default 8 command/10 detik. Nilai `0` menonaktifkan rate limit. |
 | `MAX_CONCURRENT_COMMANDS` | Batas pekerjaan plugin yang berjalan bersamaan; default 20. |
@@ -253,4 +253,4 @@ Lihat [Panduan Pengembangan Plugin](docs/PLUGIN_DEVELOPMENT.md) dan [Plugin API]
 
 Kategori sticker menyediakan plugin command terpisah untuk `.brat <teks>` (statis), `.bratvid <teks>` / `.bratvideo <teks>` (animasi), serta `.stickerapi brat|animated <teks>` / `.stapi` untuk format alternatif.
 
-Siputzx menjadi satu-satunya provider. BASEBOT membatasi teks hingga 300 karakter, timeout 15 detik, respons 8 MiB, memvalidasi signature PNG/GIF, lalu mengonversi media ke format sticker WhatsApp dengan metadata pack lokal. Jika API gagal atau format respons tidak valid, bot melaporkan kegagalan tanpa mengirim file yang belum tervalidasi. Jangan kirim teks rahasia karena teks diproses oleh provider pihak ketiga.
+Siputzx menjadi satu-satunya provider. MUSE-MD membatasi teks hingga 300 karakter, timeout 15 detik, respons 8 MiB, memvalidasi signature PNG/GIF, lalu mengonversi media ke format sticker WhatsApp dengan metadata pack lokal. Jika API gagal atau format respons tidak valid, bot melaporkan kegagalan tanpa mengirim file yang belum tervalidasi. Jangan kirim teks rahasia karena teks diproses oleh provider pihak ketiga.

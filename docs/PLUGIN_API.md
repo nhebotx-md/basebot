@@ -29,7 +29,7 @@ Context dibangun oleh core dan berisi `client`/`sock`, `m` (pesan normalisasi), 
 
 ## Default Fake Quoted Reply
 
-Balasan yang dikirim melalui `ctx.reply()`, `ctx.sendMessage()`, `ctx.services.sendMessage()`, dan pesan status proses memakai contact quote default dengan nama `config.botName` (fallback `ShooNhee-AI`) dan label visual verified. Quote dibuat khusus untuk JID chat tujuan agar tidak memakai remote JID statis dari contoh.
+Balasan yang dikirim melalui `ctx.reply()`, `ctx.sendMessage()`, `ctx.services.sendMessage()`, dan pesan status proses memakai contact quote default dengan nama `config.botName` (fallback `MUSE-MD`) dan label visual verified. Quote dibuat khusus untuk JID chat tujuan agar tidak memakai remote JID statis dari contoh.
 
 Untuk memakai kutipan pesan asli, teruskan opsi `quoted` secara eksplisit:
 
@@ -42,7 +42,7 @@ Helper tersedia dari `src/core/messaging/fake-quoted.js`:
 
 ```js
 const { createFakeQuoted } = require('../../src/core/messaging/fake-quoted');
-const quoted = createFakeQuoted('ShooNhee-AI', true, ctx.chat);
+const quoted = createFakeQuoted('MUSE-MD', true, ctx.chat);
 ```
 
 Label verified di sini adalah tampilan contact/vCard yang dibentuk bot, bukan verifikasi resmi akun WhatsApp.

@@ -1,6 +1,6 @@
 # Plugin Process Feedback
 
-BASEBOT menyediakan satu API progres untuk semua command plugin. Tujuannya memberi informasi tahap kerja yang jelas tanpa memenuhi chat dengan pesan baru berulang kali.
+MUSE-MD menyediakan satu API progres untuk semua command plugin. Tujuannya memberi informasi tahap kerja yang jelas tanpa memenuhi chat dengan pesan baru berulang kali.
 
 ## Cara pakai
 

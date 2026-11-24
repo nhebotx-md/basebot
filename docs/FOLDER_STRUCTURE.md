@@ -1,4 +1,4 @@
-# Standar Struktur Folder BASEBOT
+# Standar Struktur Folder MUSE-MD
 
 Dokumen ini adalah kontrak struktur. Perpindahan kode dilakukan bertahap dengan adapter kompatibilitas; jangan memindahkan banyak modul sekaligus tanpa memperbarui seluruh import, test, dokumentasi, dan script.
 

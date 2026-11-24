@@ -119,7 +119,7 @@ function safeStringify(value) {
   try { return JSON.stringify(redact(value)); } catch { return '"[Unserializable metadata]"'; }
 }
 
-function createLogger({ level = 'info', sink = console, component = 'BASEBOT', format = 'json', colors, clock = () => new Date(), timezone = 'Asia/Jakarta', file = null } = {}) {
+function createLogger({ level = 'info', sink = console, component = 'MUSE-MD', format = 'json', colors, clock = () => new Date(), timezone = 'Asia/Jakarta', file = null } = {}) {
   const threshold = LEVELS[level] ?? LEVELS.info;
   const pretty = format === 'pretty';
   const colorEnabled = colors === undefined ? autoColorEnabled(sink === console) : Boolean(colors);
@@ -208,7 +208,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   logger.divider = () => panelLine(colorize(colorEnabled, ANSI.border, '  ' + '─'.repeat(Math.max(12, Math.min(terminalWidth() - 4, 76)))));
   logger.banner = info => {
     if (threshold > LEVELS.info) return;
-    const name = clip(info?.name || 'BASEBOT', 32).toUpperCase();
+    const name = clip(info?.name || 'MUSE-MD', 32).toUpperCase();
     const version = clip(info?.version || '', 20);
     const mode = clip(String(info?.mode || 'public').toUpperCase(), 16);
     const node = clip(info?.node || process.version, 20);
@@ -226,7 +226,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     if (threshold > LEVELS.info) return;
     const terminal = terminalEnvironment();
     const details = {
-      name: info?.name || 'BASEBOT', version: info?.version || '0.0.0',
+      name: info?.name || 'MUSE-MD', version: info?.version || '0.0.0',
       node: info?.node || process.version, mode: info?.mode || 'public',
       prefix: info?.prefix || '.', timezone: info?.timezone || timezone,
       logLevel: info?.logLevel || level, fileLogEnabled: Boolean(fileTransport)
@@ -343,7 +343,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
   };
   logger.shutdown = (details = {}) => {
     if (threshold > LEVELS.info) return;
-    const message = 'BASEBOT shutdown completed.';
+    const message = 'MUSE-MD shutdown completed.';
     const metadata = { signal: details.signal || 'MANUAL', status: details.status || 'CLEAN EXIT', durationMs: details.durationMs };
     if (!pretty) return record('system', message, metadata);
     persistRecord('system', message, metadata);
@@ -352,7 +352,7 @@ function createLogger({ level = 'info', sink = console, component = 'BASEBOT', f
     const right = colorize(colorEnabled, ANSI.teal, '│', true);
     panelLine('');
     panelLine(border(width, '  ╭', '╮'));
-    panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.white, 'BASEBOT SHUTDOWN', true) + '  ' + colorize(colorEnabled, ANSI.gray, 'CONTROLLED EXIT'), width), width) + right);
+    panelLine(edge + padVisible(fitVisible('  ' + colorize(colorEnabled, ANSI.white, 'MUSE-MD SHUTDOWN', true) + '  ' + colorize(colorEnabled, ANSI.gray, 'CONTROLLED EXIT'), width), width) + right);
     panelLine(border(width, '  ├', '┤'));
     const rows = [
       ['SIGNAL', metadata.signal],

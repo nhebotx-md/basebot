@@ -1,6 +1,6 @@
 # Downloader Suite
 
-BASEBOT menyediakan empat command:
+MUSE-MD menyediakan empat command:
 
 - `.play <judul lagu>`: mencari judul melalui YouTube Search lalu mengirim audio biasa.
 - `.igdl <tautan Instagram>`: Reels, video, foto, dan carousel publik (maksimal 8 media).
@@ -9,7 +9,7 @@ BASEBOT menyediakan empat command:
 
 ## Provider dan fallback tanpa Cobalt
 
-Soclip menjadi provider pertama untuk Instagram, TikTok, dan YouTube. Soclip mengembalikan metadata serta URL media langsung melalui `POST https://api.soclip.dev/v1/media`. BASEBOT memakai API key Bearer dari environment. Setiap ekstraksi sukses menggunakan kredit provider; periksa dashboard Soclip untuk saldo dan penggunaan.
+Soclip menjadi provider pertama untuk Instagram, TikTok, dan YouTube. Soclip mengembalikan metadata serta URL media langsung melalui `POST https://api.soclip.dev/v1/media`. MUSE-MD memakai API key Bearer dari environment. Setiap ekstraksi sukses menggunakan kredit provider; periksa dashboard Soclip untuk saldo dan penggunaan.
 
 Jika Soclip gagal:
 - Instagram mencoba adapter Instagram lama.
@@ -29,7 +29,7 @@ YTDLP_ENABLED=true
 YTDLP_PATH=yt-dlp
 ```
 
-Jangan commit API key ke GitHub atau mengirimkannya ke chat. Jika `SOCLIP_API_KEY` kosong, BASEBOT melewati Soclip dan langsung mencoba provider cadangan. Untuk fallback audio YouTube lokal, pasang `yt-dlp` dan FFmpeg pada server; `YTDLP_PATH` dapat berisi path absolut.
+Jangan commit API key ke GitHub atau mengirimkannya ke chat. Jika `SOCLIP_API_KEY` kosong, MUSE-MD melewati Soclip dan langsung mencoba provider cadangan. Untuk fallback audio YouTube lokal, pasang `yt-dlp` dan FFmpeg pada server; `YTDLP_PATH` dapat berisi path absolut.
 
 ## Diagnostik
 

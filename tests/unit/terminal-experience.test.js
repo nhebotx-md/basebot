@@ -14,10 +14,10 @@ function createSink() {
 test('terminal dashboard renders compact runtime and plugin panels', () => {
   const { sink, lines } = createSink();
   const logger = createLogger({ sink, format: 'pretty', colors: false, level: 'info' });
-  logger.startup({ name: 'BASEBOT', version: '2.0.0', node: 'v22.23.4', mode: 'public', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
+  logger.startup({ name: 'MUSE-MD', version: '2.0.0', node: 'v22.23.4', mode: 'public', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
   logger.plugins({ loaded: 50, discovered: 50, commands: 141, skipped: 0, plugins: ['doctor', 'health', 'sticker', 'downloader'] });
   const output = lines.join('\n');
-  assert.match(output, /BASEBOT/);
+  assert.match(output, /MUSE-MD/);
   assert.match(output, /RUNTIME ENVIRONMENT/);
   assert.match(output, /PLUGIN ECOSYSTEM/);
   assert.match(output, /50 \/ 50 loaded/);
@@ -49,17 +49,17 @@ test('boot stages and shutdown summary are rendered and persisted as log events'
   assert.match(output, /SUCCESS/);
   assert.match(output, /PLUGINS/);
   assert.match(output, /WARNING/);
-  assert.match(output, /BASEBOT SHUTDOWN/);
+  assert.match(output, /MUSE-MD SHUTDOWN/);
   assert.match(output, /SIGINT/);
   assert.match(output, /125 ms/);
   await logger.close();
 });
 
 test('terminal width helpers handle ANSI colors and clipping', () => {
-  const colored = '\u001b[31mBASEBOT\u001b[0m';
-  assert.equal(stripAnsi(colored), 'BASEBOT');
+  const colored = '\u001b[31mMUSE-MD\u001b[0m';
+  assert.equal(stripAnsi(colored), 'MUSE-MD');
   assert.equal(visibleWidth(colored), 7);
-  assert.equal(visibleWidth(fitVisible('BASEBOT FRAMEWORK', 9)), 9);
+  assert.equal(visibleWidth(fitVisible('MUSE-MD FRAMEWORK', 9)), 9);
 });
 
 test('terminal profile detects Termux and respects monochrome terminal settings', () => {
@@ -88,7 +88,7 @@ test('dashboard and runtime logs stay within narrow Termux terminal columns', ()
   try {
     const { sink, lines } = createSink();
     const logger = createLogger({ sink, format: 'pretty', colors: false, level: 'info' });
-    logger.startup({ name: 'BASEBOT', version: '2.0.0', node: 'v22.23.4', mode: 'public', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
+    logger.startup({ name: 'MUSE-MD', version: '2.0.0', node: 'v22.23.4', mode: 'public', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
     logger.plugins({ loaded: 3, discovered: 3, commands: 10, skipped: 0, plugins: ['sticker', 'downloader', 'system-doctor'] });
     logger.info('Runtime event fits the terminal.', { connectionStatus: 'connected', retryCount: 0 });
     logger.stage('CONNECTION MANAGER INITIALIZATION', 'WhatsApp transport is preparing with detailed startup information', 'running');
@@ -106,7 +106,7 @@ test('dashboard and runtime logs stay within narrow Termux terminal columns', ()
     Object.defineProperty(process.stdout, 'columns', { configurable: true, writable: true, value: 28 });
     const compact = createSink();
     const compactLogger = createLogger({ sink: compact.sink, format: 'pretty', colors: false, level: 'info' });
-    compactLogger.startup({ name: 'BASEBOT', version: '2.0.0', node: 'v22.23.4', mode: 'public', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
+    compactLogger.startup({ name: 'MUSE-MD', version: '2.0.0', node: 'v22.23.4', mode: 'public', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
     compactLogger.plugins({ loaded: 3, discovered: 3, commands: 10, skipped: 0, plugins: ['sticker', 'downloader'] });
     compactLogger.stage('CONNECTION MANAGER INITIALIZATION', 'Long detail that must be clipped cleanly', 'running');
     compactLogger.connection('open', { connection: 'open', reconnectAttempt: 0, statusCode: 200 });

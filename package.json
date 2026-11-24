@@ -1,5 +1,5 @@
 {
-  "name": "basebot",
+  "name": "muse-md",
   "version": "2.0.0",
   "description": "Modular WhatsApp bot framework built on a plugin architecture.",
   "main": "index.js",

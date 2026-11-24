@@ -12,7 +12,7 @@ async function remini(input, method = 'enhance') {
   form.append('model_version', '1');
   form.append('image', input, { filename: 'input.jpg', contentType: 'image/jpeg' });
   const response = await axios.post(`https://inferenceengine.vyro.ai/${operation}`, form, {
-    headers: { ...form.getHeaders(), 'User-Agent': 'BASEBOT/2.0' },
+    headers: { ...form.getHeaders(), 'User-Agent': 'MUSE-MD/2.0' },
     timeout: 30000, maxRedirects: 0, maxBodyLength: 12 * 1024 * 1024,
     maxContentLength: 20 * 1024 * 1024, responseType: 'arraybuffer',
     validateStatus: status => status >= 200 && status < 300

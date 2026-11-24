@@ -40,7 +40,7 @@ async function createApp(options = {}) {
     fileLogEnabled: config.logging.fileEnabled
   };
   if (typeof logger.startup === 'function') logger.startup({ name: config.botName, ...startupDetails });
-  else logger.info('BASEBOT memulai runtime.', startupDetails);
+  else logger.info('MUSE-MD memulai runtime.', startupDetails);
 
   const database = options.database || new DatabaseService({ directory: config.paths.database || './data/database', logger });
   const backupService = options.backupService || createBackupService({ database, logger, owners: config.owners, maxBackups: config.backups?.retention, intervalMs: config.backups?.intervalMs });
@@ -135,11 +135,11 @@ async function createApp(options = {}) {
       logger.stage?.('RUNTIME', 'Starting WhatsApp connection manager', 'running');
       await connection.start();
       logger.stage?.('RUNTIME', 'Connection manager initialized; awaiting WhatsApp session', 'success');
-      logger.info('Runtime BASEBOT aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
+      logger.info('Runtime MUSE-MD aktif; menunggu lifecycle WhatsApp.', { plugins: activePlugins.length, commands: commandCount });
     },
     async stop(options = {}) {
       const shutdownStartedAt = Date.now();
-      logger.info('Shutdown BASEBOT dimulai.');
+      logger.info('Shutdown MUSE-MD dimulai.');
       pluginWatchService.close();
       await jobQueue.close();
       healthService.stop();

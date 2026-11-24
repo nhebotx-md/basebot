@@ -10,7 +10,7 @@ test('redact masks credential-like property names', () => {
     apiKey: 'api-key-value',
     pairingCode: '12345678',
     password: 'password-value',
-    safeLabel: 'BASEBOT'
+    safeLabel: 'MUSE-MD'
   };
 
   assert.deepEqual(redact(input), {
@@ -18,7 +18,7 @@ test('redact masks credential-like property names', () => {
     apiKey: '[REDACTED]',
     pairingCode: '[REDACTED]',
     password: '[REDACTED]',
-    safeLabel: 'BASEBOT'
+    safeLabel: 'MUSE-MD'
   });
 });
 
@@ -53,9 +53,9 @@ test('startup dashboard renders one consolidated runtime panel', () => {
   const lines = [];
   const sink = { log(line) { lines.push(String(line)); }, info(line) { lines.push(String(line)); }, warn(line) { lines.push(String(line)); }, error(line) { lines.push(String(line)); } };
   const logger = createLogger({ format: 'pretty', colors: false, sink });
-  logger.startup({ name: 'BASEBOT', version: '2.0.0', mode: 'public', node: 'v22.23.4', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
+  logger.startup({ name: 'MUSE-MD', version: '2.0.0', mode: 'public', node: 'v22.23.4', prefix: '.', timezone: 'Asia/Jakarta', logLevel: 'info' });
   const output = lines.join(' ');
-  assert.ok(output.includes('BASEBOT'));
+  assert.ok(output.includes('MUSE-MD'));
   assert.ok(output.includes('Node.js v22.23.4'));
   assert.ok(output.includes('PLATFORM'));
   assert.ok(output.includes('Asia/Jakarta'));

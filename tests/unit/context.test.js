@@ -16,7 +16,7 @@ function fixture(command, permissions = {}, category = 'test') {
   const m = normalizeMessage(raw, client);
   return { client, registry, m, sent, getLookups: () => lookups };
 }
-const config = () => loadConfig({}, { owners: ['6281234567890'], prefix: '.', paths: { temp: '/tmp/basebot-test-temp', session: '/tmp/basebot-test-session' }, plugins: { directory: './plugins' } });
+const config = () => loadConfig({}, { owners: ['6281234567890'], prefix: '.', paths: { temp: '/tmp/muse-md-test-temp', session: '/tmp/muse-md-test-session' }, plugins: { directory: './plugins' } });
 
 test('command context adds the actual invoked prefix and command to every reply', async () => {
   const f = fixture('ping');
@@ -41,7 +41,7 @@ test('self-sent messages from the connected bot account do not bypass configured
   const f = fixture('ping');
   f.m.fromMe = true;
   f.m.sender = f.client.user.id;
-  const nonOwnerConfig = loadConfig({}, { owners: ['6289999999999'], prefix: '.', paths: { temp: '/tmp/basebot-test-temp', session: '/tmp/basebot-test-session' }, plugins: { directory: './plugins' } });
+  const nonOwnerConfig = loadConfig({}, { owners: ['6289999999999'], prefix: '.', paths: { temp: '/tmp/muse-md-test-temp', session: '/tmp/muse-md-test-session' }, plugins: { directory: './plugins' } });
   const context = await buildContext({ ...f, config: nonOwnerConfig, logger, store: {} });
   assert.equal(context.isOwner, false);
 });

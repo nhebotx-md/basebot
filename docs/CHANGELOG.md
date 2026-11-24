@@ -34,7 +34,7 @@
 
 ## Sticker REST API — Generator Brat
 
-- Menambahkan plugin `.stickerapi brat|animated <teks>` dengan provider Siputzx, signature-check PNG/GIF, timeout 15 detik, batas unduhan 8 MiB, fallback opsional dan konversi WebP/EXIF oleh BASEBOT.
+- Menambahkan plugin `.stickerapi brat|animated <teks>` dengan provider Siputzx, signature-check PNG/GIF, timeout 15 detik, batas unduhan 8 MiB, fallback opsional dan konversi WebP/EXIF oleh MUSE-MD.
 - Provider Asepharyana pada host alternate hanya tersedia setelah `STICKER_API_ASEPHARYANA_ENABLED=true`; default nonaktif karena host berbeda dari domain dokumentasi awal.
 - Mengisolasi temporary input/output FFmpeg di direktori privat, membersihkannya pada sukses/gagal, memberi timeout proses 45 detik, dan menambah regression test converter.
 - Dokumentasi audit API mencatat kandidat yang tidak dipilih, sumber verifikasi, serta batas bahwa tidak ada API yang menghasilkan WhatsApp sticker siap kirim secara langsung.

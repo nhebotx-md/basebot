@@ -13,7 +13,7 @@ const { PluginStateRepository } = require('../../src/core/database/plugin-state.
 const logger = { info() {}, warn() {}, error() {} };
 
 async function fixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-json-db-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-json-db-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const database = await new DatabaseService({ directory, logger }).init();
   t.after(() => database.close());
@@ -41,7 +41,7 @@ test('database serializes concurrent updates without losing data', async t => {
 });
 
 test('legacy plain JSON data is migrated to the current schema', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-json-migration-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-json-migration-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(path.join(directory, 'users.json'), JSON.stringify({ legacyUser: { exp: 10 } }));

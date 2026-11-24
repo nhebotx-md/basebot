@@ -16,7 +16,7 @@ module.exports = {
   name: 'database-backup',
   commands: ['backup'],
   category: 'owner',
-  description: 'Membuat, memeriksa, dan memulihkan backup database BASEBOT.',
+  description: 'Membuat, memeriksa, dan memulihkan backup database MUSE-MD.',
   usage: '.backup [create|list|verify <id>|restore <id>|restore confirm <id>]',
   permissions: { ownerOnly: true },
   async execute(ctx) {
@@ -84,7 +84,7 @@ module.exports = {
           'Integritas: VALID',
           '',
           'Restore akan mengganti data users, groups, plugins, dan metadata database aktif.',
-          'Sebelum restore, BASEBOT otomatis membuat safety backup dari data saat ini.',
+          'Sebelum restore, MUSE-MD otomatis membuat safety backup dari data saat ini.',
           '',
           'Untuk menjalankan restore, kirim command berikut:',
           '*' + prefix + 'backup restore confirm ' + verified.id + '*'
@@ -94,7 +94,7 @@ module.exports = {
       const result = await backups.restore(id);
       let pluginStateNote = 'Status plugin aktif diselaraskan dengan database.';
       try { await ctx.services?.pluginManager?.restore?.(); }
-      catch { pluginStateNote = 'Status plugin tersimpan, tetapi sinkronisasi runtime gagal. Restart BASEBOT sebelum digunakan kembali.'; }
+      catch { pluginStateNote = 'Status plugin tersimpan, tetapi sinkronisasi runtime gagal. Restart MUSE-MD sebelum digunakan kembali.'; }
       await ctx.reply([
         '*RESTORE DATABASE SELESAI*',
         'Backup dipulihkan: ' + result.restored,

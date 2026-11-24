@@ -13,7 +13,7 @@ test('Node version comparison handles patch and minor boundaries', () => {
 });
 
 test('doctor produces structured checks and never exposes credentials', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'basebot-doctor-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'muse-md-doctor-'));
   for (const name of ['session', 'temp', 'logs', 'database']) fs.mkdirSync(path.join(root, name));
   fs.writeFileSync(path.join(root, 'settings.example.js'), 'module.exports = {};');
   const service = new SystemDoctorService({

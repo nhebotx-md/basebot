@@ -1,6 +1,6 @@
 # Plugin Auto Reload
 
-Dengan `PLUGIN_AUTO_RELOAD=true` (default), BASEBOT memantau direktori plugin dan subdirektorinya. Perubahan file JavaScript digabung dengan debounce 700 ms, lalu plugin dimuat ke registry kandidat dan divalidasi.
+Dengan `PLUGIN_AUTO_RELOAD=true` (default), MUSE-MD memantau direktori plugin dan subdirektorinya. Perubahan file JavaScript digabung dengan debounce 700 ms, lalu plugin dimuat ke registry kandidat dan divalidasi.
 
 Registry aktif hanya diganti jika seluruh file lolos validasi. Jika ada file rusak, command duplikat, metadata tidak valid, atau direktori kosong, reload dibatalkan dan registry lama tetap dipakai. Status plugin nonaktif dipertahankan.
 

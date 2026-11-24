@@ -27,7 +27,7 @@ module.exports = {
         'invalid-source': 'Source plugin kosong atau tidak valid.',
         'invalid-category': 'Kategori tidak valid. Gunakan huruf kecil, angka, tanda hubung, atau garis bawah.',
         'one-command-required': 'Plugin harus mendaftarkan tepat satu command.',
-        'validation-failed': 'Plugin ditolak karena metadata atau struktur plugin tidak sesuai API BaseBot.',
+        'validation-failed': 'Plugin ditolak karena metadata atau struktur plugin tidak sesuai API MUSE-MD.',
         'multiple-conflicts': 'Nama plugin dan command bertabrakan dengan lebih dari satu plugin.',
         'file-already-exists': 'File tujuan sudah ada tetapi bukan plugin terdaftar. Tidak ditimpa.',
         'protected-plugin': 'Command inti pengelola plugin dilindungi dan tidak dapat ditimpa melalui installer.',

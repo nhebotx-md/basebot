@@ -37,7 +37,7 @@ function createRegistry() {
   };
 }
 
-const config = { botName: 'ShoNhe', ownerName: 'Owner BASEBOT', prefix: '.', publicMode: true, timezone: 'Asia/Jakarta' };
+const config = { botName: 'ShoNhe', ownerName: 'Owner MUSE-MD', prefix: '.', publicMode: true, timezone: 'Asia/Jakarta' };
 
 test('normalizeCategory handles case and spaces', () => {
   assert.equal(normalizeCategory('AI Tools'), 'ai-tools');
@@ -353,7 +353,7 @@ test('.menu and .catmenu keep directory views concise while .help exposes plugin
   const service = createMenuService({ registry: createRegistry(), config });
   const menu = service.renderMenu(createContext().ctx, 'terminal');
   const category = service.renderCategory(createContext({ command: 'catmenu', args: ['download'] }).ctx);
-  assert.doesNotMatch(menu, /root@basebot|catalog --|exit 0|modules loaded/i);
+  assert.doesNotMatch(menu, /root@muse-md|catalog --|exit 0|modules loaded/i);
   assert.doesNotMatch(menu, /Unduh video dari YouTube|\\.ytv|<url>/);
   assert.doesNotMatch(category, /Unduh video dari YouTube|\.ytv|\.ytmp4 <url>/);
   const help = service.renderPluginHelp(createContext().ctx, 'ytmp4');

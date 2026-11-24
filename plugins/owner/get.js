@@ -6,7 +6,7 @@ module.exports = {
   permissions: { ownerOnly: true },
   async execute(ctx) {
     let response;
-    try { response = await fetchPublic(ctx.text, { timeoutMs: 12000, maxBytes: 8 * 1024 * 1024, headers: { 'user-agent': 'BASEBOT/1.0' } }); }
+    try { response = await fetchPublic(ctx.text, { timeoutMs: 12000, maxBytes: 8 * 1024 * 1024, headers: { 'user-agent': 'MUSE-MD/1.0' } }); }
     catch (error) { return ctx.reply(error.message); }
     if (response.status >= 300 && response.status < 400) return ctx.reply('Redirect tidak diizinkan untuk alasan keamanan.');
     if (!response.ok) return ctx.reply(`Server mengembalikan HTTP ${response.status}.`);

@@ -4,19 +4,19 @@ Arsip sumber berisi 33 plugin Owner, 23 Group, 40 Maker, 5 Sticker, dan 9 Downlo
 
 ## Prinsip porting
 
-- Semua plugin ditulis ulang ke CommonJS dan kontrak `ctx` BASEBOT.
+- Semua plugin ditulis ulang ke CommonJS dan kontrak `ctx` MUSE-MD.
 - Tidak memakai `global.db`, `global.jereApiKey`, helper fake-quoted PatrickMD, atau Baileys fork PatrickMD.
 - Tidak memindahkan `eval` dan `exec`, karena keduanya menjalankan kode/shell arbitrer.
-- Tidak menduplikasi command yang sudah berfungsi di BASEBOT.
+- Tidak menduplikasi command yang sudah berfungsi di MUSE-MD.
 - Provider eksternal wajib punya validasi URL, batas ukuran, timeout, dan penanganan error.
 
 ## Owner
 
 **Sudah diterapkan:** `.setbio`, `.setname`, `.setthumb`, `.block`, `.unblock`, `.listgc`.
 
-**Sudah tersedia di BASEBOT:** plugin manager, health, public/self, get, newsletter, upsw, pengelolaan file sementara, pengaturan menu, serta operasi join/leave dan admin grup melalui `.groupadmin`.
+**Sudah tersedia di MUSE-MD:** plugin manager, health, public/self, get, newsletter, upsw, pengelolaan file sementara, pengaturan menu, serta operasi join/leave dan admin grup melalui `.groupadmin`.
 
-**Belum dipindahkan:** `eval`/`exec` (berbahaya); `addowner`/`delowner` (owner berasal dari `OWNER_NUMBERS`); `getfile`/`savefile`/`getdb` (akses file/database PatrickMD tidak sesuai batas storage BASEBOT); `bc`/`broadcastgc`/`pushkontak` (perlu consent, rate limit, dan pembatasan penerima); `restart` (perlu lifecycle terkontrol); `autoreactsw`/`autoreadsw`/`autotyping`/`randomreact` (perlu integrasi event/presence/status); `sedekah` (database RPG tidak kompatibel); serta `upch`/`botsetting` yang perlu pemetaan API lebih lanjut.
+**Belum dipindahkan:** `eval`/`exec` (berbahaya); `addowner`/`delowner` (owner berasal dari `OWNER_NUMBERS`); `getfile`/`savefile`/`getdb` (akses file/database PatrickMD tidak sesuai batas storage MUSE-MD); `bc`/`broadcastgc`/`pushkontak` (perlu consent, rate limit, dan pembatasan penerima); `restart` (perlu lifecycle terkontrol); `autoreactsw`/`autoreadsw`/`autotyping`/`randomreact` (perlu integrasi event/presence/status); `sedekah` (database RPG tidak kompatibel); serta `upch`/`botsetting` yang perlu pemetaan API lebih lanjut.
 
 ## Group
 
@@ -24,7 +24,7 @@ Arsip sumber berisi 33 plugin Owner, 23 Group, 40 Maker, 5 Sticker, dan 9 Downlo
 
 **Sudah tersedia:** `.groupadmin`, `.community`, `.groupinfo`, `.anggota`, `.hidetag`, `.tagall`, `.grupset`, serta manajemen join request.
 
-**Tidak diduplikasi:** `add`, `kick`, `promote`, `demote`, `revoke`, `linkgc`, `setname`, `setdesc`, `setppgc`, `groupinfo`, dan `hidetag2` karena sudah memiliki padanan. `antiswgc2` yang otomatis mengeluarkan anggota tidak dipindahkan; penghapusan status saja lebih aman. `tagme` tidak ditambahkan ke kategori group karena kategori tersebut dibatasi admin oleh permission manager BASEBOT.
+**Tidak diduplikasi:** `add`, `kick`, `promote`, `demote`, `revoke`, `linkgc`, `setname`, `setdesc`, `setppgc`, `groupinfo`, dan `hidetag2` karena sudah memiliki padanan. `antiswgc2` yang otomatis mengeluarkan anggota tidak dipindahkan; penghapusan status saja lebih aman. `tagme` tidak ditambahkan ke kategori group karena kategori tersebut dibatasi admin oleh permission manager MUSE-MD.
 
 ## Maker
 
@@ -32,19 +32,19 @@ Arsip sumber berisi 33 plugin Owner, 23 Group, 40 Maker, 5 Sticker, dan 9 Downlo
 
 **Menunggu porting:** `fakecall`, `fakegithub`, `fakenotif`, `faketiktok`, `igprofile`, `iqc`, dan `meledak` membutuhkan audit canvas, FFmpeg, API upload, atau endpoint eksternal. File `toputih.js` di arsip kosong; command `toputih` tersedia melalui endpoint transformasi bersama, bukan dari file kosong itu.
 
-## Sticker dan Media BASEBOT
+## Sticker dan Media MUSE-MD
 
 Kategori `media` dipisah secara logis:
 - `sticker`: `.sticker`/`.s`, `.brat`, `.bratvid`/`.bratvideo`, dan `.wm`.
 - `maker`: image enhancer dan voice changer karena keduanya memproses media, tetapi bukan pembuat sticker.
 
-`stiker.js`, `wm.js`, `brat.js`, dan `bratvid.js` PatrickMD tumpang tindih dengan implementasi BASEBOT. `qc.js` belum dipindahkan karena membutuhkan `@napi-rs/canvas` dan perlu diuji dengan renderer/metadata sticker BASEBOT.
+`stiker.js`, `wm.js`, `brat.js`, dan `bratvid.js` PatrickMD tumpang tindih dengan implementasi MUSE-MD. `qc.js` belum dipindahkan karena membutuhkan `@napi-rs/canvas` dan perlu diuji dengan renderer/metadata sticker MUSE-MD.
 
 ## Downloader
 
-**Sudah diterapkan atau tersedia:** Facebook melalui Soclip BASEBOT (`SOCLIP_API_KEY`), alias `.musik`/`.music`/`.song` pada Play, alias `.yta`/`.ytmp3api`, serta Instagram, TikTok, Play, dan YTMP3 yang sudah ada.
+**Sudah diterapkan atau tersedia:** Facebook melalui Soclip MUSE-MD (`SOCLIP_API_KEY`), alias `.musik`/`.music`/`.song` pada Play, alias `.yta`/`.ytmp3api`, serta Instagram, TikTok, Play, dan YTMP3 yang sudah ada.
 
-**Menunggu provider/konfigurasi:** `mediafire.js` memakai endpoint BTCH/Jere dan fallback CDN; perlu redirect handling aman. `spotify.js` dan `ytmp4.js` memakai `global.jereApiKey`/Jere API yang tidak disertakan dalam arsip atau konfigurasi BASEBOT. `aio.js` perlu pengujian respons, host file, ukuran, dan redirect sebelum diaktifkan.
+**Menunggu provider/konfigurasi:** `mediafire.js` memakai endpoint BTCH/Jere dan fallback CDN; perlu redirect handling aman. `spotify.js` dan `ytmp4.js` memakai `global.jereApiKey`/Jere API yang tidak disertakan dalam arsip atau konfigurasi MUSE-MD. `aio.js` perlu pengujian respons, host file, ukuran, dan redirect sebelum diaktifkan.
 
 ## Dependency
 

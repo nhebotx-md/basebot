@@ -28,7 +28,7 @@ function context(overrides = {}) {
 test('health command returns a concise status summary to the owner', async () => {
   const { ctx, replies } = context();
   await healthPlugin.execute(ctx);
-  assert.match(replies[0], /BASEBOT HEALTH/);
+  assert.match(replies[0], /MUSE-MD HEALTH/);
   assert.match(replies[0], /HEALTHY/);
   assert.match(replies[0], /WhatsApp: open/);
 });

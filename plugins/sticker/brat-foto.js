@@ -44,7 +44,7 @@ module.exports = {
         maxContentLength: MAX_OUTPUT_BYTES,
         maxBodyLength: MAX_OUTPUT_BYTES,
         maxRedirects: 0,
-        headers: { 'User-Agent': 'BASEBOT/2.0', Accept: 'image/*' },
+        headers: { 'User-Agent': 'MUSE-MD/2.0', Accept: 'image/*' },
         validateStatus: status => status >= 200 && status < 300
       });
       const buffer = Buffer.from(response.data || []);

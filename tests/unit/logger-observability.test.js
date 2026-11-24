@@ -29,13 +29,13 @@ test('message terminal panel never prints contact or group names', () => {
 });
 
 test('file logger writes sanitized JSONL records and rotates within retention limits', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-log-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-log-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const logger = createLogger({
     level: 'debug',
     format: 'json',
     sink: { log() {}, info() {}, warn() {}, error() {}, debug() {} },
-    file: { directory, filename: 'basebot.jsonl', maxBytes: 240, maxFiles: 3 }
+    file: { directory, filename: 'muse-md.jsonl', maxBytes: 240, maxFiles: 3 }
   });
 
   logger.info('safe event', { token: 'never-write-this', phone: '6281234567890', status: 'connected' });
@@ -44,7 +44,7 @@ test('file logger writes sanitized JSONL records and rotates within retention li
   logger.info('runtime restored', { status: 'healthy' });
   await logger.close();
 
-  const names = (await fs.readdir(directory)).filter(name => name.startsWith('basebot.jsonl')).sort();
+  const names = (await fs.readdir(directory)).filter(name => name.startsWith('muse-md.jsonl')).sort();
   assert.ok(names.length >= 2, 'expected at least one rotated file');
   assert.ok(names.length <= 3, 'retention must cap active plus rotated files');
   const contents = await Promise.all(names.map(name => fs.readFile(path.join(directory, name), 'utf8')));
@@ -58,7 +58,7 @@ test('file logger writes sanitized JSONL records and rotates within retention li
       assert.ok(record.message);
     }
   }
-  const activeStat = await fs.stat(path.join(directory, 'basebot.jsonl'));
+  const activeStat = await fs.stat(path.join(directory, 'muse-md.jsonl'));
   assert.equal(activeStat.mode & 0o077, 0, 'active log file must not be group/world readable');
   assert.equal(logger.fileStatus().closed, true);
 });

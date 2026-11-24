@@ -2,7 +2,7 @@
 
 ## Tujuan
 
-Health Monitor menyediakan snapshot baca-saja untuk membantu owner mendiagnosis runtime BASEBOT. Command tidak mengubah konfigurasi, database, status plugin, sesi, atau koneksi. Health Monitor tidak mengirim request jaringan tambahan.
+Health Monitor menyediakan snapshot baca-saja untuk membantu owner mendiagnosis runtime MUSE-MD. Command tidak mengubah konfigurasi, database, status plugin, sesi, atau koneksi. Health Monitor tidak mengirim request jaringan tambahan.
 
 ## Command
 

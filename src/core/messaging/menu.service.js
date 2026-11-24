@@ -186,7 +186,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
   };
 
   function getVisiblePlugins(ctx) {
-    const internalMenuPlugins = new Set(['basebot-menu', 'basebot-catmenu', 'basebot-allmenu']);
+    const internalMenuPlugins = new Set(['muse-menu', 'muse-catmenu', 'muse-allmenu']);
     return registry.list({ includeDisabled: false })
       .filter(plugin => !internalMenuPlugins.has(plugin.name))
       .filter(plugin => validatePermission(plugin, ctx).allowed);
@@ -229,7 +229,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     const now = clock();
     const role = ctx.isOwner ? 'OWNER' : ctx.isGroupAdmin ? 'GROUP ADMIN' : ({ user: 'USER', premium: 'PREMIUM', moderator: 'MODERATOR', guest: 'GUEST' }[ctx.userRole] || 'MEMBER');
     const userName = cleanLabel(ctx.pushname, 'Pengguna');
-    const botName = cleanLabel(config.botName, 'BASEBOT');
+    const botName = cleanLabel(config.botName, 'MUSE-MD');
     const mode = config.publicMode ? 'PUBLIC' : 'SELF';
     const commandPrefix = Array.isArray(config.prefix) ? (config.prefix[0] || '.') : String(config.prefix || '.');
     const prefixLabel = Array.isArray(config.prefix) ? config.prefix.join(' / ') : commandPrefix;
@@ -399,7 +399,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
     try {
       await ctx.sendMessage(ctx.chat, {
         text,
-        footer: 'BASEBOT',
+        footer: 'MUSE-MD',
         buttons: [{
           text: buttonText,
           sections: [{ title: sectionTitle, rows }]
@@ -443,7 +443,7 @@ function createMenuService({ registry, config, database = null, version = '0.0.0
       '└──────────────',
       '',
       '【 ⚙ MAIN MENU 】',
-      'BASEBOT SYSTEM DASHBOARD',
+      'MUSE-MD SYSTEM DASHBOARD',
       'Pilih kategori melalui daftar interaktif di bawah.'
     ].join('\n');
     return sendInteractiveList(ctx, {

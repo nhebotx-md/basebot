@@ -7,7 +7,7 @@ const path = require('node:path');
 const { createStorageService } = require('../../src/core/services/storage.service');
 
 test('storage confines operations to a private real root and refuses symlink roots/files', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'basebot-storage-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'muse-md-storage-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const actual = path.join(root, 'actual');
   await fs.mkdir(actual);
