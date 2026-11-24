@@ -136,10 +136,11 @@ module.exports = {
       const { buffer, contentType } = await ctx.services.media.downloadBuffer(data.videoUrl, {
         maxBytes: 20 * 1024 * 1024, timeoutMs: 30000
       });
-      if (!contentType.startsWith('video/')) throw new Error('File video TikTok tidak valid.');
+      const videoMime = resolveMediaType(contentType, buffer, 'video');
+      if (!videoMime) throw new Error('File video TikTok tidak valid atau formatnya tidak dikenali.');
       await progress.update('Mengirim video TikTok', { detail: 'Video siap dikirim ke WhatsApp.' });
       await ctx.sendMessage(ctx.chat, {
-        video: buffer, mimetype: contentType, caption: 'TikTok Video\n\n' + title
+        video: buffer, mimetype: videoMime, caption: 'TikTok Video\n\n' + title
       }, { quoted: ctx.m.raw });
       return progress.update('Video TikTok selesai', { detail: 'Video berhasil dikirim.' });
     }
