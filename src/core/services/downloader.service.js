@@ -53,6 +53,31 @@ function createDownloaderService(config = {}, adapters = {}) {
     binary: config.ytDlpPath || 'yt-dlp', tempDir: config.tempDir || './storage/temp'
   }));
   const providerManager = adapters.providerManager || new ProviderManager(config.providerOptions || { timeoutMs: config.providerTimeoutMs, retries: config.providerRetries, failureThreshold: config.providerFailureThreshold, cooldownMs: config.providerCooldownMs });
+  const tikwmProvider = adapters.tikwm || (async url => {
+    const body = new URLSearchParams({ url, count: '12', cursor: '0', web: '1', hd: '1' });
+    const response = await axios.post('https://www.tikwm.com/api/', body.toString(), {
+      headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'user-agent': 'Mozilla/5.0 BaseBot/2.0' },
+      timeout: 25000, maxRedirects: 0, maxContentLength: 1024 * 1024
+    });
+    const payload = response.data;
+    const data = payload?.data;
+    if (payload?.code !== 0 || !data) throw new Error(String(payload?.msg || 'TikWM tidak menemukan media TikTok.').slice(0, 180));
+    const imageItems = Array.isArray(data.images) ? data.images : [];
+    const images = imageItems.map(item => {
+      if (typeof item === 'string') return item;
+      if (typeof item?.url === 'string') return item.url;
+      if (Array.isArray(item?.url_list)) return item.url_list.find(value => typeof value === 'string' && /^https:\/\//i.test(value)) || '';
+      return '';
+    }).filter(Boolean).slice(0, 10);
+    const videoUrl = typeof data.hdplay === 'string' && data.hdplay ? data.hdplay : (typeof data.play === 'string' ? data.play : '');
+    return {
+      title: String(data.title || 'Konten TikTok').slice(0, 500),
+      videoUrl,
+      images,
+      audioUrl: typeof data.music === 'string' ? data.music : '',
+      provider: 'tikwm'
+    };
+  });
   const tikTokProvider = adapters.tiktok || (async url => {
     const response = await axios.get('https://www.laurine.site/api/downloader/tiktok', {
       params: { url }, timeout: 15000, maxRedirects: 0, maxContentLength: 1024 * 1024
@@ -62,7 +87,7 @@ function createDownloaderService(config = {}, adapters = {}) {
     return {
       title: String(data.title || 'Konten TikTok').slice(0, 500),
       videoUrl: typeof data.no_watermark === 'string' ? data.no_watermark : '',
-      images: Array.isArray(data.image) ? data.image.slice(0, 8) : (data.cover ? [data.cover] : []),
+      images: Array.isArray(data.image) ? data.image.slice(0, 10) : [],
       audioUrl: typeof data.music === 'string' ? data.music : ''
     };
   });
@@ -114,10 +139,15 @@ function createDownloaderService(config = {}, adapters = {}) {
     async tiktok(input) {
       validateSource(input, ['tiktok.com'], 'TikTok');
       return providerChain('TikTok downloader', [
+        ['TikWM gratis', async () => {
+          const result = await tikwmProvider(input);
+          if (!result?.videoUrl && !result?.images?.length && !result?.audioUrl) throw new Error('TikWM tidak mengembalikan media yang didukung.');
+          return { ...result, provider: 'tikwm' };
+        }],
         ['Soclip', async () => {
           const result = await soclip(input);
           const video = result.medias.find(item => item.type === 'video' || item.ext === 'mp4');
-          const images = result.medias.filter(item => item.type === 'image' || /^(jpg|jpeg|png|webp)$/i.test(item.ext)).map(item => item.url).slice(0, 8);
+          const images = result.medias.filter(item => item.type === 'image' || /^(jpg|jpeg|png|webp|heic)$/i.test(item.ext)).map(item => item.url).slice(0, 10);
           const audio = result.medias.find(item => item.type === 'audio' || item.ext === 'mp3');
           if (!video && !images.length && !audio) throw new Error('Respons Soclip tidak berisi video, slideshow, atau audio.');
           return { title: result.title, videoUrl: video?.url || '', images, audioUrl: audio?.url || '', provider: 'soclip' };
