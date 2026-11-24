@@ -136,12 +136,20 @@ function createDownloaderService(config = {}, adapters = {}) {
         }]
       ]);
     },
-    async tiktok(input) {
+    async tiktok(input, options = {}) {
       validateSource(input, ['tiktok.com'], 'TikTok');
+      const requestedMode = options.mode || '';
+      if (requestedMode && !['video', 'audio', 'slide'].includes(requestedMode)) throw new Error('Jenis media TikTok tidak didukung.');
+      const supportsMode = result => {
+        if (requestedMode === 'video') return Boolean(result?.videoUrl);
+        if (requestedMode === 'audio') return Boolean(result?.audioUrl);
+        if (requestedMode === 'slide') return Boolean(result?.images?.length);
+        return Boolean(result?.videoUrl || result?.images?.length || result?.audioUrl);
+      };
       return providerChain('TikTok downloader', [
         ['TikWM gratis', async () => {
           const result = await tikwmProvider(input);
-          if (!result?.videoUrl && !result?.images?.length && !result?.audioUrl) throw new Error('TikWM tidak mengembalikan media yang didukung.');
+          if (!supportsMode(result)) throw new Error('TikWM tidak menyediakan jenis media yang dipilih.');
           return { ...result, provider: 'tikwm' };
         }],
         ['Soclip', async () => {
@@ -149,12 +157,13 @@ function createDownloaderService(config = {}, adapters = {}) {
           const video = result.medias.find(item => item.type === 'video' || item.ext === 'mp4');
           const images = result.medias.filter(item => item.type === 'image' || /^(jpg|jpeg|png|webp|heic)$/i.test(item.ext)).map(item => item.url).slice(0, 10);
           const audio = result.medias.find(item => item.type === 'audio' || item.ext === 'mp3');
-          if (!video && !images.length && !audio) throw new Error('Respons Soclip tidak berisi video, slideshow, atau audio.');
-          return { title: result.title, videoUrl: video?.url || '', images, audioUrl: audio?.url || '', provider: 'soclip' };
+          const normalized = { title: result.title, videoUrl: video?.url || '', images, audioUrl: audio?.url || '', provider: 'soclip' };
+          if (!supportsMode(normalized)) throw new Error('Soclip tidak menyediakan jenis media yang dipilih.');
+          return normalized;
         }],
         ['provider TikTok cadangan', async () => {
           const result = await tikTokProvider(input);
-          if (!result?.videoUrl && !result?.images?.length && !result?.audioUrl) throw new Error('Provider lama tidak mengembalikan media.');
+          if (!supportsMode(result)) throw new Error('Provider lama tidak menyediakan jenis media yang dipilih.');
           return { ...result, provider: 'legacy' };
         }]
       ]);
