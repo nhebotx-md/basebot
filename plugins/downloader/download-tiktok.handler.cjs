@@ -32,6 +32,40 @@ function parseTikTokInput(input) {
   return { url: parts.join(' '), mode };
 }
 
+function detectMediaType(buffer, expected) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 4) return '';
+  const b = buffer;
+  if (expected === 'image') {
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+    if (b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
+    if (b.toString('ascii', 0, 4) === 'GIF8') return 'image/gif';
+    if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+    if (b.toString('ascii', 4, 8) === 'ftyp' && /^(heic|heix|hevc|mif1|avif)$/.test(b.toString('ascii', 8, 12))) return 'image/heic';
+  }
+  if (expected === 'video') {
+    if (b.toString('ascii', 4, 8) === 'ftyp') return 'video/mp4';
+    if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return 'video/webm';
+    if (b.toString('ascii', 0, 4) === 'OggS') return 'video/ogg';
+  }
+  if (expected === 'audio') {
+    if (b.toString('ascii', 0, 3) === 'ID3') return 'audio/mpeg';
+    if (b.toString('ascii', 0, 4) === 'OggS') return 'audio/ogg';
+    if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WAVE') return 'audio/wav';
+    if (b.toString('ascii', 4, 8) === 'ftyp') return 'audio/mp4';
+    if (b[0] === 0xff && (b[1] & 0xe0) === 0xe0) return 'audio/mpeg';
+  }
+  return '';
+}
+
+function resolveMediaType(contentType, buffer, expected) {
+  const normalized = String(contentType || '').split(';')[0].trim().toLowerCase();
+  if (normalized.startsWith(expected + '/')) return normalized;
+  if (!normalized || ['application/octet-stream', 'binary/octet-stream', 'application/force-download', 'text/plain'].includes(normalized)) {
+    return detectMediaType(buffer, expected);
+  }
+  return '';
+}
+
 async function sendSlideAlbum(ctx, images, title, progress) {
   const albumItems = [];
   let totalBytes = 0;
@@ -43,7 +77,8 @@ async function sendSlideAlbum(ctx, images, title, progress) {
     const { buffer, contentType } = await ctx.services.media.downloadBuffer(imageUrl, {
       maxBytes: 10 * 1024 * 1024, timeoutMs: 20000
     });
-    if (!contentType.startsWith('image/')) continue;
+    const imageMime = resolveMediaType(contentType, buffer, 'image');
+    if (!imageMime) continue;
     if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new Error('Foto slideshow TikTok kosong atau tidak valid.');
     totalBytes += buffer.length;
     if (totalBytes > 40 * 1024 * 1024) throw new Error('Total slideshow TikTok melebihi batas 40 MB.');
@@ -116,9 +151,10 @@ module.exports = {
       const { buffer, contentType } = await ctx.services.media.downloadBuffer(data.audioUrl, {
         maxBytes: 20 * 1024 * 1024, timeoutMs: 30000
       });
-      if (!contentType.startsWith('audio/')) throw new Error('File audio TikTok tidak valid.');
+      const audioMime = resolveMediaType(contentType, buffer, 'audio');
+      if (!audioMime) throw new Error('File audio TikTok tidak valid atau formatnya tidak dikenali.');
       await progress.update('Mengirim audio TikTok', { detail: 'Audio siap dikirim ke WhatsApp.' });
-      await ctx.sendMessage(ctx.chat, { audio: buffer, mimetype: contentType, ptt: false }, { quoted: ctx.m.raw });
+      await ctx.sendMessage(ctx.chat, { audio: buffer, mimetype: audioMime, ptt: false }, { quoted: ctx.m.raw });
       return progress.update('Audio TikTok selesai', { detail: 'Audio berhasil dikirim.' });
     }
 
@@ -130,3 +166,5 @@ module.exports = {
 
 module.exports.parseTikTokInput = parseTikTokInput;
 module.exports.sendSlideAlbum = sendSlideAlbum;
+module.exports.detectMediaType = detectMediaType;
+module.exports.resolveMediaType = resolveMediaType;
