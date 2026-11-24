@@ -68,7 +68,7 @@ function createDownloaderService(config = {}, adapters = {}) {
       if (typeof item?.url === 'string') return item.url;
       if (Array.isArray(item?.url_list)) return item.url_list.find(value => typeof value === 'string' && /^https:\/\//i.test(value)) || '';
       return '';
-    }).filter(Boolean).slice(0, 10);
+    }).filter(Boolean).slice(0, 30);
     const videoUrl = typeof data.hdplay === 'string' && data.hdplay ? data.hdplay : (typeof data.play === 'string' ? data.play : '');
     return {
       title: String(data.title || 'Konten TikTok').slice(0, 500),
