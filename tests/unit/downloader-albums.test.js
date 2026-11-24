@@ -44,7 +44,7 @@ test('Instagram carousel downloads validated media and sends one native mixed-me
 });
 
 test('TikTok slideshow downloads photos and sends them as one native album', async () => {
-  const ctx = baseContext({ command: 'tt', text: 'https://tiktok.com/example' });
+  const ctx = baseContext({ command: 'tt', text: 'https://tiktok.com/example slide' });
   ctx.services.downloaders.tiktok = async () => ({ title: 'Slideshow', images: [
     'https://8.8.8.8/one.jpg', 'https://8.8.8.8/two.jpg'
   ] });
