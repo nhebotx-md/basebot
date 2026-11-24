@@ -56,8 +56,8 @@ function createDownloaderService(config = {}, adapters = {}) {
   const tikwmProvider = adapters.tikwm || (async url => {
     const body = new URLSearchParams({ url, count: '12', cursor: '0', web: '1', hd: '1' });
     const response = await axios.post('https://www.tikwm.com/api/', body.toString(), {
-      headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'user-agent': 'Mozilla/5.0 BaseBot/2.0' },
-      timeout: 25000, maxRedirects: 0, maxContentLength: 1024 * 1024
+      headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'user-agent': 'Mozilla/5.0 BaseBot/2.0', accept: 'application/json, text/plain, */*', referer: 'https://www.tikwm.com/' },
+      timeout: 25000, maxRedirects: 3, maxContentLength: 1024 * 1024, maxBodyLength: 16 * 1024
     });
     const payload = response.data;
     const data = payload?.data;
@@ -92,10 +92,10 @@ function createDownloaderService(config = {}, adapters = {}) {
     };
   });
 
-  async function providerChain(label, providers) {
+  async function providerChain(label, providers, { alwaysFallback = false } = {}) {
     const errors = [];
     for (let index = 0; index < providers.length; index += 1) {
-      if (index > 0 && !config.fallbackEnabled) break;
+      if (index > 0 && !config.fallbackEnabled && !alwaysFallback) break;
       const [name, run] = providers[index];
       try {
         return await providerManager.run(name, run, {
@@ -166,7 +166,7 @@ function createDownloaderService(config = {}, adapters = {}) {
           if (!supportsMode(result)) throw new Error('Provider lama tidak menyediakan jenis media yang dipilih.');
           return { ...result, provider: 'legacy' };
         }]
-      ]);
+      ], { alwaysFallback: true });
     },
     async ytmp3(input) {
       validateSource(input, ['youtube.com', 'youtu.be'], 'YouTube');
