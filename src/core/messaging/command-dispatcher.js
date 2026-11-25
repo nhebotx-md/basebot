@@ -93,6 +93,17 @@ function diagnosePluginError(error) {
   return { cause: 'Proses plugin berhenti karena exception yang tidak tertangani.', action: 'Periksa log server menggunakan ID referensi di bawah, lalu perbaiki bagian plugin yang disebutkan.' };
 }
 
+function reportPluginError(logger, { reference, plugin, command, stage, scope, error, extra = {} }) {
+  // Catat sebagai log JSON ber-REF bila logger mendukungnya; logger lama
+  // atau stub test tanpa errorReference tetap memakai logger.error biasa.
+  if (logger && typeof logger.errorReference === 'function') {
+    logger.errorReference({ reference, plugin, command, stage, scope, error });
+    return;
+  }
+  const message = stage === 'event' ? 'Plugin event gagal.' : 'Plugin gagal saat dieksekusi.';
+  logger?.error?.(message, { plugin, command, stage, reference, error, ...extra });
+}
+
 function formatPluginFailure({ plugin, command, error, stage = 'execute', reference }) {
   const diagnosis = diagnosePluginError(error);
   const errorName = String(error?.name || 'Error').replace(/[^a-z0-9_.-]/gi, '').slice(0, 32) || 'Error';
@@ -258,8 +269,9 @@ class CommandDispatcher {
       return { handled: true, plugin: plugin.name, reference: ctx.traceId };
     } catch (error) {
       const reference = ctx.traceId;
-      this.logger.error('Plugin gagal saat dieksekusi.', {
-        plugin: plugin.name, command: ctx.command, stage: 'execute', reference, error
+      reportPluginError(this.logger, {
+        reference, plugin: plugin.name, command: ctx.command, stage: 'execute',
+        scope: ctx.isGroup ? 'group' : 'private', error
       });
       if (ctx.progress?.isStarted() && !ctx.progress.isFinished()) {
         try { await ctx.progress.fail('Plugin gagal menyelesaikan proses', { detail: 'Ref: ' + reference }); }
@@ -297,9 +309,9 @@ class CommandDispatcher {
           continue;
         }
         const reference = randomBytes(4).toString('hex').toUpperCase();
-        this.logger.error('Plugin event gagal.', {
-          plugin: plugin.name, eventName, stage: 'event', reference, error,
-          diagnosis: diagnosePluginError(error)
+        reportPluginError(this.logger, {
+          reference, plugin: plugin.name, command: eventName, stage: 'event', error,
+          extra: { eventName, diagnosis: diagnosePluginError(error) }
         });
         results.push({ plugin: plugin.name, ok: false, reference });
       }
