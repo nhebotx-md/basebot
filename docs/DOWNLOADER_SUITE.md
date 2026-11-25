@@ -1,20 +1,31 @@
 # Downloader Suite
 
-MUSE-MD menyediakan empat command:
+MUSE-MD menyediakan lima command (satu plugin per command, sesuai
+`PLUGIN_DEVELOPMENT.md`; alias memakai file wrapper tipis di atas satu
+handler bersama, jadi `.fb` dan `.facebook` adalah plugin terpisah yang
+menjalankan handler yang sama):
 
 - `.play <judul lagu>`: mencari judul melalui YouTube Search lalu mengirim audio biasa.
 - `.igdl <tautan Instagram>`: Reels, video, foto, dan carousel publik (maksimal 8 media).
 - `.tt <tautan TikTok>`: video, slideshow hingga 8 foto, dan audio; alias `.tiktok` tetap tersedia.
 - `.ytmp3 <tautan YouTube>`: mengirim audio dari URL YouTube yang valid.
+- `.fb <tautan Facebook>`: video dan foto Facebook publik; alias `.facebook`, `.fbdl`, `.fbvideo` tetap tersedia.
 
 ## Provider dan fallback tanpa Cobalt
 
-Soclip menjadi provider pertama untuk Instagram, TikTok, dan YouTube. Soclip mengembalikan metadata serta URL media langsung melalui `POST https://api.soclip.dev/v1/media`. MUSE-MD memakai API key Bearer dari environment. Setiap ekstraksi sukses menggunakan kredit provider; periksa dashboard Soclip untuk saldo dan penggunaan.
+Soclip menjadi provider pertama untuk Instagram, TikTok, YouTube, dan
+Facebook. Soclip mengembalikan metadata serta URL media langsung melalui `POST https://api.soclip.dev/v1/media`. MUSE-MD memakai API key Bearer dari environment. Setiap ekstraksi sukses menggunakan kredit provider; periksa dashboard Soclip untuk saldo dan penggunaan.
 
-Jika Soclip gagal:
-- Instagram mencoba adapter Instagram lama.
-- TikTok mencoba adapter TikTok lama.
+Fallback antar-provider aktif secara default dan hanya mati bila
+`downloaders.fallbackEnabled` diset `false` secara eksplisit. Jika Soclip gagal:
+- Instagram mencoba yt-dlp lokal, lalu adapter Instagram lama.
+- TikTok mencoba adapter TikTok lama (TikWM dulu, lalu Soclip, lalu provider lama).
 - YouTube mencoba converter lama, lalu yt-dlp lokal bila diaktifkan.
+- Facebook mencoba yt-dlp lokal (video); sebelumnya Facebook hanya memanggil Soclip langsung dari plugin tanpa fallback sama sekali.
+
+Unduhan file media memakai User-Agent browser default, karena sebagian CDN
+(TikTok/Akamai, Instagram/fbcdn) menolak request tanpa User-Agent dengan
+HTTP 403.
 
 Cobalt sudah dihapus dari implementasi dan konfigurasi. Tidak ada URL Cobalt yang diperlukan.
 
@@ -52,4 +63,5 @@ Jika semua provider gagal, error menyebutkan nama provider dan ringkasan penyeba
 4. Uji `.igdl` pada satu Reel dan satu carousel publik.
 5. Uji `.tt` pada video, slideshow, dan audio TikTok publik.
 6. Uji `.ytmp3` pada konten YouTube yang Anda miliki atau diizinkan untuk diunduh.
-7. Uji fallback dengan API key salah pada lingkungan uji; periksa bahwa provider cadangan dijalankan dan diagnostik menyebutkan kegagalan Soclip.
+7. Uji `.fb` pada satu video Facebook publik.
+8. Uji fallback dengan API key salah pada lingkungan uji; periksa bahwa provider cadangan dijalankan dan diagnostik menyebutkan kegagalan Soclip.

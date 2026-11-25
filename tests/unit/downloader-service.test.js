@@ -78,6 +78,7 @@ test('Soclip is preferred for Instagram Reels and carousel posts', async () => {
 test('Instagram falls back to legacy provider when Soclip fails', async () => {
   const service = createDownloaderService({ fallbackEnabled: true }, {
     soclip: async () => { throw new Error('Soclip unavailable'); },
+    ytdlpVideo: async () => { throw new Error('yt-dlp unavailable'); },
     igdl: async () => ({ data: [{ url: 'https://cdn.example/reel.mp4' }] })
   });
   const result = await service.igdl('https://www.instagram.com/reel/ABC123/');
@@ -118,6 +119,55 @@ test('provider diagnostics preserve each fallback failure instead of hiding the 
   await assert.rejects(service.ytmp3('https://youtu.be/abcdefgh'), error =>
     /Soclip: 401 invalid key/.test(error.message) && /converter YouTube cadangan: 503 converter down/.test(error.message)
   );
+});
+
+test('fallback stays enabled when config omits fallbackEnabled', async () => {
+  // Regresi: sebelumnya providerChain membaca config.fallbackEnabled apa
+  // adanya, jadi service yang dibuat tanpa kunci itu tidak pernah mencoba
+  // provider cadangan meski Soclip down.
+  const service = createDownloaderService({}, {
+    soclip: async () => { throw new Error('Soclip unavailable'); },
+    ytdlpVideo: async () => { throw new Error('yt-dlp unavailable'); },
+    igdl: async () => ({ data: [{ url: 'https://cdn.example/reel.mp4' }] })
+  });
+  const result = await service.igdl('https://www.instagram.com/reel/ABC123/');
+  assert.equal(result.provider, 'legacy');
+});
+
+test('Instagram falls back to yt-dlp video when Soclip fails', async () => {
+  const service = createDownloaderService({ fallbackEnabled: true }, {
+    soclip: async () => { throw new Error('Soclip unavailable'); },
+    ytdlpVideo: async () => ({ buffer: Buffer.from('video'), contentType: 'video/mp4', title: 'Media Instagram', provider: 'yt-dlp' }),
+    igdl: async () => { throw new Error('legacy should not run'); }
+  });
+  const result = await service.igdl('https://www.instagram.com/reel/ABC123/');
+  assert.equal(result.provider, 'yt-dlp');
+  assert.equal(result.buffer.toString(), 'video');
+});
+
+test('Facebook downloader prefers Soclip and falls back to yt-dlp video', async () => {
+  const viaSoclip = createDownloaderService({ fallbackEnabled: true }, {
+    soclip: async () => ({ title: 'FB post', medias: [{ type: 'video', ext: 'mp4', url: 'https://cdn.example/fb.mp4' }] })
+  });
+  const soclipResult = await viaSoclip.facebook('https://www.facebook.com/watch/?v=123');
+  assert.equal(soclipResult.provider, 'soclip');
+  assert.equal(soclipResult.data[0].url, 'https://cdn.example/fb.mp4');
+
+  const viaYtDlp = createDownloaderService({ fallbackEnabled: true }, {
+    soclip: async () => { throw new Error('Soclip unavailable'); },
+    ytdlpVideo: async () => ({ buffer: Buffer.from('video'), contentType: 'video/mp4', title: 'Video Facebook', provider: 'yt-dlp' })
+  });
+  const fallbackResult = await viaYtDlp.facebook('https://fb.watch/abc123');
+  assert.equal(fallbackResult.provider, 'yt-dlp');
+  assert.equal(fallbackResult.buffer.toString(), 'video');
+});
+
+test('Facebook downloader rejects non-Facebook hosts before any provider call', async () => {
+  const service = createDownloaderService({}, {
+    soclip: async () => { throw new Error('soclip should not run'); }
+  });
+  await assert.rejects(service.facebook('https://example.com/watch/?v=123'), /Facebook/);
+  await assert.rejects(service.facebook('http://www.facebook.com/watch/?v=123'), /HTTPS/);
 });
 
 test('legacy downloader helper paths preserve their public exports', () => {

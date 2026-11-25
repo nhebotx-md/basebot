@@ -9,9 +9,17 @@ async function downloadBuffer(url, { maxBytes = 20 * 1024 * 1024, timeoutMs = 15
   let current;
   try { current = new URL(url); } catch { throw new Error('URL media tidak valid.'); }
   if (current.protocol !== 'https:') throw new Error('URL media harus menggunakan HTTPS.');
+  // CDN media (TikTok/Akamai, Instagram/fbcdn) sering menolak request tanpa
+  // User-Agent dengan HTTP 403. Kirim UA browser bila pemanggil tidak
+  // menentukan header sendiri; header eksplisit pemanggil tetap menang.
+  const requestHeaders = {
+    'user-agent': 'Mozilla/5.0 (compatible; MUSE-MD/2.0)',
+    accept: '*/*',
+    ...headers
+  };
 
   for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
-    const response = await fetchPublic(current.toString(), { maxBytes, timeoutMs, headers });
+    const response = await fetchPublic(current.toString(), { maxBytes, timeoutMs, headers: requestHeaders });
     if (REDIRECT_STATUSES.has(response.status)) {
       if (redirects === MAX_REDIRECTS) throw new Error('Terlalu banyak redirect saat mengunduh media.');
       const location = response.headers.get('location');
