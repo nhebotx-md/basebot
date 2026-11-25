@@ -10,6 +10,19 @@ module.exports = {
     if (!ctx.text) return ctx.reply(`Contoh: ${ctx.prefix}igdl https://www.instagram.com/reel/...`);
     await progress.start('Memvalidasi tautan Instagram', { detail: 'Memastikan alamat tujuan aman sebelum meminta media.' });
     const data = await ctx.services.downloaders.igdl(ctx.text);
+    // Fallback yt-dlp mengembalikan buffer langsung (bukan daftar URL).
+    if (data.buffer) {
+      const contentType = String(data.contentType || '');
+      if (!contentType.startsWith('image/') && !contentType.startsWith('video/')) {
+        throw new Error('Jenis media dari Instagram tidak didukung.');
+      }
+      await progress.update('Mengirim media Instagram', { detail: 'Media hasil fallback siap dikirim.' });
+      const message = contentType.startsWith('image/')
+        ? { image: data.buffer, caption: 'Media Instagram.' }
+        : { video: data.buffer, mimetype: contentType, caption: 'Media Instagram.' };
+      await ctx.sendMessage(ctx.chat, message, { quoted: ctx.m.raw });
+      return progress.update('Media Instagram berhasil dikirim', { detail: '1 media terkirim.' });
+    }
     const raw = Array.isArray(data?.data) ? data.data : [];
     const items = [...new Map(raw.filter(item => typeof item.url === 'string').map(item => [item.url, item])).values()].slice(0, 8);
     if (!items.length) {

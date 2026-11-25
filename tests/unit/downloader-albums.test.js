@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const igdl = require('../../plugins/downloader/download-igdl');
+const igdl = require('../../plugins/downloader/igdl');
 const tiktok = require('../../plugins/downloader/tiktok');
 
 function baseContext(overrides = {}) {
@@ -41,6 +41,16 @@ test('Instagram carousel downloads validated media and sends one native mixed-me
   assert.ok(Buffer.isBuffer(ctx.albums[0][1][0].image));
   assert.ok(Buffer.isBuffer(ctx.albums[0][1][1].video));
   assert.equal(ctx.messages.length, 0);
+});
+
+test('Instagram sends a yt-dlp fallback buffer directly without an album download', async () => {
+  const ctx = baseContext();
+  ctx.services.downloaders.igdl = async () => ({ buffer: Buffer.from('video'), contentType: 'video/mp4', title: 'Media Instagram', provider: 'yt-dlp' });
+  await igdl.execute(ctx);
+  assert.equal(ctx.albums.length, 0);
+  assert.equal(ctx.messages.length, 1);
+  assert.ok(Buffer.isBuffer(ctx.messages[0][1].video));
+  assert.equal(ctx.messages[0][1].mimetype, 'video/mp4');
 });
 
 test('TikTok slideshow downloads photos and sends them as one native album', async () => {

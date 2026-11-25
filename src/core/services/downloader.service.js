@@ -23,34 +23,53 @@ function validateSource(input, allowedHosts, label) {
   return url;
 }
 
-async function downloadWithYtDlp(input, { binary = 'yt-dlp', tempDir = './storage/temp', timeoutMs = 90000 } = {}) {
+const YTDLP_VIDEO_TYPES = Object.freeze({ mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime' });
+const YTDLP_IMAGE_TYPES = Object.freeze({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' });
+
+async function downloadWithYtDlp(input, { binary = 'yt-dlp', tempDir = './storage/temp', timeoutMs = 90000, kind = 'audio', title = 'Audio YouTube' } = {}) {
   await fs.mkdir(tempDir, { recursive: true });
   const root = await fs.mkdtemp(path.join(tempDir, 'muse-md-downloader-'));
-  const output = path.join(root, 'audio.%(ext)s');
+  const stem = kind === 'video' ? 'media' : 'audio';
+  const output = path.join(root, stem + '.%(ext)s');
+  const formatArgs = kind === 'video'
+    ? ['--format', 'mp4/best[ext=mp4]/best', '--max-filesize', '25M']
+    : ['--extract-audio', '--audio-format', 'mp3', '--max-filesize', '20M'];
+  const maxBytes = kind === 'video' ? 25 * 1024 * 1024 : 20 * 1024 * 1024;
   try {
     await execFileAsync(binary, [
-      '--no-playlist', '--extract-audio', '--audio-format', 'mp3',
-      '--max-filesize', '20M', '--no-part', '--no-progress', '--no-warnings',
+      '--no-playlist', ...formatArgs,
+      '--no-part', '--no-progress', '--no-warnings',
       '--output', output, '--', input
     ], { timeout: timeoutMs, maxBuffer: 1024 * 1024, windowsHide: true });
     const files = await fs.readdir(root);
-    const audioFile = files.find(file => /^audio\.mp3$/i.test(file));
-    if (!audioFile) throw new Error('yt-dlp tidak menghasilkan file MP3.');
-    const filePath = path.join(root, audioFile);
+    const mediaFile = files.find(file => new RegExp(`^${stem}\\.(mp3|mp4|webm|mov|jpg|jpeg|png|webp)$`, 'i').test(file));
+    if (!mediaFile) throw new Error('yt-dlp tidak menghasilkan file media.');
+    const filePath = path.join(root, mediaFile);
     const stat = await fs.stat(filePath);
-    if (!stat.isFile() || stat.size < 1 || stat.size > 20 * 1024 * 1024) throw new Error('Ukuran audio hasil yt-dlp tidak valid.');
-    return { buffer: await fs.readFile(filePath), contentType: 'audio/mpeg', title: 'Audio YouTube', provider: 'yt-dlp' };
+    if (!stat.isFile() || stat.size < 1 || stat.size > maxBytes) throw new Error('Ukuran media hasil yt-dlp tidak valid.');
+    const ext = mediaFile.split('.').pop().toLowerCase();
+    const contentType = kind === 'audio' ? 'audio/mpeg' : (YTDLP_VIDEO_TYPES[ext] || YTDLP_IMAGE_TYPES[ext] || '');
+    if (!contentType) throw new Error('yt-dlp menghasilkan format media yang tidak didukung.');
+    return { buffer: await fs.readFile(filePath), contentType, title, provider: 'yt-dlp' };
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
   }
 }
 
 function createDownloaderService(config = {}, adapters = {}) {
+  // Fallback antar-provider aktif secara default; hanya mati bila dimatikan
+  // eksplisit (fallbackEnabled: false). Sebelumnya, config tanpa kunci ini
+  // membuat fallback tidak pernah jalan sehingga satu server down = semua
+  // downloader mati meski provider cadangan sudah ditulis.
+  const fallbackEnabled = config.fallbackEnabled !== false;
   const soclip = adapters.soclip || (url => soclipResolve(url, { apiKey: config.soclipApiKey }));
   const igdlProvider = adapters.igdl || instagramIgdl;
   const legacyAudio = adapters.ytmp3 || legacyYtmp3;
   const ytDlpAudio = adapters.ytdlpAudio || (url => downloadWithYtDlp(url, {
     binary: config.ytDlpPath || 'yt-dlp', tempDir: config.tempDir || './storage/temp'
+  }));
+  const ytDlpVideo = adapters.ytdlpVideo || ((url, title = 'Video') => downloadWithYtDlp(url, {
+    kind: 'video', title, binary: config.ytDlpPath || 'yt-dlp', tempDir: config.tempDir || './storage/temp'
   }));
   const providerManager = adapters.providerManager || new ProviderManager(config.providerOptions || { timeoutMs: config.providerTimeoutMs, retries: config.providerRetries, failureThreshold: config.providerFailureThreshold, cooldownMs: config.providerCooldownMs });
   const tikwmProvider = adapters.tikwm || (async url => {
@@ -95,7 +114,7 @@ function createDownloaderService(config = {}, adapters = {}) {
   async function providerChain(label, providers, { alwaysFallback = false } = {}) {
     const errors = [];
     for (let index = 0; index < providers.length; index += 1) {
-      if (index > 0 && !config.fallbackEnabled && !alwaysFallback) break;
+      if (index > 0 && !fallbackEnabled && !alwaysFallback) break;
       const [name, run] = providers[index];
       try {
         return await providerManager.run(name, run, {
@@ -129,10 +148,29 @@ function createDownloaderService(config = {}, adapters = {}) {
           if (!data.length) throw new Error('Tidak ada foto/video pada respons Soclip.');
           return { data, title: result.title, provider: 'soclip' };
         }],
+        ['yt-dlp lokal', async () => {
+          if (config.ytDlpEnabled === false) throw new Error('Fallback yt-dlp dinonaktifkan.');
+          return ytDlpVideo(input, 'Media Instagram');
+        }],
         ['provider Instagram cadangan', async () => {
           const result = await igdlProvider(input);
           if (!Array.isArray(result?.data) || !result.data.some(item => typeof item?.url === 'string')) throw new Error('Provider lama tidak mengembalikan media.');
           return { ...result, provider: 'legacy' };
+        }]
+      ]);
+    },
+    async facebook(input) {
+      validateSource(input, ['facebook.com', 'fb.watch'], 'Facebook');
+      return providerChain('Facebook downloader', [
+        ['Soclip', async () => {
+          const result = await soclip(input);
+          const data = socialMedia(result);
+          if (!data.length) throw new Error('Tidak ada foto/video pada respons Soclip.');
+          return { data, title: result.title, provider: 'soclip' };
+        }],
+        ['yt-dlp lokal', async () => {
+          if (config.ytDlpEnabled === false) throw new Error('Fallback yt-dlp dinonaktifkan.');
+          return ytDlpVideo(input, 'Video Facebook');
         }]
       ]);
     },

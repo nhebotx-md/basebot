@@ -1,6 +1,5 @@
 'use strict';
 
-const { soclipResolve } = require('../../src/integrations/providers/soclip');
 const { getPluginProgress } = require('../../src/core/services/plugin-progress.service');
 
 const ALLOWED_HOSTS = new Set(['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.watch', 'www.fb.watch']);
@@ -19,7 +18,7 @@ module.exports = {
   name: 'facebook-downloader',
   commands: ['facebook', 'fb', 'fbdl', 'fbvideo'],
   category: 'downloader',
-  description: 'Mengunduh video dan foto Facebook melalui provider Soclip.',
+  description: 'Mengunduh video dan foto Facebook melalui layanan downloader (Soclip, fallback yt-dlp lokal).',
   usage: '.fb <tautan Facebook publik>',
   permissions: {},
   async execute(ctx) {
@@ -33,10 +32,26 @@ module.exports = {
     });
     try {
       await progress.update('Mengambil metadata Facebook', {
-        detail: 'Meminta daftar media dari Soclip.'
+        detail: 'Meminta daftar media dari layanan downloader.'
       });
-      const result = await soclipResolve(source, { apiKey: ctx.config.downloaders?.soclipApiKey });
-      const items = (result.medias || []).filter(item => item?.url).slice(0, 8);
+      // Lewat downloader service agar Facebook ikut rantai fallback
+      // (Soclip -> yt-dlp lokal) seperti downloader lain, bukan Soclip saja.
+      const result = await ctx.services.downloaders.facebook(source);
+      if (result.buffer) {
+        const contentType = String(result.contentType || '');
+        if (!contentType.startsWith('video/') && !contentType.startsWith('image/')) {
+          throw new Error('Provider tidak mengembalikan file media.');
+        }
+        await progress.update('Mengirim media Facebook', {
+          detail: 'Media hasil fallback siap dikirim.'
+        });
+        const message = contentType.startsWith('image/')
+          ? { image: result.buffer, caption: 'Facebook · ' + (result.title || '') }
+          : { video: result.buffer, mimetype: contentType, caption: 'Facebook · ' + (result.title || '') };
+        await ctx.sendMessage(ctx.chat, message, { quoted: ctx.m.raw });
+        return progress.update('Downloader Facebook selesai', { detail: '1 media berhasil dikirim.' });
+      }
+      const items = (result.data || []).filter(item => item?.url).slice(0, 8);
       if (!items.length) throw new Error('Provider tidak mengembalikan media Facebook.');
       let sent = 0;
       const images = [];
