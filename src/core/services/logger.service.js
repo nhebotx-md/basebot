@@ -45,6 +45,14 @@ function redact(value, key = '', seen = new WeakSet(), depth = 0) {
     const safe = { name: sanitizeText(value.name), message: sanitizeText(value.message) };
     if (value.code !== undefined) safe.code = redact(value.code, 'code', seen, depth + 1);
     if (value.statusCode !== undefined) safe.statusCode = value.statusCode;
+    // Pesan agregat provider (mis. kegagalan TikTok: TikWM | Soclip | legacy)
+    // disimpan di properti custom error; tanpa ini diagnosis di log hilang.
+    if (Array.isArray(value.providerErrors)) {
+      safe.providerErrors = value.providerErrors
+        .filter(item => typeof item === 'string')
+        .map(item => sanitizeText(item).slice(0, 240))
+        .slice(0, 20);
+    }
     if (value.stack) safe.stack = sanitizeText(value.stack).split('\n').slice(0, 16).join('\n');
     return safe;
   }
@@ -99,6 +107,18 @@ function fitVisible(value, width) {
 function clip(value, max = 68) {
   const text = sanitizeText(value).replace(/[\r\n]+/g, ' ').trim();
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
+}
+function wrapText(value, width) {
+  const words = sanitizeText(value).replace(/[\r\n]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const candidate = line ? line + ' ' + word : word;
+    if (line && visibleWidth(candidate) > width) { lines.push(line); line = word; }
+    else line = candidate;
+  }
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
 }
 function shortTime(date, timezone = 'Asia/Jakarta') {
   try {
@@ -204,6 +224,50 @@ function createLogger({ level = 'info', sink = console, component = 'MUSE-MD', f
   logger.tag = (label, message, detail = '') => {
     if (LEVELS.info < threshold) return;
     record('info', '[' + clip(label, 24) + '] ' + message + (detail ? ' ' + detail : ''));
+  };
+  // Error plugin dengan ID referensi yang tersimpan sebagai log JSON.
+  // Setiap kegagalan plugin dicatat satu baris JSONL dengan
+  // data.kind === 'plugin-error' dan data.reference === REF, sehingga REF
+  // yang dikirim ke grup bisa dicari di file log (`grep <REF> logs/*.jsonl`
+  // atau perintah owner `.logref <REF>`). Pesan error lengkap juga
+  // ditampilkan di terminal; sebelumnya metadata error terpotong menjadi
+  // "+N metadata fields" dan tidak terlihat.
+  logger.errorReference = (details = {}) => {
+    if (LEVELS.error < threshold) return null;
+    const reference = String(details.reference || '').trim().toUpperCase();
+    if (!/^[0-9A-F]{8}$/.test(reference)) return null;
+    const errorData = details.error instanceof Error || (details.error && typeof details.error === 'object')
+      ? redact(details.error)
+      : { name: 'Error', message: sanitizeText(details.error ?? 'Unknown error') };
+    const data = {
+      kind: 'plugin-error',
+      reference,
+      plugin: clip(details.plugin || 'unknown', 64),
+      command: clip(details.command || '-', 40),
+      stage: clip(details.stage || 'execute', 24),
+      ...(details.scope ? { scope: clip(details.scope, 16) } : {}),
+      error: errorData
+    };
+    if (!pretty) { record('error', 'Plugin gagal saat dieksekusi.', data); return reference; }
+    persistRecord('error', 'Plugin gagal saat dieksekusi.', data);
+    const time = colorize(colorEnabled, ANSI.gray, shortTime(clock(), timezone));
+    const levelLabel = colorize(colorEnabled, ANSI.red, padVisible('ERROR', 7), true);
+    const prefix = '  ' + time + '  ' + levelLabel + '  ' + colorize(colorEnabled, ANSI.violet, '›') + '  ';
+    writeLine(prefix + colorize(colorEnabled, ANSI.white, 'Plugin gagal saat dieksekusi. [REF ' + reference + ']'), 'error');
+    const indentWidth = Math.min(36, Math.max(2, terminalWidth() - 30));
+    const detailWidth = Math.max(8, terminalWidth() - indentWidth - 2);
+    const rows = [
+      ['PLUGIN', data.plugin],
+      ['COMMAND', data.command],
+      ['ERROR', String(errorData.name || 'Error')]
+    ];
+    for (const [key, value] of rows) {
+      writeLine(' '.repeat(indentWidth) + colorize(colorEnabled, ANSI.border, '·') + ' ' + colorize(colorEnabled, ANSI.gray, key + '=') + colorize(colorEnabled, ANSI.white, clip(String(value), detailWidth)), 'error');
+    }
+    for (const line of wrapText(String(errorData.message || ''), detailWidth)) {
+      writeLine(' '.repeat(indentWidth) + colorize(colorEnabled, ANSI.border, '·') + ' ' + colorize(colorEnabled, ANSI.gray, 'DETAIL=') + colorize(colorEnabled, ANSI.white, line), 'error');
+    }
+    return reference;
   };
   logger.divider = () => panelLine(colorize(colorEnabled, ANSI.border, '  ' + '─'.repeat(Math.max(12, Math.min(terminalWidth() - 4, 76)))));
   logger.banner = info => {

@@ -161,6 +161,13 @@ CI repository menguji Node.js 22 dan Node.js 24. Jalankan kedua perintah di atas
 | `LOG_FILE_NAME` | Nama file log di dalam `LOG_DIR`; tidak menerima path. Default `muse-md.jsonl`. |
 | `LOG_FILE_MAX_BYTES`, `LOG_FILE_MAX_FILES` | Batas ukuran per file dan jumlah file termasuk file aktif; default 5 MiB dan 5 file. File log memakai permission privat. |
 | `COMMAND_RATE_LIMIT`, `COMMAND_RATE_WINDOW_MS` | Batas command per pengirim dan jendela waktu; default 8 command/10 detik. Nilai `0` menonaktifkan rate limit. |
+
+Saat sebuah plugin gagal, bot membalas dengan kotak "FITUR GAGAL DIPROSES" berisi ID referensi (contoh `REF 6E397A04`). Kegagalan itu juga dicatat sebagai satu baris JSON di file log (`logs/muse-md.jsonl` beserta file rotasi `.1`–`.4`) dengan `data.kind: "plugin-error"` dan `data.reference` yang sama, lengkap dengan pesan error dan stack trace. Owner bisa mengambilnya tanpa membuka file log:
+
+- `.logref 6E397A04` — menampilkan plugin, command, tahap, dan pesan error untuk REF tersebut.
+- Manual: `grep 6E397A04 logs/muse-md.jsonl` (tambah `logs/muse-md.jsonl.*` bila sudah ter-rotasi).
+
+Jika `LOG_FILE_ENABLED=false`, tidak ada file log yang bisa dicari; REF hanya tampil di terminal dan balasan bot.
 | `MAX_CONCURRENT_COMMANDS` | Batas pekerjaan plugin yang berjalan bersamaan; default 20. |
 | `SESSION_DIR`, `TEMP_DIR`, `LOG_DIR` | Lokasi data sesi, file sementara, dan log. |
 | `PLUGINS_DIR`, `PLUGIN_RELOAD` | Direktori plugin dan opsi reload saat proses pemuatan. |
